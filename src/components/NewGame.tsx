@@ -4,8 +4,8 @@ import type { Club } from "../types";
 import { useStore } from "../store";
 
 const COUNTRIES: Record<string, string> = {
-  BR: "🇧🇷 Brasil", AR: "🇦🇷 Argentina", EN: "🏴 Inglaterra",
-  ES: "🇪🇸 Espanha", DE: "🇩🇪 Alemanha", FR: "🇫🇷 França", PT: "🇵🇹 Portugal",
+  BR: "Brasil", AR: "Argentina", EN: "Inglaterra",
+  ES: "Espanha", DE: "Alemanha", FR: "França", PT: "Portugal",
 };
 
 export default function NewGame() {
@@ -27,46 +27,49 @@ export default function NewGame() {
   );
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
-      <h1 className="mb-1 text-3xl font-bold tracking-tight">Retro Manager 2026</h1>
-      <p className="mb-6 text-zinc-400">Escolha seu clube para iniciar a temporada.</p>
+    <div className="mx-auto max-w-2xl px-4 pb-10 pt-8 sm:px-6">
+      <img
+        src="/elifoot3k.png"
+        alt="Elifoot 3K — Manager de futebol do futuro"
+        className="mx-auto mb-8 w-full max-w-md"
+      />
 
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="circuit-line mb-6">
+        <span className="ui-label" style={{ color: "var(--accent)" }}>
+          Nova carreira
+        </span>
+      </div>
+
+      <nav className="mb-6 flex flex-wrap gap-x-5 gap-y-1">
         {Object.entries(COUNTRIES).map(([code, label]) => (
           <button
             key={code}
             onClick={() => { setCountry(code); setClubId(null); }}
-            className={`rounded px-3 py-1.5 text-sm ${
-              country === code ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
-            }`}
+            className={`country-tab ${country === code ? "active" : ""}`}
           >
             {label}
           </button>
         ))}
-      </div>
+      </nav>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="border-t border-[rgba(30,42,56,0.6)]">
         {list.map((c) => (
           <button
             key={c.id}
             onClick={() => setClubId(c.id)}
-            className={`rounded-lg border p-3 text-left ${
-              clubId === c.id
-                ? "border-emerald-500 bg-zinc-800"
-                : "border-zinc-800 bg-zinc-900 hover:bg-zinc-800"
-            }`}
+            className={`club-row ${clubId === c.id ? "selected" : ""}`}
           >
-            <div className="mb-1 flex items-center gap-2">
-              <span
-                className="inline-block h-3 w-3 rounded-full border border-zinc-600"
-                style={{ background: c.primaryColor }}
-              />
-              <span className="text-xs text-zinc-500">{c.division}</span>
-            </div>
-            <div className="text-sm font-semibold">{c.name}</div>
-            <div className="text-xs text-zinc-400">
+            <span
+              className="inline-block h-2.5 w-2.5 rotate-45 border border-zinc-700"
+              style={{ background: c.primaryColor }}
+            />
+            <span className="club-name text-sm font-semibold text-zinc-100">
+              {c.name}
+            </span>
+            <span className="ui-label">{c.division}</span>
+            <span className="w-16 text-right font-mono text-xs text-zinc-500">
               €{(c.baseBudget / 1e6).toFixed(1)}M
-            </div>
+            </span>
           </button>
         ))}
       </div>
@@ -74,7 +77,7 @@ export default function NewGame() {
       <button
         disabled={!clubId}
         onClick={() => clubId && startGame(Date.now() >>> 0, clubId)}
-        className="mt-6 w-full rounded-lg bg-emerald-600 py-3 font-bold disabled:opacity-40 hover:bg-emerald-500"
+        className="btn-cta mt-8 w-full py-3.5"
       >
         Começar carreira
       </button>
