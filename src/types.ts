@@ -136,6 +136,7 @@ export interface GameState {
   season: number;
   week: number;
   userClubId: string;
+  managerName?: string; // nome do técnico digitado na tela inicial
   budget: number;
   clubs: Club[];
   players: Player[];

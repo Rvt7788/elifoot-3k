@@ -62,7 +62,7 @@ interface Store {
   setSettings: (s: Partial<Settings>) => void;
   loadGame: (g: GameState) => void;
   releasePlayer: (id: string) => void;
-  startGame: (seed: number, clubId: string) => void;
+  startGame: (seed: number, clubId: string, managerName?: string) => void;
   resetGame: () => void;
   startMatchday: () => void;
   tick: () => void;
@@ -185,11 +185,11 @@ export const useStore = create<Store>()(
         return { ok: true, message: `Negócio fechado! ${player.name} é reforço.` };
       },
 
-      startGame: (seed, clubId) => {
+      startGame: (seed, clubId, managerName) => {
         const game = newGame(seed, clubId);
         const userClub = game.clubs.find((c) => c.id === clubId)!;
         set({
-          game: { ...game, budget: game.budget + seasonRevenue(userClub.baseBudget) },
+          game: { ...game, managerName, budget: game.budget + seasonRevenue(userClub.baseBudget) },
           live: null,
           lastResults: null,
         });
