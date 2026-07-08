@@ -1,0 +1,235 @@
+@import url("https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
+:root {
+  --font-display: "Oswald", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+
+  /* Escala tipográfica única, usada em vez de tamanhos soltos (text-xs/sm/lg escolhidos ao acaso) */
+  --fs-micro: 0.6875rem;  /* 11px — rótulos auxiliares, badges */
+  --fs-label: 0.75rem;    /* 12px — rótulos de campo, cabeçalhos de card */
+  --fs-body: 0.875rem;    /* 14px — texto corrido, linhas de lista */
+  --fs-value: 1.125rem;   /* 18px — valores secundários em destaque */
+  --fs-stat: 1.75rem;     /* 28px — número principal de um card de estatística */
+  --fs-title: 1.5rem;     /* 24px — título de seção/página */
+
+  /* Paleta retro arcade — verdes fósforo e azul CRT */
+  --retro-green: #33ff66;
+  --retro-green-dim: #1a8c3a;
+  --retro-amber: #ffcc00;
+  --retro-red: #ff3333;
+  --retro-cyan: #00ffcc;
+  --retro-blue: #0077ff;
+  --retro-dark: #0a0e14;
+  --retro-panel: #111820;
+  --retro-border: #1e2a38;
+
+  /* Paleta metálica prateada, ecoando a logo */
+  --metal-100: #f4f5f7;
+  --metal-300: #c7cdd6;
+  --metal-500: #9aa3b2;
+  --metal-700: #5b6472;
+  --metal-900: #2a2f38;
+
+  /* Cyan de destaque, o mesmo tom do contorno neon da logo */
+  --accent: #22d3ee;
+  --accent-dim: #0e7490;
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+body {
+  @apply bg-zinc-950 text-zinc-100;
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
+}
+
+/* Título de página/seção: sempre a mesma voz visual */
+.ui-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Rótulo pequeno em maiúsculas no topo de um card ("POSIÇÃO NA LIGA" etc.) */
+.ui-label {
+  font-family: var(--font-body);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--metal-500);
+}
+
+/* Número grande de destaque dentro de um card de estatística */
+.ui-stat {
+  font-family: var(--font-display);
+  font-size: var(--fs-stat);
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--metal-100);
+}
+
+/* =============================================
+   BOTÕES RETRO ARCADE E ABAS
+   ============================================= */
+
+/* Botões do header e abas compartilhando o mesmo font-family, font-weight e paddings para evitar layout shift */
+.btn-metal,
+.btn-metal-green,
+.btn-metal-red,
+.btn-retro-amber,
+.btn-metal-tab,
+.tab-button {
+  font-family: var(--font-body) !important;
+  font-weight: 500 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  transition: all 0.15s ease-in-out;
+}
+
+/* Ajuste de SVG dentro dos botões */
+.btn-metal svg,
+.btn-metal-green svg,
+.btn-metal-red svg,
+.btn-retro-amber svg,
+.btn-metal-tab svg,
+.tab-button svg {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.tab-button {
+  border: none;
+  background: none;
+  color: #a1a1aa; /* text-zinc-400 */
+}
+
+.tab-button:hover {
+  color: #22d3ee;
+}
+
+/* Aba ativa: cor de destaque cyan neon, sem mudar fonte ou tamanho */
+.btn-metal-tab {
+  font-family: var(--font-body) !important;
+  font-weight: 500 !important;
+  color: #22d3ee; /* cyan-400 */
+  background: none;
+  border: none;
+  text-shadow: 0 0 8px rgba(34, 211, 238, 0.4);
+}
+
+/* Verde retro: Iniciar rodada */
+.btn-metal-green {
+  color: #ffffff;
+  background-color: #10b981; /* bg-emerald-500 */
+  border: 1px solid #34d399;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.2);
+}
+.btn-metal-green:hover {
+  background-color: #059669;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+
+/* Vermelho retro: Ao vivo */
+.btn-metal-red {
+  color: #ffffff;
+  background-color: #ef4444; /* bg-red-500 */
+  border: 1px solid #f87171;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.2);
+}
+.btn-metal-red:hover {
+  background-color: #dc2626;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
+
+/* Botão padrão / cinza metálico */
+.btn-metal {
+  color: #f4f4f5;
+  background-color: #27272a;
+  border: 1px solid #3f3f46;
+}
+.btn-metal:hover {
+  background-color: #3f3f46;
+  border-color: #52525b;
+}
+
+/* Botão amber retro */
+.btn-retro-amber {
+  color: #000000;
+  background-color: #f59e0b;
+  border: 1px solid #fbbf24;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.2);
+}
+.btn-retro-amber:hover {
+  background-color: #d97706;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+}
+
+/* Botão de rodada no cabeçalho: sem fundo, só texto + ícone; a cor indica o estado */
+.btn-ghost-green,
+.btn-ghost-red,
+.btn-ghost-amber {
+  font-family: var(--font-body) !important;
+  font-weight: 500 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  transition: all 0.15s ease-in-out;
+  background: none;
+  border: 1px solid transparent;
+}
+.btn-ghost-green svg,
+.btn-ghost-red svg,
+.btn-ghost-amber svg {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* Iniciar rodada: texto neutro que fica verde ao apertar/passar o mouse */
+.btn-ghost-green {
+  color: #d4d4d8; /* zinc-300 */
+}
+.btn-ghost-green:hover,
+.btn-ghost-green:active {
+  color: #34d399; /* emerald-400 */
+  text-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+
+/* Ao vivo: texto vermelho */
+.btn-ghost-red {
+  color: #f87171; /* red-400 */
+}
+.btn-ghost-red:hover,
+.btn-ghost-red:active {
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+}
+
+/* Encerrar rodada: texto âmbar */
+.btn-ghost-amber {
+  color: #fbbf24; /* amber-400 */
+}
+.btn-ghost-amber:hover,
+.btn-ghost-amber:active {
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+@keyframes flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
+}
+.ai-flash {
+  animation: flash 0.6s ease-in-out 3;
+}

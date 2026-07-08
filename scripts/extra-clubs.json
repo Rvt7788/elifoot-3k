@@ -1,0 +1,86 @@
+{
+  "BR": [
+    {"id": "pay_br", "name": "Paysandu", "shortName": "PAY", "division": "Série B", "primaryColor": "#0080C8", "secondaryColor": "#FFFFFF", "baseBudget": 1400000},
+    {"id": "rem_br", "name": "Remo", "shortName": "REM", "division": "Série B", "primaryColor": "#003DA5", "secondaryColor": "#FFFFFF", "baseBudget": 1300000},
+    {"id": "pon_br", "name": "Ponte Preta", "shortName": "PON", "division": "Série B", "primaryColor": "#000000", "secondaryColor": "#FFFFFF", "baseBudget": 1500000},
+    {"id": "cha_br", "name": "Chapecoense", "shortName": "CHA", "division": "Série B", "primaryColor": "#009846", "secondaryColor": "#FFFFFF", "baseBudget": 1600000},
+    {"id": "ame_br", "name": "América-MG", "shortName": "AME", "division": "Série B", "primaryColor": "#007A33", "secondaryColor": "#000000", "baseBudget": 2500000},
+    {"id": "vil_br", "name": "Vila Nova", "shortName": "VIL", "division": "Série B", "primaryColor": "#CE1126", "secondaryColor": "#FFFFFF", "baseBudget": 1400000},
+    {"id": "nau_br", "name": "Náutico", "shortName": "NAU", "division": "Série C", "primaryColor": "#CE1126", "secondaryColor": "#FFFFFF", "baseBudget": 1100000},
+    {"id": "abc_br", "name": "ABC", "shortName": "ABC", "division": "Série C", "primaryColor": "#000000", "secondaryColor": "#FFFFFF", "baseBudget": 900000},
+    {"id": "bsp_br", "name": "Botafogo-SP", "shortName": "BSP", "division": "Série B", "primaryColor": "#CE1126", "secondaryColor": "#FFFFFF", "baseBudget": 1200000},
+    {"id": "ope_br", "name": "Operário-PR", "shortName": "OPE", "division": "Série B", "primaryColor": "#000000", "secondaryColor": "#FFFFFF", "baseBudget": 1100000}
+  ],
+  "AR": [
+    {"id": "tig_ar", "name": "Tigre", "shortName": "TIG", "division": "Série B", "primaryColor": "#003087", "secondaryColor": "#CE1126", "baseBudget": 1600000},
+    {"id": "ald_ar", "name": "Aldosivi", "shortName": "ALD", "division": "Série B", "primaryColor": "#FDB913", "secondaryColor": "#007749", "baseBudget": 1200000},
+    {"id": "sar_ar", "name": "Sarmiento", "shortName": "SAR", "division": "Série B", "primaryColor": "#007749", "secondaryColor": "#FFFFFF", "baseBudget": 1100000},
+    {"id": "ind_r_ar", "name": "Independiente Rivadavia", "shortName": "IRV", "division": "Série B", "primaryColor": "#003087", "secondaryColor": "#FFFFFF", "baseBudget": 1300000},
+    {"id": "rie_ar", "name": "Deportivo Riestra", "shortName": "RIE", "division": "Série B", "primaryColor": "#000000", "secondaryColor": "#FFFFFF", "baseBudget": 900000},
+    {"id": "alb_ar", "name": "All Boys", "shortName": "ALB", "division": "Série B", "primaryColor": "#FFFFFF", "secondaryColor": "#000000", "baseBudget": 800000},
+    {"id": "nch_ar", "name": "Nueva Chicago", "shortName": "NCH", "division": "Série B", "primaryColor": "#007749", "secondaryColor": "#000000", "baseBudget": 800000},
+    {"id": "alm_ar", "name": "Almirante Brown", "shortName": "ALM", "division": "Série B", "primaryColor": "#FDB913", "secondaryColor": "#000000", "baseBudget": 750000},
+    {"id": "tem_ar", "name": "Temperley", "shortName": "TEM", "division": "Série B", "primaryColor": "#8CB7DB", "secondaryColor": "#FFFFFF", "baseBudget": 700000},
+    {"id": "los_ar", "name": "Los Andes", "shortName": "LAN", "division": "Série B", "primaryColor": "#8B0000", "secondaryColor": "#FFFFFF", "baseBudget": 650000}
+  ],
+  "EN": [
+    {"id": "mid_en", "name": "Middlesbrough", "shortName": "MID", "division": "Série B", "primaryColor": "#DC143C", "secondaryColor": "#FFFFFF", "baseBudget": 6000000},
+    {"id": "sto_en", "name": "Stoke City", "shortName": "STK", "division": "Série B", "primaryColor": "#E03A3E", "secondaryColor": "#FFFFFF", "baseBudget": 5000000},
+    {"id": "swa_en", "name": "Swansea City", "shortName": "SWA", "division": "Série B", "primaryColor": "#FFFFFF", "secondaryColor": "#000000", "baseBudget": 4500000},
+    {"id": "car_en", "name": "Cardiff City", "shortName": "CAR", "division": "Série B", "primaryColor": "#0070B5", "secondaryColor": "#FFFFFF", "baseBudget": 4500000},
+    {"id": "bri_c_en", "name": "Bristol City", "shortName": "BRC", "division": "Série B", "primaryColor": "#E21C38", "secondaryColor": "#FFFFFF", "baseBudget": 4000000},
+    {"id": "hul_en", "name": "Hull City", "shortName": "HUL", "division": "Série B", "primaryColor": "#F5A12D", "secondaryColor": "#000000", "baseBudget": 4000000},
+    {"id": "pre_en", "name": "Preston North End", "shortName": "PNE", "division": "Série B", "primaryColor": "#FFFFFF", "secondaryColor": "#002147", "baseBudget": 3500000},
+    {"id": "bla_en", "name": "Blackburn Rovers", "shortName": "BLA", "division": "Série B", "primaryColor": "#009EE0", "secondaryColor": "#FFFFFF", "baseBudget": 3800000},
+    {"id": "qpr_en", "name": "Queens Park Rangers", "shortName": "QPR", "division": "Série B", "primaryColor": "#005CAB", "secondaryColor": "#FFFFFF", "baseBudget": 3500000},
+    {"id": "mil_en", "name": "Millwall", "shortName": "MIL", "division": "Série B", "primaryColor": "#001D5E", "secondaryColor": "#FFFFFF", "baseBudget": 3200000}
+  ],
+  "ES": [
+    {"id": "spg_es", "name": "Sporting Gijón", "shortName": "SPG", "division": "Série B", "primaryColor": "#E32219", "secondaryColor": "#FFFFFF", "baseBudget": 3000000},
+    {"id": "rac_es", "name": "Racing Santander", "shortName": "RAC", "division": "Série B", "primaryColor": "#009846", "secondaryColor": "#FFFFFF", "baseBudget": 2800000},
+    {"id": "ten_es", "name": "Tenerife", "shortName": "TEN", "division": "Série B", "primaryColor": "#FFFFFF", "secondaryColor": "#003DA5", "baseBudget": 2500000},
+    {"id": "alb_es", "name": "Albacete", "shortName": "ALB", "division": "Série B", "primaryColor": "#FFFFFF", "secondaryColor": "#E32219", "baseBudget": 2200000},
+    {"id": "bur_es", "name": "Burgos", "shortName": "BUR", "division": "Série B", "primaryColor": "#000000", "secondaryColor": "#FFFFFF", "baseBudget": 2000000},
+    {"id": "mir_es", "name": "Mirandés", "shortName": "MIR", "division": "Série B", "primaryColor": "#E32219", "secondaryColor": "#000000", "baseBudget": 1800000},
+    {"id": "hue_es", "name": "Huesca", "shortName": "HUE", "division": "Série B", "primaryColor": "#003DA5", "secondaryColor": "#8B0000", "baseBudget": 2200000},
+    {"id": "cart_es", "name": "Cartagena", "shortName": "CTG", "division": "Série B", "primaryColor": "#000000", "secondaryColor": "#FFFFFF", "baseBudget": 1800000},
+    {"id": "cord_es", "name": "Córdoba", "shortName": "CDB", "division": "Série B", "primaryColor": "#009846", "secondaryColor": "#FFFFFF", "baseBudget": 1700000},
+    {"id": "cast_es", "name": "Castellón", "shortName": "CAS", "division": "Série B", "primaryColor": "#000000", "secondaryColor": "#FFFFFF", "baseBudget": 1600000}
+  ],
+  "DE": [
+    {"id": "koe_de", "name": "1. FC Köln", "shortName": "KOE", "division": "Série B", "primaryColor": "#ED1C24", "secondaryColor": "#FFFFFF", "baseBudget": 9000000},
+    {"id": "ksc_de", "name": "Karlsruher SC", "shortName": "KSC", "division": "Série B", "primaryColor": "#00417B", "secondaryColor": "#FFFFFF", "baseBudget": 3500000},
+    {"id": "sgf_de", "name": "Greuther Fürth", "shortName": "SGF", "division": "Série B", "primaryColor": "#009B48", "secondaryColor": "#FFFFFF", "baseBudget": 3000000},
+    {"id": "d98_de", "name": "Darmstadt 98", "shortName": "D98", "division": "Série B", "primaryColor": "#004E9E", "secondaryColor": "#FFFFFF", "baseBudget": 3800000},
+    {"id": "fcm_de", "name": "Magdeburg", "shortName": "FCM", "division": "Série B", "primaryColor": "#005CA9", "secondaryColor": "#FFFFFF", "baseBudget": 2800000},
+    {"id": "elv_de", "name": "Elversberg", "shortName": "ELV", "division": "Série B", "primaryColor": "#000000", "secondaryColor": "#FFFFFF", "baseBudget": 2200000},
+    {"id": "ulm_de", "name": "SSV Ulm", "shortName": "ULM", "division": "Série B", "primaryColor": "#000000", "secondaryColor": "#FFFFFF", "baseBudget": 1800000},
+    {"id": "jre_de", "name": "Jahn Regensburg", "shortName": "JRE", "division": "Série B", "primaryColor": "#E32219", "secondaryColor": "#FFFFFF", "baseBudget": 1900000},
+    {"id": "psm_de", "name": "Preußen Münster", "shortName": "PSM", "division": "Série B", "primaryColor": "#009B48", "secondaryColor": "#000000", "baseBudget": 1700000},
+    {"id": "rwe_de", "name": "Rot-Weiss Essen", "shortName": "RWE", "division": "Série B", "primaryColor": "#E10012", "secondaryColor": "#FFFFFF", "baseBudget": 1600000}
+  ],
+  "FR": [
+    {"id": "gre_fr", "name": "Grenoble", "shortName": "GRE", "division": "Série B", "primaryColor": "#003DA5", "secondaryColor": "#FFFFFF", "baseBudget": 2000000},
+    {"id": "ami_fr", "name": "Amiens", "shortName": "AMI", "division": "Série B", "primaryColor": "#FFFFFF", "secondaryColor": "#000000", "baseBudget": 2200000},
+    {"id": "pau_fr", "name": "Pau FC", "shortName": "PAU", "division": "Série B", "primaryColor": "#FFD700", "secondaryColor": "#003DA5", "baseBudget": 1800000},
+    {"id": "rod_fr", "name": "Rodez", "shortName": "ROD", "division": "Série B", "primaryColor": "#8B0000", "secondaryColor": "#FFD700", "baseBudget": 1600000},
+    {"id": "lav_fr", "name": "Laval", "shortName": "LAV", "division": "Série B", "primaryColor": "#F58220", "secondaryColor": "#000000", "baseBudget": 1700000},
+    {"id": "ann_fr", "name": "Annecy", "shortName": "ANN", "division": "Série B", "primaryColor": "#E10012", "secondaryColor": "#FFFFFF", "baseBudget": 1500000},
+    {"id": "dun_fr", "name": "Dunkerque", "shortName": "DUN", "division": "Série B", "primaryColor": "#005CA9", "secondaryColor": "#FFFFFF", "baseBudget": 1400000},
+    {"id": "red_fr", "name": "Red Star", "shortName": "RST", "division": "Série B", "primaryColor": "#009846", "secondaryColor": "#FFFFFF", "baseBudget": 1600000},
+    {"id": "nan_c_fr", "name": "Nancy", "shortName": "NAN", "division": "Série B", "primaryColor": "#E10012", "secondaryColor": "#FFFFFF", "baseBudget": 1500000},
+    {"id": "dij_fr", "name": "Dijon", "shortName": "DIJ", "division": "Série B", "primaryColor": "#E10012", "secondaryColor": "#FFFFFF", "baseBudget": 1400000}
+  ],
+  "PT": [
+    {"id": "avi_pt", "name": "Académico de Viseu", "shortName": "AVI", "division": "Série B", "primaryColor": "#000000", "secondaryColor": "#FFFFFF", "baseBudget": 900000},
+    {"id": "tor_pt", "name": "Torreense", "shortName": "TOR", "division": "Série B", "primaryColor": "#E10012", "secondaryColor": "#FFFFFF", "baseBudget": 850000},
+    {"id": "maf_pt", "name": "Mafra", "shortName": "MAF", "division": "Série B", "primaryColor": "#FFD700", "secondaryColor": "#009846", "baseBudget": 800000},
+    {"id": "oli_pt", "name": "Oliveirense", "shortName": "OLI", "division": "Série B", "primaryColor": "#E10012", "secondaryColor": "#000000", "baseBudget": 800000},
+    {"id": "alv_pt", "name": "Alverca", "shortName": "ALV", "division": "Série B", "primaryColor": "#E10012", "secondaryColor": "#FFFFFF", "baseBudget": 850000},
+    {"id": "fel_pt", "name": "Felgueiras", "shortName": "FEL", "division": "Série B", "primaryColor": "#009846", "secondaryColor": "#FFFFFF", "baseBudget": 700000},
+    {"id": "var_pt", "name": "Varzim", "shortName": "VAR", "division": "Série B", "primaryColor": "#FFFFFF", "secondaryColor": "#000000", "baseBudget": 750000},
+    {"id": "tro_pt", "name": "Trofense", "shortName": "TRO", "division": "Série B", "primaryColor": "#E10012", "secondaryColor": "#FFFFFF", "baseBudget": 650000},
+    {"id": "cov_pt", "name": "Sporting da Covilhã", "shortName": "COV", "division": "Série B", "primaryColor": "#FFD700", "secondaryColor": "#000000", "baseBudget": 650000},
+    {"id": "vvd_pt", "name": "Länk Vilaverdense", "shortName": "VVD", "division": "Série B", "primaryColor": "#005CA9", "secondaryColor": "#FFFFFF", "baseBudget": 600000}
+  ]
+}
