@@ -1,0 +1,51 @@
+{
+  "_comment": "Clubes do jogo com participação histórica em copa continental. Base do sorteio da Libertadores (BR/AR) e da Champions (EN/ES/DE/FR/PT). Nomes idênticos aos de clubs.json.",
+  "libertadores": {
+    "BR": [
+      "Flamengo", "Palmeiras", "Botafogo", "Atlético Mineiro", "São Paulo",
+      "Corinthians", "Bahia", "Fluminense", "Grêmio", "Internacional",
+      "Cruzeiro", "Vasco", "Athletico Paranaense", "Red Bull Bragantino",
+      "Fortaleza", "Santos", "Vitória", "Criciúma", "Juventude",
+      "Coritiba", "Sport", "Goiás", "América-MG", "Chapecoense",
+      "Paysandu", "Guarani"
+    ],
+    "AR": [
+      "River Plate", "Boca Juniors", "Racing Club", "Estudiantes",
+      "Talleres de Córdoba", "Independiente", "San Lorenzo", "Vélez Sarsfield",
+      "Rosario Central", "Huracán", "Newell's Old Boys", "Lanús",
+      "Defensa y Justicia", "Godoy Cruz", "Argentinos Juniors",
+      "Atlético Tucumán", "Banfield", "Gimnasia La Plata",
+      "Colón", "Quilmes", "Tigre", "Arsenal de Sarandí", "Central Córdoba"
+    ]
+  },
+  "champions": {
+    "EN": [
+      "Manchester City", "Arsenal", "Liverpool", "Chelsea", "Manchester United",
+      "Newcastle", "Tottenham", "Aston Villa", "Everton", "Leicester",
+      "Wolves", "Nottingham Forest", "Ipswich Town", "Leeds United",
+      "Burnley", "Blackburn Rovers", "Derby County"
+    ],
+    "ES": [
+      "Real Madrid", "Barcelona", "Atlético de Madrid", "Girona",
+      "Real Sociedad", "Villarreal", "Athletic Bilbao", "Real Betis",
+      "Sevilla", "Valencia", "Celta de Vigo", "Mallorca",
+      "Deportivo La Coruña", "Málaga"
+    ],
+    "DE": [
+      "Bayern de Munique", "Borussia Dortmund", "Bayer Leverkusen", "RB Leipzig",
+      "Eintracht Frankfurt", "Stuttgart", "Wolfsburg", "Borussia Mönchengladbach",
+      "Hoffenheim", "Union Berlin", "Werder Bremen", "1. FC Köln", "Hamburgo",
+      "Schalke 04", "Hertha Berlin", "Kaiserslautern", "Nuremberg",
+      "Eintracht Braunschweig", "Dynamo Dresden", "Magdeburg", "Hansa Rostock"
+    ],
+    "FR": [
+      "Paris Saint-Germain", "Olympique de Marseille", "Monaco",
+      "Olympique Lyonnais", "Nice", "Lille", "Rennes", "Lens",
+      "Strasbourg", "Brest", "Stade de Reims", "Saint-Étienne",
+      "Nantes", "Montpellier", "Auxerre", "Bordeaux"
+    ],
+    "PT": [
+      "Benfica", "Sporting CP", "Porto", "Braga", "Boavista"
+    ]
+  }
+}
