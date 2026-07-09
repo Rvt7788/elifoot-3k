@@ -18,10 +18,10 @@ for (const size of sizes) {
     .toFile(path.join(outDir, `icon-${size}.png`));
 }
 
-// Maskable: logo centralizada ocupando ~70% do canvas, fundo sólido escuro
+// Maskable: logo centralizada ocupando ~92% do canvas, fundo sólido escuro
 // (combina com o tema do jogo) para não cortar em formatos de ícone circulares.
 for (const size of sizes) {
-  const inner = Math.round(size * 0.7);
+  const inner = Math.round(size * 0.92);
   const logo = await sharp(src).resize(inner, inner, { fit: "cover" }).png().toBuffer();
   await sharp({
     create: {

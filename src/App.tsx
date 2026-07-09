@@ -47,13 +47,15 @@ export default function App() {
     { key: "mercado", label: "Mercado", Icon: IconMarket },
   ];
 
-  let headerBtnLabel = "Iniciar rodada";
-  let headerBtnClass = "btn-ghost-green";
+  let headerBtnLabel = "Iniciar jogo";
+  let headerBtnClass = "btn-metal-green";
   let headerBtnIcon = <IconPlay className="h-4 w-4" />;
   let headerBtnOnClick = () => {
     startMatchday();
     setTab("rodada");
   };
+  // "Ao vivo" só aparece fora da aba Rodada — lá dentro já se vê o jogo rolando
+  let showHeaderBtn = true;
 
   if (liveRunning) {
     if (liveFinished) {
@@ -76,6 +78,7 @@ export default function App() {
       headerBtnOnClick = () => {
         setTab("rodada");
       };
+      showHeaderBtn = tab !== "rodada";
     }
   }
 
@@ -107,13 +110,15 @@ export default function App() {
               <IconGear className="h-5 w-5" />
             </button>
           </div>
-          <button
-            onClick={headerBtnOnClick}
-            className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-sm ${headerBtnClass}`}
-          >
-            {headerBtnIcon}
-            {headerBtnLabel}
-          </button>
+          {showHeaderBtn && (
+            <button
+              onClick={headerBtnOnClick}
+              className={`flex items-center gap-2 rounded px-4 py-2 text-base font-semibold ${headerBtnClass}`}
+            >
+              {headerBtnIcon}
+              {headerBtnLabel}
+            </button>
+          )}
         </div>
       </header>
 
