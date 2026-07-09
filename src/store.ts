@@ -1,12 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Fixture, Formation, GameState, LiveMatch, Player, Tactics, TrainingIntensity } from "./types";
-import { FORMATIONS } from "./types";
+import type { CustomFormation, Fixture, Formation, GameState, LiveMatch, Player, Tactics, TrainingIntensity } from "./types";
+import { shapeOf } from "./types";
 import { applyWeeklyGain, RECOVERY } from "./game/training";
 import {
   applyCupResults, drawCup, leagueWeek, nextCupWeek, tiesForLeg, weekInfo,
 } from "./game/cup";
-import { newGame } from "./game/seeder";
+import { newGame, assignShirtNumbers } from "./game/seeder";
 import { createLiveMatch, simulateMinute } from "./game/engine";
 import { applyResult, sortTable } from "./game/schedule";
 import { mulberry32 } from "./game/rng";
@@ -69,9 +69,11 @@ interface Store {
   setPaused: (p: boolean) => void;
   setStarters: (ids: string[]) => void;
   setSlotOrder: (ids: string[]) => void;
-  setFormation: (f: Formation) => void;
+  setFormation: (f: Formation, custom?: CustomFormation) => void;
+  setCustomFormation: (custom: CustomFormation) => void;
   setDefaultTactics: (t: Partial<Tactics>) => void;
   setPlayerTraining: (id: string, i: TrainingIntensity) => void;
+  setPlayerNumber: (id: string, number: number) => void;
   payBicho: () => boolean;
   sellPlayer: (id: string) => { ok: boolean; amount?: number };
   buyPlayer: (id: string, offer: number) => { ok: boolean; message: string };
@@ -106,6 +108,20 @@ export function needsUserShootout(g: GameState, live: LiveMatch[] | null): boole
   const aggAway = (tie.g1a ?? 0) + m.homeScore;
   return aggHome === aggAway;
 }
+
+// O clube do usuário caiu da copa nacional nesta temporada? (perdeu algum
+// confronto já decidido, em qualquer fase disputada até agora)
+export const isCupEliminated = (g: GameState): boolean => {
+  if (!g.cup) return false;
+  return g.cup.rounds.some((ties) =>
+    ties.some(
+      (t) =>
+        (t.homeId === g.userClubId || t.awayId === g.userClubId) &&
+        t.winnerId != null &&
+        t.winnerId !== g.userClubId,
+    ),
+  );
+};
 
 // Próxima semana a disputar, considerando liga e copa intercaladas no calendário.
 export const nextPlayableWeek = (g: GameState): number | null => {
@@ -240,6 +256,7 @@ export const useStore = create<Store>()(
           return div === userClub.division ? 0 : 1;
         };
         const sorted = [...pairs].sort((a, b) => divOrder(a) - divOrder(b));
+        const matchCompetition = info.type === "cup" ? "cup" : "league";
         const live = sorted.map((f) =>
           createLiveMatch(
             f.homeId, f.awayId,
@@ -253,6 +270,7 @@ export const useStore = create<Store>()(
             clubAggression(g, f.awayId),
             f.homeId === g.userClubId ? g.slotOrder : undefined,
             f.awayId === g.userClubId ? g.slotOrder : undefined,
+            matchCompetition,
           ),
         );
         set({ live, lastResults: null, liveDivision: null, paused: false });
@@ -317,17 +335,34 @@ export const useStore = create<Store>()(
         set({ game: { ...g, players } });
       },
 
+      setPlayerNumber: (id, number) => {
+        const g = get().game;
+        if (!g) return;
+        const clubId = g.players.find((p) => p.id === id)?.clubId;
+        // troca de número dentro do mesmo elenco: quem já usava o número escolhido
+        // assume o número antigo do jogador editado (nunca duplica no time)
+        const target = g.players.find((p) => p.id === id);
+        if (!target) return;
+        const swapWith = g.players.find((p) => p.clubId === clubId && p.number === number && p.id !== id);
+        const players = g.players.map((p) => {
+          if (p.id === id) return { ...p, number };
+          if (swapWith && p.id === swapWith.id) return { ...p, number: target.number };
+          return p;
+        });
+        set({ game: { ...g, players } });
+      },
+
       setDefaultTactics: (t) => {
         const g = get().game;
         if (!g) return;
         set({ game: { ...g, defaultTactics: { ...g.defaultTactics, ...t } } });
       },
 
-      setFormation: (formation) => {
+      setFormation: (formation, custom) => {
         const g = get().game;
         if (!g) return;
         const squad = g.players.filter((p) => p.clubId === g.userClubId);
-        const shape = FORMATIONS[formation];
+        const shape = shapeOf(formation, custom ?? g.customFormation);
         const byPos = (pos: Player["pos"]) =>
           g.starters
             .map((id) => squad.find((p) => p.id === id))
@@ -347,7 +382,31 @@ export const useStore = create<Store>()(
             .slice(0, missing);
           candidates.forEach((p) => kept.add(p.id));
         });
-        set({ game: { ...g, formation, starters: [...kept], slotOrder: undefined } });
+        // elenco curto pode não ter reservas suficientes numa posição da nova
+        // formação (ex.: só 4 meias disponíveis para um 3-5-2 que pede 5): nesse
+        // caso preenche as vagas restantes com o melhor disponível de qualquer
+        // posição de linha, para nunca devolver um time com menos de 11.
+        if (kept.size < Math.min(11, squad.length)) {
+          const rest = squad
+            .filter((p) => !kept.has(p.id))
+            .sort((a, b) => b.strength - a.strength);
+          for (const p of rest) {
+            if (kept.size >= Math.min(11, squad.length)) break;
+            kept.add(p.id);
+          }
+        }
+        set({
+          game: {
+            ...g, formation, starters: [...kept], slotOrder: undefined,
+            customFormation: custom ?? g.customFormation,
+          },
+        });
+      },
+
+      setCustomFormation: (custom) => {
+        const g = get().game;
+        if (!g) return;
+        set({ game: { ...g, customFormation: custom } });
       },
 
       updateLive: (fn) => {
@@ -449,9 +508,13 @@ export const useStore = create<Store>()(
             played.set(lp.playerId, lp.energy);
             if (lp.onField || lp.subbedOut || lp.sentOff) enteredField.add(lp.playerId);
           }
-        // quem estava suspenso cumpriu a pena nesta rodada (ficou de fora do XI): libera para a próxima
+        // quem estava suspenso NESTA competição cumpriu a pena na rodada (ficou de
+        // fora do XI): libera só o campo da competição que acabou de rolar. Vermelho
+        // levado na liga não afeta a copa, e vice-versa.
         const suspendedIds = new Set(
-          game.players.filter((p) => p.suspended).map((p) => p.id),
+          game.players
+            .filter((p) => (isCup ? p.suspendedCup : p.suspendedLeague))
+            .map((p) => p.id),
         );
         const players = game.players.map((p) => {
           // regime individual do jogador afeta ganho de XP e recuperação; IA treina em regime normal
@@ -462,7 +525,8 @@ export const useStore = create<Store>()(
           const next = {
             ...p,
             energy: Math.min(100, Math.round(recovered)),
-            suspended: suspendedIds.has(p.id) ? false : p.suspended,
+            suspendedLeague: !isCup && suspendedIds.has(p.id) ? false : p.suspendedLeague,
+            suspendedCup: isCup && suspendedIds.has(p.id) ? false : p.suspendedCup,
           };
           // evolução semanal: jogar rende muito mais XP; reservas evoluem só pelo treino
           applyWeeklyGain(next, enteredField.has(p.id), intensity);
@@ -488,17 +552,28 @@ export const useStore = create<Store>()(
     }),
     {
       name: "retro-manager-save",
-      version: 6,
-      // saves antigos: preenche campos de treinamento/pé e encaixa a copa no calendário
+      version: 7,
+      // saves antigos: preenche campos de treinamento/pé/número/suspensão e encaixa a copa no calendário
       migrate: (state: any) => {
         const g = state?.game;
         if (g) {
-          g.players = g.players.map((p: Player) => ({
+          g.players = g.players.map((p: any) => ({
             ...p, xp: p.xp ?? 0, gained: p.gained ?? 0,
             training: p.training ?? g.trainingIntensity ?? "normal",
             foot: p.foot ?? (Math.random() < 0.25 ? "canhoto" : "destro"),
+            // 'suspended' antigo virou suspensão por competição
+            suspendedLeague: p.suspendedLeague ?? p.suspended ?? false,
+            suspendedCup: p.suspendedCup ?? false,
+            number: p.number ?? 0,
           }));
           delete g.trainingIntensity;
+          // numeração de camisa: atribui por clube para quem ainda não tem
+          if (g.players.some((p: Player) => !p.number)) {
+            for (const club of g.clubs as { id: string }[]) {
+              const squad = (g.players as Player[]).filter((p) => p.clubId === club.id);
+              if (squad.some((p) => !p.number)) assignShirtNumbers(squad);
+            }
+          }
           if (!g.cup) {
             const userClub = g.clubs.find((c: any) => c.id === g.userClubId);
             g.cup = drawCup(

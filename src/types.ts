@@ -2,7 +2,7 @@ export type Position = "GOL" | "DEF" | "MEI" | "ATA";
 export type Foot = "destro" | "canhoto";
 export type Tier = "bagre" | "bom" | "craque" | "extra";
 export type Trait = "Goleador" | "Paredão" | "Veloz" | "Criativo" | "Raçudo";
-export type Mentality = "defensivo" | "equilibrado" | "ofensivo";
+export type Mentality = "defensivo" | "equilibrado" | "ofensivo" | "tudo_ou_nada";
 export type Marking = "leve" | "frouxa" | "apertada";
 
 export interface Club {
@@ -32,25 +32,48 @@ export interface Player {
   assists: number;
   yellows: number;
   reds: number;
-  suspended: boolean; // recebeu vermelho na última partida: fora da próxima rodada
+  suspendedLeague: boolean; // recebeu vermelho na liga: fora da próxima partida da liga
+  suspendedCup: boolean; // recebeu vermelho na copa: fora da próxima partida da copa
   value: number;
   xp: number; // progresso de treino rumo ao próximo ponto de força
   gained: number; // pontos de força ganhos na temporada (para exibir evolução)
   training: TrainingIntensity; // regime de treino individual
   foot: Foot; // pé dominante: rende mais no lado do campo compatível (canhoto à esquerda)
+  number: number; // número da camisa (1-99), editável em Elenco
 }
 
 export type TrainingIntensity = "leve" | "normal" | "pesada";
 
-export type Formation = "4-4-2" | "4-3-3" | "3-5-2" | "4-2-3-1" | "5-3-2";
+export type Formation = "4-4-2" | "4-3-3" | "3-5-2" | "4-5-1" | "5-3-2" | "3-4-3" | "custom";
 
-export const FORMATIONS: Record<Formation, { DEF: number; MEI: number; ATA: number }> = {
+export const FORMATIONS: Record<Exclude<Formation, "custom">, { DEF: number; MEI: number; ATA: number }> = {
   "4-4-2": { DEF: 4, MEI: 4, ATA: 2 },
   "4-3-3": { DEF: 4, MEI: 3, ATA: 3 },
   "3-5-2": { DEF: 3, MEI: 5, ATA: 2 },
-  "4-2-3-1": { DEF: 4, MEI: 5, ATA: 1 },
+  "4-5-1": { DEF: 4, MEI: 5, ATA: 1 },
   "5-3-2": { DEF: 5, MEI: 3, ATA: 2 },
+  "3-4-3": { DEF: 3, MEI: 4, ATA: 3 },
 };
+
+// Formação livre desenhada pelo usuário no editor: um slot por posição da linha
+// (x,y em % do campo). O goleiro não entra aqui — fica sempre fixo no gol.
+export interface CustomFormation {
+  name: string;
+  slots: { pos: Position; x: number; y: number }[]; // 10 slots de linha (sem o GOL)
+}
+
+// Quantos jogadores de cada posição de linha a formação exige — igual para as
+// fixas (tabela FORMATIONS) e para a customizada (conta os slots desenhados).
+export function shapeOf(
+  formation: Formation, custom?: CustomFormation,
+): { DEF: number; MEI: number; ATA: number } {
+  if (formation === "custom") {
+    const s = { DEF: 0, MEI: 0, ATA: 0 };
+    for (const slot of custom?.slots ?? []) s[slot.pos as "DEF" | "MEI" | "ATA"]++;
+    return s;
+  }
+  return FORMATIONS[formation];
+}
 
 export interface Tactics {
   mentality: Mentality;
@@ -78,6 +101,7 @@ export interface LivePlayer {
 }
 
 export interface LiveMatch {
+  competition: "league" | "cup"; // suspensão por cartão vale só na mesma competição
   homeId: string;
   awayId: string;
   minute: number;
@@ -143,6 +167,7 @@ export interface GameState {
   starters: string[]; // 11 titulares escolhidos pelo usuário
   slotOrder?: string[]; // ordem manual dos titulares no campo (lado esquerdo/direito por linha)
   formation: Formation;
+  customFormation?: CustomFormation; // desenhada no editor, usada quando formation === "custom"
   defaultTactics: Tactics; // como o time entra em campo (ajustável na prancheta pré-jogo)
   fixtures: Fixture[]; // liga nacional do país do usuário (A e B)
   tables: Record<string, TableRow[]>; // por divisão

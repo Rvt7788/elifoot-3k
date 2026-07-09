@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { useStore, bichoCost } from "../store";
+import { useStore, bichoCost, nextPlayableWeek } from "../store";
 import { bestXI, DEFAULT_TACTICS } from "../game/engine";
+import { weekInfo } from "../game/cup";
 import type { Formation, Marking, Mentality, Player, Position } from "../types";
 import { FORMATIONS } from "../types";
 import { pitchLayout, PlayerPin, EmptySlot, PitchBackground } from "./PitchField";
 import { readableOn } from "../game/color";
-import Toggle from "./Toggle";
 import EnergyBar from "./EnergyBar";
+import FormationEditorModal from "./FormationEditorModal";
 
 const TIER_BADGE: Record<string, string> = {
   bagre: "", bom: "★", craque: "★★", extra: "★★★",
@@ -33,10 +34,10 @@ function PlayerDetails({ p }: { p: Player }) {
 }
 
 function PlayerRow({
-  p, selected, selColor, onClick, expanded, onToggleExpand,
+  p, selected, selColor, onClick, expanded, onToggleExpand, suspendedNext,
 }: {
   p: Player; selected: boolean; selColor: string; onClick: () => void;
-  expanded: boolean; onToggleExpand: () => void;
+  expanded: boolean; onToggleExpand: () => void; suspendedNext: boolean;
 }) {
   return (
     <div className="mb-0.5">
@@ -48,10 +49,11 @@ function PlayerRow({
         }`}
       >
         <span className="flex min-w-0 items-center gap-1">
+          <span className={`w-4 shrink-0 text-right tabular-nums ${selected ? "opacity-70" : "text-zinc-500"}`}>{p.number}</span>
           <b className={`shrink-0 ${selected ? "opacity-70" : "text-zinc-400"}`}>{p.pos}</b>
-          <span className={`truncate ${p.suspended ? "text-zinc-500 line-through" : ""}`}>{p.name}</span>
+          <span className={`truncate ${suspendedNext ? "text-zinc-500 line-through" : ""}`}>{p.name}</span>
           <span className="shrink-0 text-amber-400">{TIER_BADGE[p.tier]}</span>
-          {p.suspended && <span className="shrink-0 text-[9px] font-bold text-red-400">SUSP</span>}
+          {suspendedNext && <span className="shrink-0 text-[9px] font-bold text-red-400">SUSP</span>}
         </span>
         <span className="flex shrink-0 items-center gap-1.5">
           <EnergyBar value={p.energy} />
@@ -69,10 +71,28 @@ function PlayerRow({
   );
 }
 
+// Botão compacto on/off com ícone de estado, no lugar do Toggle (que ocupa
+// muito espaço) — usado nos extras da prancheta (Agressividade, Catimba etc.)
+function ToggleBtn({
+  checked, onClick, label, disabled,
+}: { checked: boolean; onClick: () => void; label: React.ReactNode; disabled?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="flex w-full items-center justify-between gap-1.5 rounded bg-zinc-800 px-2 py-1 text-left text-[11px] hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      <span>{label}</span>
+      <span className={checked ? "text-emerald-400" : "text-zinc-600"}>●</span>
+    </button>
+  );
+}
+
 const MENT: { key: Mentality; label: string }[] = [
   { key: "defensivo", label: "Defensivo" },
   { key: "equilibrado", label: "Equilibrado" },
   { key: "ofensivo", label: "Ofensivo" },
+  { key: "tudo_ou_nada", label: "Tudo ou nada" },
 ];
 
 const MARK: { key: Marking; label: string }[] = [
@@ -86,11 +106,13 @@ export default function TacticsBoard() {
   const setStarters = useStore((s) => s.setStarters);
   const setSlotOrder = useStore((s) => s.setSlotOrder);
   const setFormation = useStore((s) => s.setFormation);
+  const setCustomFormation = useStore((s) => s.setCustomFormation);
   const setDefaultTactics = useStore((s) => s.setDefaultTactics);
   const payBicho = useStore((s) => s.payBicho);
   const [sel, setSel] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [byEnergy, setByEnergy] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
   // Resetar zera starters para montagem manual: enquanto o time tiver menos de
   // 11, mostramos o campo vazio em vez de cair automaticamente no melhor time.
   const [manualMode, setManualMode] = useState(false);
@@ -98,12 +120,19 @@ export default function TacticsBoard() {
 
   const tactics = game.defaultTactics ?? DEFAULT_TACTICS;
 
+  // suspensão é por competição: descobre se o próximo jogo do usuário é copa ou liga
+  const nextWeek = nextPlayableWeek(game);
+  const nextCompetition = nextWeek !== null && weekInfo(nextWeek).type === "cup" ? "cup" : "league";
+  const isSuspendedNext = (p: Player) =>
+    nextCompetition === "cup" ? p.suspendedCup : p.suspendedLeague;
+
   const squad = game.players.filter((p) => p.clubId === game.userClubId);
   const userClub = game.clubs.find((c) => c.id === game.userClubId)!;
   const kit = { bg: userClub.primaryColor, border: userClub.secondaryColor };
   const formation = game.formation ?? "4-4-2";
+  const custom = game.customFormation;
   const hasFullXI = (game.starters?.length ?? 0) >= 11;
-  const starters = hasFullXI ? game.starters : manualMode ? game.starters ?? [] : bestXI(squad, formation);
+  const starters = hasFullXI ? game.starters : manualMode ? game.starters ?? [] : bestXI(squad, formation, false, "league", custom);
   const titulares = squad
     .filter((p) => starters.includes(p.id))
     .sort((a, b) => POS_ORDER[a.pos] - POS_ORDER[b.pos] || b.strength - a.strength);
@@ -129,7 +158,7 @@ export default function TacticsBoard() {
         : byForce;
   });
 
-  const layout = pitchLayout(formation);
+  const layout = pitchLayout(formation, custom);
   const slots: { pos: Position; slotIdx: number; x: number; y: number; player?: Player }[] = [];
   POS_KEYS.forEach((posKey) => {
     layout[posKey].forEach((coord, i) => {
@@ -188,26 +217,36 @@ export default function TacticsBoard() {
 
   const toggleExpand = (id: string) => setExpanded(expanded === id ? null : id);
 
-  const ideal = bestXI(squad, formation, byEnergy);
+  const ideal = bestXI(squad, formation, byEnergy, "league", custom);
   const isBestActive =
     starters.length === ideal.length && ideal.every((id) => starters.includes(id));
 
+  const emptySlots = slots.filter((s) => !s.player);
+  // Preenche só as vagas vazias com o melhor reserva disponível de cada posição,
+  // mantendo quem já está escalado — diferente de "Escalar por", que recalcula o time todo.
+  const fillEmptySlots = () => {
+    const nextPosPlayers = { ...posPlayers };
+    const addedIds: string[] = [];
+    POS_KEYS.forEach((posKey) => {
+      const need = layout[posKey].length - nextPosPlayers[posKey].length;
+      if (need <= 0) return;
+      const bench = squad
+        .filter((p) => p.pos === posKey && !starters.includes(p.id) && !addedIds.includes(p.id))
+        .sort((a, b) => b.strength - a.strength)
+        .slice(0, need);
+      nextPosPlayers[posKey] = [...nextPosPlayers[posKey], ...bench];
+      addedIds.push(...bench.map((p) => p.id));
+    });
+    if (addedIds.length === 0) return;
+    setStarters([...starters, ...addedIds]);
+    setSlotOrder(flatOrder(nextPosPlayers));
+  };
+
   return (
-    <div className="flex flex-col gap-4 lg:flex-row">
-      {/* Campo à esquerda, com as formações clicáveis em cima */}
-      <div className="mx-auto w-full shrink-0 sm:mx-0 sm:w-64">
+    <div className="flex flex-row gap-3">
+      {/* Prancheta à esquerda: campo (visual) + números da formação abaixo + escalar por + reservas */}
+      <div className="w-[38%] shrink-0 sm:w-40">
         <p className="ui-label mb-1">Formação</p>
-        <div className="mb-2 flex justify-between">
-          {(Object.keys(FORMATIONS) as Formation[]).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFormation(f)}
-              className={`country-tab !px-1 !text-[11px] ${formation === f ? "active" : ""}`}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
         <PitchBackground className="relative w-full overflow-hidden rounded-lg">
           {slots.map((s, i) =>
             s.player ? (
@@ -217,6 +256,7 @@ export default function TacticsBoard() {
                 x={s.x}
                 y={s.y}
                 colors={kit}
+                compact
                 selected={sel === s.player.id}
                 onClick={() => clickPlayer(s.player!.id)}
               />
@@ -226,23 +266,51 @@ export default function TacticsBoard() {
                 x={s.x}
                 y={s.y}
                 label={s.pos}
+                compact
                 pulse={!!sel && !starters.includes(sel) && squad.find((p) => p.id === sel)?.pos === s.pos}
                 onClick={() => clickEmptySlot(s.pos, s.slotIdx)}
               />
             ),
           )}
         </PitchBackground>
-      </div>
+        <div className="mb-2 mt-1.5 flex flex-wrap justify-between gap-x-1 gap-y-0.5">
+          {(Object.keys(FORMATIONS) as Formation[]).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFormation(f)}
+              className={`country-tab !px-1 !text-[10px] ${formation === f ? "active" : ""}`}
+            >
+              {f}
+            </button>
+          ))}
+          <button
+            onClick={() => setEditorOpen(true)}
+            className={`country-tab !px-1 !text-[10px] ${formation === "custom" ? "active" : ""}`}
+            title="Criar ou editar sua própria formação"
+          >
+            {formation === "custom" ? "Editar" : "+ Criar"}
+          </button>
+        </div>
 
-      {/* Coluna de comando tático: escalar por → mentalidade → marcação → extras */}
-      <div className="flex w-full shrink-0 flex-col gap-3 lg:w-40">
-        <div>
+        {editorOpen && (
+          <FormationEditorModal
+            initial={custom}
+            onClose={() => setEditorOpen(false)}
+            onSave={(f) => {
+              setCustomFormation(f);
+              setFormation("custom", f);
+              setEditorOpen(false);
+            }}
+          />
+        )}
+
+        <div className="mt-2">
           <p className="ui-label mb-1">Escalar por</p>
           <div className="flex gap-1">
             <button
               onClick={() => {
                 setByEnergy(false);
-                setStarters(bestXI(squad, formation, false));
+                setStarters(bestXI(squad, formation, false, "league", custom));
                 setManualMode(false);
               }}
               className={`flex-1 rounded px-1.5 py-1 text-[11px] ${
@@ -254,7 +322,7 @@ export default function TacticsBoard() {
             <button
               onClick={() => {
                 setByEnergy(true);
-                setStarters(bestXI(squad, formation, true));
+                setStarters(bestXI(squad, formation, true, "league", custom));
                 setManualMode(false);
               }}
               className={`flex-1 rounded px-1.5 py-1 text-[11px] ${
@@ -270,110 +338,20 @@ export default function TacticsBoard() {
           >
             Resetar escalação
           </button>
+          {emptySlots.length > 0 && (
+            <button
+              onClick={fillEmptySlots}
+              className="mt-1 w-full rounded bg-amber-900/40 px-2 py-1 text-[11px] text-amber-300 hover:bg-amber-900/60"
+            >
+              Preencher vagas ({emptySlots.length})
+            </button>
+          )}
         </div>
 
+        <p className="mb-1 mt-3 text-xs font-bold text-zinc-500">
+          RESERVAS ({reservas.length})
+        </p>
         <div>
-          <p className="ui-label mb-1">Mentalidade</p>
-          <div className="flex flex-col gap-1">
-            {MENT.map((m) => (
-              <button
-                key={m.key}
-                onClick={() => setDefaultTactics({ mentality: m.key })}
-                className={`rounded px-2 py-1 text-left text-[11px] ${
-                  tactics.mentality === m.key ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
-                }`}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-          <div className="mt-1">
-            <Toggle
-              checked={tactics.truculencia}
-              onChange={() => setDefaultTactics({ truculencia: !tactics.truculencia })}
-              label="Agressividade"
-              color="#b91c1c"
-            />
-          </div>
-          <div className="mt-1">
-            <Toggle
-              checked={tactics.cera}
-              onChange={() => setDefaultTactics({ cera: !tactics.cera })}
-              label="Catimba"
-              color="#78716c"
-            />
-          </div>
-        </div>
-
-        <div>
-          <p className="ui-label mb-1">Marcação</p>
-          <div className="flex flex-col gap-1">
-            {MARK.map((m) => (
-              <button
-                key={m.key}
-                onClick={() => setDefaultTactics({ marking: m.key })}
-                className={`rounded px-2 py-1 text-left text-[11px] ${
-                  tactics.marking === m.key ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
-                }`}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <p className="ui-label mb-1">Extras</p>
-          <Toggle
-            checked={tactics.autoSub ?? false}
-            onChange={() => setDefaultTactics({ autoSub: !tactics.autoSub })}
-            label="Sub. automática"
-            color="#0891b2"
-          />
-          <div className="mt-1">
-            <Toggle
-              checked={tactics.bicho ?? false}
-              onChange={() => {
-                if (tactics.bicho) return; // dinheiro pago não volta
-                if (!payBicho()) alert("Orçamento insuficiente para pagar o bicho.");
-              }}
-              disabled={!tactics.bicho && game.budget < bichoCost(userClub.baseBudget)}
-              label={
-                <>
-                  Bicho{" "}
-                  <span className="text-[11px] text-zinc-400">
-                    €{(bichoCost(userClub.baseBudget) / 1e6).toFixed(2)}M
-                  </span>
-                </>
-              }
-              color="#10b981"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Titulares e reservas, à direita, mesmo espaço */}
-      <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="min-w-0">
-          <p className="mb-1 text-xs font-bold" style={{ color: userClub.primaryColor }}>
-            TITULARES ({titulares.length})
-          </p>
-          {titulares.map((p) => (
-            <PlayerRow
-              key={p.id}
-              p={p}
-              selected={sel === p.id}
-              selColor={userClub.primaryColor}
-              onClick={() => clickPlayer(p.id)}
-              expanded={expanded === p.id}
-              onToggleExpand={() => toggleExpand(p.id)}
-            />
-          ))}
-        </div>
-        <div className="min-w-0">
-          <p className="mb-1 text-xs font-bold text-zinc-500">
-            RESERVAS ({reservas.length})
-          </p>
           {reservas.map((p) => (
             <PlayerRow
               key={p.id}
@@ -383,8 +361,105 @@ export default function TacticsBoard() {
               onClick={() => clickPlayer(p.id)}
               expanded={expanded === p.id}
               onToggleExpand={() => toggleExpand(p.id)}
+              suspendedNext={isSuspendedNext(p)}
             />
           ))}
+        </div>
+      </div>
+
+      {/* Ao lado: titulares, depois mentalidade + marcação/extras */}
+      <div className="min-w-0 flex-1">
+        <p className="mb-1 text-xs font-bold" style={{ color: userClub.primaryColor }}>
+          TITULARES ({titulares.length})
+        </p>
+        <div className="mb-3">
+          {titulares.map((p) => (
+            <PlayerRow
+              key={p.id}
+              p={p}
+              selected={sel === p.id}
+              selColor={userClub.primaryColor}
+              onClick={() => clickPlayer(p.id)}
+              expanded={expanded === p.id}
+              onToggleExpand={() => toggleExpand(p.id)}
+              suspendedNext={isSuspendedNext(p)}
+            />
+          ))}
+        </div>
+
+        <div className="grid grid-cols-2 gap-x-3 gap-y-3">
+          <div>
+            <p className="ui-label mb-1">Mentalidade</p>
+            <div className="flex flex-col gap-1">
+              {MENT.map((m) => (
+                <button
+                  key={m.key}
+                  onClick={() => setDefaultTactics({ mentality: m.key })}
+                  className={`rounded px-2 py-1 text-left text-[11px] ${
+                    tactics.mentality === m.key ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-1">
+              <ToggleBtn
+                checked={tactics.truculencia}
+                onClick={() => setDefaultTactics({ truculencia: !tactics.truculencia })}
+                label="Agressividade"
+              />
+            </div>
+            <div className="mt-1">
+              <ToggleBtn
+                checked={tactics.cera}
+                onClick={() => setDefaultTactics({ cera: !tactics.cera })}
+                label="Catimba"
+              />
+            </div>
+          </div>
+
+          <div>
+            <p className="ui-label mb-1">Marcação</p>
+            <div className="flex flex-col gap-1">
+              {MARK.map((m) => (
+                <button
+                  key={m.key}
+                  onClick={() => setDefaultTactics({ marking: m.key })}
+                  className={`rounded px-2 py-1 text-left text-[11px] ${
+                    tactics.marking === m.key ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+
+            <p className="ui-label mb-1 mt-3">Extras</p>
+            <ToggleBtn
+              checked={tactics.autoSub ?? false}
+              onClick={() => setDefaultTactics({ autoSub: !tactics.autoSub })}
+              label="Sub. automática"
+            />
+            <div className="mt-1">
+              <ToggleBtn
+                checked={tactics.bicho ?? false}
+                onClick={() => {
+                  if (tactics.bicho) return; // dinheiro pago não volta
+                  if (!payBicho()) alert("Orçamento insuficiente para pagar o bicho.");
+                }}
+                disabled={!tactics.bicho && game.budget < bichoCost(userClub.baseBudget)}
+                label={
+                  <>
+                    Bicho{" "}
+                    <span className="text-[11px] text-zinc-400">
+                      €{(bichoCost(userClub.baseBudget) / 1e6).toFixed(2)}M
+                    </span>
+                  </>
+                }
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>

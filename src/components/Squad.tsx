@@ -7,6 +7,7 @@ const TIER_BADGE: Record<string, string> = {
 export default function Squad() {
   const game = useStore((s) => s.game);
   const releasePlayer = useStore((s) => s.releasePlayer);
+  const setPlayerNumber = useStore((s) => s.setPlayerNumber);
   if (!game) return null;
   const order = { GOL: 0, DEF: 1, MEI: 2, ATA: 3 };
   const squad = game.players
@@ -25,7 +26,8 @@ export default function Squad() {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-zinc-700 text-left text-zinc-400">
-            <th className="py-1 pr-3">Pos</th>
+            <th className="py-1 pr-2 text-center">Nº</th>
+            <th className="pr-3">Pos</th>
             <th>Nome</th>
             <th className="text-center">Idade</th>
             <th className="text-center">Força</th>
@@ -38,12 +40,30 @@ export default function Squad() {
         <tbody>
           {squad.map((p) => (
             <tr key={p.id} className="border-b border-zinc-800">
-              <td className="py-1 pr-3 text-zinc-400">{p.pos}</td>
+              <td className="py-1 pr-2 text-center">
+                <input
+                  type="number"
+                  min={1}
+                  max={99}
+                  value={p.number}
+                  onChange={(e) => {
+                    const n = e.target.valueAsNumber;
+                    if (!Number.isNaN(n) && n >= 1 && n <= 99) setPlayerNumber(p.id, n);
+                  }}
+                  className="w-10 rounded bg-zinc-800 px-1 py-0.5 text-center text-xs"
+                />
+              </td>
+              <td className="pr-3 text-zinc-400">{p.pos}</td>
               <td>
                 {p.name} <span className="text-amber-400">{TIER_BADGE[p.tier]}</span>
-                {p.suspended && (
-                  <span className="ml-1 rounded bg-red-950 px-1 text-[10px] text-red-400" title="Suspenso: cumpre 1 rodada fora">
-                    🟥 suspenso
+                {p.suspendedLeague && (
+                  <span className="ml-1 rounded bg-red-950 px-1 text-[10px] text-red-400" title="Suspenso na liga: cumpre 1 rodada fora">
+                    🟥 susp. liga
+                  </span>
+                )}
+                {p.suspendedCup && (
+                  <span className="ml-1 rounded bg-red-950 px-1 text-[10px] text-red-400" title="Suspenso na copa: cumpre 1 partida fora">
+                    🟥 susp. copa
                   </span>
                 )}
               </td>

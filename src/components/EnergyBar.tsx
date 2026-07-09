@@ -1,3 +1,13 @@
+// Escala ÚNICA de cor por energia, em 5 faixas — usada tanto na barra quanto nos
+// pins do campo, para o mesmo nível de energia ter sempre a mesma cor em todo lugar.
+export function energyStepColors(value: number): { bg: string; border: string } {
+  if (value >= 80) return { bg: "#10b981", border: "#6ee7b7" }; // emerald
+  if (value >= 60) return { bg: "#84cc16", border: "#bef264" }; // lime
+  if (value >= 40) return { bg: "#f59e0b", border: "#fcd34d" }; // amber
+  if (value >= 20) return { bg: "#f97316", border: "#fdba74" }; // orange
+  return { bg: "#ef4444", border: "#fca5a5" }; // red
+}
+
 // Barra de energia em 5 células: substitui o número % nas escalações e pranchetas.
 // Cor acompanha o nível: verde (cheio) → vermelho (esgotado).
 export default function EnergyBar({
@@ -8,12 +18,7 @@ export default function EnergyBar({
   className?: string;
 }) {
   const cells = Math.max(0, Math.min(5, Math.ceil(value / 20)));
-  const color =
-    value >= 80 ? "#10b981" // emerald-500
-    : value >= 60 ? "#84cc16" // lime-500
-    : value >= 40 ? "#f59e0b" // amber-500
-    : value >= 20 ? "#f97316" // orange-500
-    : "#ef4444"; // red-500
+  const color = energyStepColors(value).bg;
   return (
     <span
       className={`inline-flex shrink-0 items-center gap-[2px] ${className ?? ""}`}

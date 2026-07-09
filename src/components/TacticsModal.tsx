@@ -28,8 +28,11 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
   const setTactic = (fn: (t: typeof tactics) => void) =>
     updateLive((ms) => fn(side === "home" ? ms[mi].homeTactics : ms[mi].awayTactics));
 
-  const onField = lineup.filter((l) => l.onField && !l.sentOff);
-  const bench = lineup.filter((l) => !l.onField && !l.subbedOut && !l.sentOff);
+  const POS_ORDER: Record<Position, number> = { GOL: 0, DEF: 1, MEI: 2, ATA: 3 };
+  const byPos = (a: { playerId: string }, b: { playerId: string }) =>
+    POS_ORDER[pById[a.playerId].pos] - POS_ORDER[pById[b.playerId].pos];
+  const onField = lineup.filter((l) => l.onField && !l.sentOff).sort(byPos);
+  const bench = lineup.filter((l) => !l.onField && !l.subbedOut && !l.sentOff).sort(byPos);
   const hasKeeperOnField = onField.some((l) => pById[l.playerId].pos === "GOL");
 
   const executeSub = (outPlayerId: string, inPlayerId: string) => {
@@ -92,7 +95,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
   };
 
   const formation = game.formation ?? "4-4-2";
-  const pos = pitchLayout(formation);
+  const pos = pitchLayout(formation, game.customFormation);
   const slots: { pos: Position; x: number; y: number; player?: Player; energy?: number }[] = [];
 
   const activePlayers = onField.map((l) => ({
@@ -175,6 +178,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
     { key: "defensivo", label: "🛡 Defensivo" },
     { key: "equilibrado", label: "⚖ Equilibrado" },
     { key: "ofensivo", label: "⚔ Ofensivo" },
+    { key: "tudo_ou_nada", label: "🔥 Tudo ou nada" },
   ];
 
   const MARK: { key: Marking; label: string }[] = [
@@ -280,7 +284,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
         <div className="mb-4">
           <p className="mb-1 text-sm text-zinc-400">Esquema Tático (Formação)</p>
           <div className="flex gap-2 flex-wrap">
-            {(["4-4-2", "4-3-3", "3-5-2", "4-2-3-1", "5-3-2"] as const).map((f) => (
+            {(["4-4-2", "4-3-3", "3-5-2", "4-5-1", "5-3-2", "3-4-3"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => {
@@ -391,7 +395,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
                           : "bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40"
                       }`}
                     >
-                      <span>{p.pos} {p.name} ({p.strength}) <span className="text-sky-400">{p.foot === "canhoto" ? "C" : "D"}</span></span>
+                      <span><span className="tabular-nums text-zinc-500">{p.number}</span> {p.pos} {p.name} ({p.strength}) <span className="text-sky-400">{p.foot === "canhoto" ? "C" : "D"}</span></span>
                       <EnergyBar value={l.energy} />
                     </button>
                   );
@@ -421,7 +425,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
                       }`}
                       title={!isCompatible ? "Só é possível repor um goleiro por outro goleiro" : undefined}
                     >
-                      <span>{p.pos} {p.name} ({p.strength}) <span className="text-sky-400">{p.foot === "canhoto" ? "C" : "D"}</span></span>
+                      <span><span className="tabular-nums text-zinc-500">{p.number}</span> {p.pos} {p.name} ({p.strength}) <span className="text-sky-400">{p.foot === "canhoto" ? "C" : "D"}</span></span>
                       <EnergyBar value={l.energy} />
                     </button>
                   );

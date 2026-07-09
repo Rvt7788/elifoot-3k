@@ -168,13 +168,15 @@ export default function Market() {
               Força mín–máx
               <div className="mt-0.5 flex gap-1">
                 <input
-                  type="number" min={1} max={50} value={filters.minStrength}
-                  onChange={(e) => updateFilters({ minStrength: Number(e.target.value) })}
+                  type="number" min={1} max={50}
+                  value={Number.isNaN(filters.minStrength) ? "" : filters.minStrength}
+                  onChange={(e) => updateFilters({ minStrength: e.target.valueAsNumber })}
                   className="w-1/2 rounded bg-zinc-800 px-2 py-1 text-sm"
                 />
                 <input
-                  type="number" min={1} max={50} value={filters.maxStrength}
-                  onChange={(e) => updateFilters({ maxStrength: Number(e.target.value) })}
+                  type="number" min={1} max={50}
+                  value={Number.isNaN(filters.maxStrength) ? "" : filters.maxStrength}
+                  onChange={(e) => updateFilters({ maxStrength: e.target.valueAsNumber })}
                   className="w-1/2 rounded bg-zinc-800 px-2 py-1 text-sm"
                 />
               </div>
@@ -230,12 +232,18 @@ export default function Market() {
               const price = askingPrice(game, p);
               return (
                 <div key={p.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm">
+                  <span className="w-6 shrink-0 text-right tabular-nums text-zinc-500">{p.number}</span>
                   <span className="w-8 shrink-0 text-zinc-400">{p.pos}</span>
                   <span className="min-w-[120px] flex-1 truncate">
                     {p.name} <span className="text-amber-400">{TIER_BADGE[p.tier]}</span>
                   </span>
                   <span className="w-32 shrink-0 truncate text-xs text-zinc-500">{clubName(p.clubId)}</span>
-                  <span className="w-10 shrink-0 text-center font-bold">{p.strength}</span>
+                  <span className="w-10 shrink-0 text-center font-bold">
+                    {p.strength}
+                    {p.strength < p.cap && (
+                      <span className="ml-0.5 text-emerald-400" title={`Potencial até ${p.cap}`}>▲</span>
+                    )}
+                  </span>
                   <span className="w-10 shrink-0 text-center text-xs text-zinc-400">{p.age}a</span>
                   <span className="w-40 shrink-0 truncate text-xs text-zinc-400">{p.traits.join(", ") || "—"}</span>
                   <span className="w-24 shrink-0 text-right text-xs text-zinc-400">
@@ -276,11 +284,17 @@ export default function Market() {
               .sort((a, b) => b.value - a.value)
               .map((p) => (
                 <div key={p.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm">
+                  <span className="w-6 shrink-0 text-right tabular-nums text-zinc-500">{p.number}</span>
                   <span className="w-8 shrink-0 text-zinc-400">{p.pos}</span>
                   <span className="min-w-[120px] flex-1 truncate">
                     {p.name} <span className="text-amber-400">{TIER_BADGE[p.tier]}</span>
                   </span>
-                  <span className="w-10 shrink-0 text-center font-bold">{p.strength}</span>
+                  <span className="w-10 shrink-0 text-center font-bold">
+                    {p.strength}
+                    {p.strength < p.cap && (
+                      <span className="ml-0.5 text-emerald-400" title={`Potencial até ${p.cap}`}>▲</span>
+                    )}
+                  </span>
                   <span className="w-10 shrink-0 text-center text-xs text-zinc-400">{p.age}a</span>
                   <span className="w-28 shrink-0 text-right text-xs text-emerald-400">
                     €{(askingPrice(game, p) / 1e6).toFixed(2)}M

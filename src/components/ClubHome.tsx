@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useStore, nextPlayableWeek, clubAggression } from "../store";
+import { useStore, nextPlayableWeek, clubAggression, isCupEliminated } from "../store";
 import { weekInfo, tiesForLeg, CUP_STAGE_NAMES } from "../game/cup";
 import { sortTable } from "../game/schedule";
 import { aiPregameTactics } from "../game/engine";
@@ -134,6 +134,7 @@ function OpponentModal({
         <div>
           {sorted.map((p) => (
             <div key={p.id} className="flex items-center gap-3 border-b border-[rgba(30,42,56,0.6)] py-1 text-sm">
+              <span className="w-5 text-right tabular-nums text-xs text-zinc-500">{p.number}</span>
               <span className="ui-label w-8">{p.pos}</span>
               <span className="flex-1 text-zinc-200">{p.name}</span>
               <span className="text-xs text-zinc-500">{p.age} anos</span>
@@ -163,25 +164,31 @@ export default function ClubHome() {
   const week = nextPlayableWeek(game);
   const info = week !== null ? weekInfo(week) : null;
   const isCupNext = info?.type === "cup";
-  const next =
+  const cupTie =
     isCupNext && game.cup
-      ? (() => {
-          const t = tiesForLeg(game.cup, (info as any).stage, (info as any).leg).find(
-            (x) => x.homeId === club.id || x.awayId === club.id,
-          );
-          return t ? { homeId: t.homeId, awayId: t.awayId, round: 0 } : undefined;
-        })()
-      : game.fixtures.find(
-          (f) =>
-            f.week === week &&
-            !f.played &&
-            (f.homeId === club.id || f.awayId === club.id),
-        );
+      ? tiesForLeg(game.cup, (info as any).stage, (info as any).leg).find(
+          (x) => x.homeId === club.id || x.awayId === club.id,
+        )
+      : undefined;
+  const next = cupTie
+    ? { homeId: cupTie.homeId, awayId: cupTie.awayId, round: 0 }
+    : game.fixtures.find(
+        (f) =>
+          f.week === week &&
+          !f.played &&
+          (f.homeId === club.id || f.awayId === club.id),
+      );
+  // placar da ida, para mostrar em "próximo jogo" quando for a volta
+  const firstLeg =
+    isCupNext && info?.type === "cup" && info.leg === 2 && game.cup && cupTie
+      ? game.cup.rounds[info.stage]?.[cupTie.tieIndex]
+      : undefined;
   const nextOpp = next
     ? game.clubs.find(
         (c) => c.id === (next.homeId === club.id ? next.awayId : next.homeId),
       )
     : null;
+  const eliminated = isCupEliminated(game);
 
   const lastResults = game.fixtures
     .filter((f) => f.played && (f.homeId === club.id || f.awayId === club.id))
@@ -193,9 +200,9 @@ export default function ClubHome() {
   return (
     <div className="mx-auto max-w-4xl px-4 pb-10 pt-6">
       {/* Cabeçalho do clube */}
-      <div className="mb-2 flex items-center gap-3">
+      <div className="mb-2 flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
         <span
-          className="inline-block h-9 w-9 rotate-45 border-2"
+          className="inline-block h-9 w-9 shrink-0 rotate-45 border-2"
           style={{ background: club.primaryColor, borderColor: club.secondaryColor }}
         />
         <div>
@@ -222,17 +229,36 @@ export default function ClubHome() {
               )}
             </p>
             <p className="mt-1 text-sm text-zinc-500">
+              <span className="font-semibold uppercase tracking-wide text-zinc-300">
+                {next.homeId === club.id ? "Em casa" : "Fora"}
+              </span>{" "}
+              ·{" "}
               {isCupNext && info?.type === "cup"
                 ? `🏆 Copa — ${CUP_STAGE_NAMES[info.stage]} (${info.leg === 1 ? "ida" : "volta"})`
-                : `Rodada ${next.round}`}{" "}
-              · {next.homeId === club.id ? "em casa" : "fora"}
+                : `Rodada ${next.round}`}
             </p>
+            {firstLeg && (
+              <p className="mt-0.5 text-xs text-zinc-600">
+                Jogo de ida:{" "}
+                {game.clubs.find((c) => c.id === firstLeg.homeId)?.shortName} {firstLeg.g1h} - {firstLeg.g1a}{" "}
+                {game.clubs.find((c) => c.id === firstLeg.awayId)?.shortName}
+              </p>
+            )}
             <button
               onClick={() => setAnalyzing(true)}
               className="country-tab active mt-2"
             >
               Analisar adversário
             </button>
+          </div>
+        ) : eliminated && nextPlayableWeek(game) !== null ? (
+          <div className="text-center">
+            <p className="text-sm font-semibold uppercase tracking-wide text-red-400">
+              Copa Nacional: Eliminado
+            </p>
+            <p className="mt-1 text-xs text-zinc-500">
+              Sua próxima partida é pela liga — acompanhe a copa na aba Tabela.
+            </p>
           </div>
         ) : (
           <p className="text-center text-sm text-zinc-400">Temporada encerrada</p>

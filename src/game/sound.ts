@@ -14,11 +14,18 @@ function beep(freq: number, dur: number, type: OscillatorType, when = 0, vol = 0
   osc.stop(ctx.currentTime + when + dur);
 }
 
-// Gol: fanfarra ascendente
+// Gol a favor: fanfarra ascendente
 export function playGoal() {
   beep(523, 0.15, "square");
   beep(659, 0.15, "square", 0.13);
   beep(784, 0.3, "square", 0.26);
+}
+
+// Gol sofrido: descendente e grave, para diferenciar claramente do gol a favor
+export function playGoalConceded() {
+  beep(392, 0.15, "square");
+  beep(311, 0.15, "square", 0.13);
+  beep(233, 0.35, "square", 0.26);
 }
 
 // Cartão vermelho: buzina grave dupla

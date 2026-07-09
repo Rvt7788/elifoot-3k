@@ -48,7 +48,7 @@ export default function App() {
   ];
 
   let headerBtnLabel = "Iniciar jogo";
-  let headerBtnClass = "btn-metal-green";
+  let headerBtnClass = "btn-text-green";
   let headerBtnIcon = <IconPlay className="h-4 w-4" />;
   let headerBtnOnClick = () => {
     startMatchday();
@@ -87,24 +87,24 @@ export default function App() {
       <header className="sticky top-0 z-40 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur">
         {/* mobile: 3 linhas empilhadas (logo, abas, iniciar rodada); md+: 1 linha centralizada */}
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-1.5 px-3 py-2 md:flex-row md:justify-center md:gap-4">
-          <img src="/elifoot3k.png" alt="Elifoot 3k" className="h-8 w-auto" />
-          <div className="flex items-center gap-0.5">
+          <img src="/elifoot3k.png" alt="Elifoot 3k" className="h-16 w-auto" />
+          <div className="flex w-full items-center gap-0.5 md:w-auto">
             {TABS.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
-                className={`rounded px-2 py-1.5 text-sm ${
+                className={`flex-1 rounded px-2 py-2.5 text-sm md:flex-none ${
                   tab === t.key ? "btn-metal-tab" : "tab-button"
                 }`}
                 title={t.label}
               >
-                <t.Icon className="h-4 w-4" />
+                <t.Icon className="h-5 w-5" />
                 <span className="hidden lg:inline">{t.label}</span>
               </button>
             ))}
             <button
               onClick={() => setSettingsOpen(true)}
-              className="ml-1 tab-button rounded px-2 py-1.5 text-sm text-zinc-400"
+              className="ml-1 flex-1 tab-button rounded px-2 py-2.5 text-sm text-zinc-400 md:flex-none"
               title="Configurações"
             >
               <IconGear className="h-5 w-5" />
@@ -113,7 +113,7 @@ export default function App() {
           {showHeaderBtn && (
             <button
               onClick={headerBtnOnClick}
-              className={`flex items-center gap-2 rounded px-4 py-2 text-base font-semibold ${headerBtnClass}`}
+              className={`flex items-center gap-2 px-4 py-2 text-base font-semibold ${headerBtnClass}`}
             >
               {headerBtnIcon}
               {headerBtnLabel}

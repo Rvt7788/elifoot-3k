@@ -109,15 +109,42 @@ export function makePlayer(
     assists: 0,
     yellows: 0,
     reds: 0,
-    suspended: false,
+    suspendedLeague: false,
+    suspendedCup: false,
     value: 0,
     xp: 0,
     gained: 0,
     training: "normal",
     foot: chance(rng, 0.25) ? "canhoto" : "destro",
+    number: 0, // atribuído em bulk por clube depois que o elenco inteiro existe
   };
   p.value = playerValue(p);
   return p;
+}
+
+// Faixa clássica de numeração por posição — evita repetir dentro do mesmo elenco;
+// estoura a faixa (elenco grande) cai pra frente sem colidir.
+const NUMBER_RANGE: Record<Position, [number, number]> = {
+  GOL: [1, 1],
+  DEF: [2, 6],
+  MEI: [7, 10],
+  ATA: [9, 11],
+};
+
+export function assignShirtNumbers(squad: Player[]): void {
+  const used = new Set<number>();
+  const byPos: Record<Position, Player[]> = { GOL: [], DEF: [], MEI: [], ATA: [] };
+  for (const p of squad) byPos[p.pos].push(p);
+  (["GOL", "DEF", "MEI", "ATA"] as Position[]).forEach((pos) => {
+    const [start] = NUMBER_RANGE[pos];
+    let n = start;
+    for (const p of byPos[pos].sort((a, b) => b.strength - a.strength)) {
+      while (used.has(n)) n++;
+      p.number = n;
+      used.add(n);
+      n++;
+    }
+  });
 }
 
 export function newGame(seed: number, userClubId: string): GameState {
@@ -143,11 +170,15 @@ export function newGame(seed: number, userClubId: string): GameState {
     // cada posição consome os nomes reais pesquisados na ordem listada; quando
     // acabam (elenco real menor que o shape sorteado), cai no gerador procedural
     const used: Record<Position, number> = { GOL: 0, DEF: 0, MEI: 0, ATA: 0 };
+    const clubSquad: Player[] = [];
     squadShape(rng).forEach((pos) => {
       const names = roster?.[pos];
       const realName = names && used[pos] < names.length ? names[used[pos]++] : undefined;
-      players.push(makePlayer(rng, club.id, club.country, pos, target, ++n, false, realName));
+      const p = makePlayer(rng, club.id, club.country, pos, target, ++n, false, realName);
+      clubSquad.push(p);
+      players.push(p);
     });
+    assignShirtNumbers(clubSquad);
   }
 
   // Os 5 Extra-Classe do universo: sorteados entre clubes distintos

@@ -1,7 +1,7 @@
 import type {
-  Formation, LiveMatch, LivePlayer, Marking, MatchEvent, Mentality, Player, Position, Tactics,
+  CustomFormation, Formation, LiveMatch, LivePlayer, Marking, MatchEvent, Mentality, Player, Position, Tactics,
 } from "../types";
-import { FORMATIONS } from "../types";
+import { shapeOf } from "../types";
 import { chance, pick, pickWeighted, randInt, type Rng } from "./rng";
 
 export const DEFAULT_TACTICS: Tactics = {
@@ -17,6 +17,16 @@ const MENTALITY_ATT: Record<Mentality, number> = {
   defensivo: 0.6,
   equilibrado: 1.0,
   ofensivo: 1.35,
+  tudo_ou_nada: 1.75, // aposta tudo no ataque — o time mais decidido/arriscado do jogo
+};
+
+// "Tudo ou nada" também abre mão de parte da defesa em troca desse volume ofensivo
+// (time joga com a linha alta, sem se preocupar em voltar): mais chance de sofrer gol.
+const MENTALITY_DEF: Record<Mentality, number> = {
+  defensivo: 1.15,
+  equilibrado: 1.0,
+  ofensivo: 0.95,
+  tudo_ou_nada: 0.65,
 };
 
 // Marcação: mais apertada rende mais desarmes (bônus no volume) mas cansa mais rápido;
@@ -47,15 +57,22 @@ export function effectiveStrength(p: Player): number {
   return p.strength * energyFactor(p.energy);
 }
 
+// Suspensão vale só na mesma competição: vermelho na liga não tira o jogador
+// da copa, e vice-versa.
+function isSuspended(p: Player, competition: "league" | "cup"): boolean {
+  return competition === "league" ? p.suspendedLeague : p.suspendedCup;
+}
+
 // Melhor XI por posição, respeitando a formação (1 GOL + DEF/MEI/ATA da formação).
 // byEnergy=false ordena só pela força nominal (ignora cansaço); byEnergy=true usa a
 // força efetiva em campo, considerando o corte de energia do motor de simulação.
 export function bestXI(
-  squad: Player[], formation: Formation = "4-4-2", byEnergy = false,
+  squad: Player[], formation: Formation = "4-4-2", byEnergy = false, competition: "league" | "cup" = "league",
+  custom?: CustomFormation,
 ): string[] {
-  const shape = FORMATIONS[formation];
+  const shape = shapeOf(formation, custom);
   const rank = byEnergy ? effectiveStrength : (p: Player) => p.strength;
-  const available = squad.filter((p) => !p.suspended);
+  const available = squad.filter((p) => !isSuspended(p, competition));
   const byPos = (pos: Player["pos"], count: number) =>
     available
       .filter((p) => p.pos === pos)
@@ -67,11 +84,13 @@ export function bestXI(
 }
 
 // Escalação: usa os titulares definidos pelo usuário (descontando suspensos) ou o melhor XI
-export function pickLineup(squad: Player[], starterIds?: string[]): LivePlayer[] {
+export function pickLineup(
+  squad: Player[], starterIds?: string[], competition: "league" | "cup" = "league",
+): LivePlayer[] {
   const valid = starterIds?.filter(
-    (id) => squad.some((p) => p.id === id && !p.suspended),
+    (id) => squad.some((p) => p.id === id && !isSuspended(p, competition)),
   ) ?? [];
-  const starters = new Set(valid.length === 11 ? valid : bestXI(squad));
+  const starters = new Set(valid.length === 11 ? valid : bestXI(squad, "4-4-2", false, competition));
   return squad.map((p) => ({
     playerId: p.id,
     energy: p.energy,
@@ -114,8 +133,10 @@ export function createLiveMatch(
   awayAggression = 0.5,
   homeSlotOrder?: string[],
   awaySlotOrder?: string[],
+  competition: "league" | "cup" = "league",
 ): LiveMatch {
   return {
+    competition,
     homeId, awayId,
     minute: 0, homeScore: 0, awayScore: 0,
     momentum: 0, dangerTime: 0,
@@ -127,8 +148,8 @@ export function createLiveMatch(
     awayTactics: awayDefaultTactics
       ? { ...DEFAULT_TACTICS, ...awayDefaultTactics }
       : aiPregameTactics(awaySquad, homeSquad, awayAggression),
-    homeLineup: pickLineup(homeSquad, homeStarters),
-    awayLineup: pickLineup(awaySquad, awayStarters),
+    homeLineup: pickLineup(homeSquad, homeStarters, competition),
+    awayLineup: pickLineup(awaySquad, awayStarters, competition),
     homeSubsLeft: 5, awaySubsLeft: 5,
     finished: false,
     lastAiCheck: 0,
@@ -214,7 +235,7 @@ function attackPower(lineup: LivePlayer[], idx: PlayersIndex, t: Tactics, slotOr
 function defensePower(lineup: LivePlayer[], idx: PlayersIndex, t: Tactics, slotOrder?: string[]): number {
   const def = sectorPower(lineup, idx, "DEF", slotOrder);
   const gk = sectorPower(lineup, idx, "GOL");
-  return def.total * (def.energyAvg / 100) + gk.total * 0.3 + MARKING_POWER[t.marking];
+  return (def.total * (def.energyAvg / 100) + gk.total * 0.3 + MARKING_POWER[t.marking]) * MENTALITY_DEF[t.mentality];
 }
 
 // Poder líquido do time no confronto: ataque próprio reduzido pela defesa adversária,
@@ -252,6 +273,7 @@ const MENTALITY_SHOT_TILT: Record<Mentality, Partial<Record<Position, number>>> 
   ofensivo: { ATA: 1.25, MEI: 0.9 },
   equilibrado: {},
   defensivo: { ATA: 0.8, MEI: 1.15, DEF: 1.3 },
+  tudo_ou_nada: { ATA: 1.45, MEI: 1.05 },
 };
 
 // Sorteia quem finaliza dentre todos em campo. O peso de cada jogador não é só
@@ -290,13 +312,19 @@ function tryShot(
   const atkLineup = side === "home" ? m.homeLineup : m.awayLineup;
   const defLineup = side === "home" ? m.awayLineup : m.homeLineup;
   const atkTactics = side === "home" ? m.homeTactics : m.awayTactics;
+  const defTactics = side === "home" ? m.awayTactics : m.homeTactics;
   const striker = pickStriker(rng, atkLineup, idx, atkTactics.mentality);
   const keeper = bestOnField(defLineup, idx, "GOL");
   const bestDef = bestOnField(defLineup, idx, "DEF");
   if (!striker) return;
+  // "tudo ou nada" mexe na CONVERSÃO, não só no volume: quem ataca com tudo
+  // finaliza melhor (todo mundo no ataque), e quem defende nessa mentalidade
+  // está com a linha lá na frente — o goleiro fica exposto ao 1×1.
   let atk = striker.strength * (striker.traits.includes("Goleador") ? 1.25 : 1);
+  if (atkTactics.mentality === "tudo_ou_nada") atk *= 1.2;
   let gk = (keeper?.strength ?? 5) * (keeper?.traits.includes("Paredão") ? 1.3 : 1);
   gk += (bestDef?.strength ?? 5) * 0.4; // último defensor ajuda a segurar a finalização
+  if (defTactics.mentality === "tudo_ou_nada") gk *= 0.7;
   const pGoal = Math.min(0.65, Math.max(0.08, (atk / (atk + gk)) * 0.55));
   if (chance(rng, pGoal)) {
     if (side === "home") m.homeScore++;
@@ -325,7 +353,8 @@ function tryShot(
 // e suspensão automática para a próxima rodada.
 function sendOff(m: LiveMatch, side: "home" | "away", player: Player, lp: LivePlayer) {
   player.reds++;
-  player.suspended = true;
+  if (m.competition === "cup") player.suspendedCup = true;
+  else player.suspendedLeague = true;
   lp.sentOff = true;
   m.events.push({ minute: m.minute, type: "red", side, playerName: player.name });
 }
@@ -512,7 +541,10 @@ export function simulateMinute(
     [m.awayLineup, m.awayTactics],
   ] as const) {
     const drain =
-      0.55 * (t.mentality === "ofensivo" ? 1.2 : 1) * (t.truculencia ? 1.15 : 1) * MARKING_DRAIN[t.marking];
+      0.55 *
+      (t.mentality === "ofensivo" ? 1.2 : t.mentality === "tudo_ou_nada" ? 1.35 : 1) *
+      (t.truculencia ? 1.15 : 1) *
+      MARKING_DRAIN[t.marking];
     for (const lp of lineup)
       if (lp.onField && !lp.sentOff) lp.energy = Math.max(0, lp.energy - drain);
   }
@@ -545,13 +577,17 @@ export function simulateMinute(
     m.dangerTime++;
     const attacking: "home" | "away" = m.momentum > 0 ? "home" : "away";
     const attTactics = attacking === "home" ? m.homeTactics : m.awayTactics;
-    // gatilho do contra-ataque: 15% (dobra se o atacante for ofensivo)
-    const pCounter = attTactics.mentality === "ofensivo" ? 0.3 : 0.15;
+    // gatilho do contra-ataque: 15% (dobra se o atacante for ofensivo; quem joga
+    // tudo ou nada se expõe ainda mais ao contragolpe)
+    const pCounter =
+      attTactics.mentality === "tudo_ou_nada" ? 0.4
+      : attTactics.mentality === "ofensivo" ? 0.3
+      : 0.15;
     if (chance(rng, pCounter)) {
       m.momentum = attacking === "home" ? -80 : 80;
       m.dangerTime = 0;
       tryShot(rng, m, idx, attacking === "home" ? "away" : "home");
-    } else if (m.dangerTime >= 2 && chance(rng, 0.35)) {
+    } else if (m.dangerTime >= 2 && chance(rng, attTactics.mentality === "tudo_ou_nada" ? 0.5 : 0.35)) {
       tryShot(rng, m, idx, attacking);
       m.dangerTime = 0;
     }

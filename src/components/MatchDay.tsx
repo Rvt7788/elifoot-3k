@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useStore, nextPlayableWeek, weekFixtures } from "../store";
 import type { Club, Fixture, LiveMatch, MatchEvent } from "../types";
 import TacticsModal from "./TacticsModal";
-import { playGoal, playRed } from "../game/sound";
+import { playGoal, playGoalConceded, playRed } from "../game/sound";
 import { distinctPair } from "../game/color";
 import { weekInfo, tiesForLeg, CUP_STAGE_NAMES } from "../game/cup";
 
@@ -32,6 +32,7 @@ function getClubDisplayName(name: string): string {
 // Máximo de eventos exibidos na linha: os mais antigos saem para os novos entrarem,
 // evitando que o card colapse em jogos com muitos lances.
 const MAX_STRIP_EVENTS = 5;
+const LINEUP_POS_ORDER: Record<string, number> = { GOL: 0, DEF: 1, MEI: 2, ATA: 3 };
 
 // Sobrenome do jogador para o badge do gol (curto, cabe no card)
 function shortPlayerName(name: string): string {
@@ -188,7 +189,7 @@ function MatchDetailModal({
   m: LiveMatch;
   home: Club;
   away: Club;
-  players: Record<string, { name: string; pos: string; strength: number }>;
+  players: Record<string, { name: string; pos: string; strength: number; number: number }>;
   onClose: () => void;
 }) {
   const goals = m.events.filter((e) => e.type === "goal");
@@ -299,11 +300,14 @@ function MatchDetailModal({
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div>
               <p className="mb-0.5 text-[10px] text-zinc-500">{home.shortName}</p>
-              {m.homeLineup.filter((l) => l.onField || l.subbedOut).map((l) => {
+              {m.homeLineup
+                .filter((l) => l.onField || l.subbedOut)
+                .sort((a, b) => LINEUP_POS_ORDER[players[a.playerId]?.pos ?? "ATA"] - LINEUP_POS_ORDER[players[b.playerId]?.pos ?? "ATA"])
+                .map((l) => {
                 const p = players[l.playerId];
                 return (
                   <div key={l.playerId} className={`flex items-center justify-between ${l.sentOff ? "text-zinc-600 line-through" : l.subbedOut ? "text-zinc-500" : "text-zinc-300"}`}>
-                    <span>{p?.pos} {p?.name}</span>
+                    <span><span className="tabular-nums text-zinc-500">{p?.number}</span> {p?.pos} {p?.name}</span>
                     <span className="text-cyan-400 text-[10px]">{p?.strength}</span>
                   </div>
                 );
@@ -311,11 +315,14 @@ function MatchDetailModal({
             </div>
             <div>
               <p className="mb-0.5 text-[10px] text-zinc-500">{away.shortName}</p>
-              {m.awayLineup.filter((l) => l.onField || l.subbedOut).map((l) => {
+              {m.awayLineup
+                .filter((l) => l.onField || l.subbedOut)
+                .sort((a, b) => LINEUP_POS_ORDER[players[a.playerId]?.pos ?? "ATA"] - LINEUP_POS_ORDER[players[b.playerId]?.pos ?? "ATA"])
+                .map((l) => {
                 const p = players[l.playerId];
                 return (
                   <div key={l.playerId} className={`flex items-center justify-between ${l.sentOff ? "text-zinc-600 line-through" : l.subbedOut ? "text-zinc-500" : "text-zinc-300"}`}>
-                    <span>{p?.pos} {p?.name}</span>
+                    <span><span className="tabular-nums text-zinc-500">{p?.number}</span> {p?.pos} {p?.name}</span>
                     <span className="text-cyan-400 text-[10px]">{p?.strength}</span>
                   </div>
                 );
@@ -341,7 +348,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
   const [detailMatch, setDetailMatch] = useState<LiveMatch | null>(null);
   const [halftimeNotice, setHalftimeNotice] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval>>();
-  const prevCounts = useRef<{ userGoals: number; userReds: number } | null>(null);
+  const prevCounts = useRef<{ userGoals: number; oppGoals: number; userReds: number } | null>(null);
   const halftimePaused = useRef(false);
 
   const allDone = live?.every((m) => m.finished) ?? false;
@@ -378,16 +385,21 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
       (m) => m.homeId === game.userClubId || m.awayId === game.userClubId,
     );
     const userSide = userMatch?.homeId === game.userClubId ? "home" : "away";
+    const oppSide = userSide === "home" ? "away" : "home";
     const userGoals = userMatch
       ? userMatch.events.filter((e) => e.type === "goal" && e.side === userSide).length
+      : 0;
+    const oppGoals = userMatch
+      ? userMatch.events.filter((e) => e.type === "goal" && e.side === oppSide).length
       : 0;
     const userReds = userMatch
       ? userMatch.events.filter((e) => e.type === "red" && e.side === userSide).length
       : 0;
     const prev = prevCounts.current;
-    prevCounts.current = { userGoals, userReds };
+    prevCounts.current = { userGoals, oppGoals, userReds };
     if (!prev) return;
     if (userGoals > prev.userGoals && settings.soundGoal) playGoal();
+    if (oppGoals > prev.oppGoals && settings.soundGoal) playGoalConceded();
     if (userReds > prev.userReds) {
       if (settings.soundRed) playRed();
       if (!userMatch?.finished) {
@@ -400,7 +412,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
   if (!game) return null;
   const clubById = (id: string) => game.clubs.find((c) => c.id === id)!;
   const playerLookup = Object.fromEntries(
-    game.players.map((p) => [p.id, { name: p.name, pos: p.pos, strength: p.strength }]),
+    game.players.map((p) => [p.id, { name: p.name, pos: p.pos, strength: p.strength, number: p.number }]),
   );
 
   // Abre modal de detalhe de qualquer partida (live ou lastResults)
