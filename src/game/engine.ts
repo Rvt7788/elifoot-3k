@@ -1,5 +1,5 @@
 import type {
-  Formation, LiveMatch, LivePlayer, Marking, MatchEvent, Mentality, Player, Tactics,
+  Formation, LiveMatch, LivePlayer, Marking, MatchEvent, Mentality, Player, Position, Tactics,
 } from "../types";
 import { FORMATIONS } from "../types";
 import { chance, pick, pickWeighted, randInt, type Rng } from "./rng";
@@ -85,7 +85,7 @@ export function pickLineup(squad: Player[], starterIds?: string[]): LivePlayer[]
 // Estratégia pré-jogo da IA: compara a força do próprio XI com a do adversário e
 // entra em campo com postura coerente — nitidamente mais fraco recua e aperta a
 // marcação; nitidamente mais forte propõe o jogo; parelho entra equilibrado.
-function aiPregameTactics(mySquad: Player[], oppSquad: Player[], aggression: number): Tactics {
+export function aiPregameTactics(mySquad: Player[], oppSquad: Player[], aggression: number): Tactics {
   const xiStrength = (squad: Player[]) =>
     bestXI(squad).reduce((s, id) => s + (squad.find((p) => p.id === id)?.strength ?? 0), 0);
   const ratio = xiStrength(mySquad) / Math.max(1, xiStrength(oppSquad));
@@ -240,19 +240,20 @@ function bestOnField(
     .sort((a, b) => b.strength - a.strength)[0];
 }
 
-// Sorteia quem finaliza dentre atacantes (prioridade) e meias em campo, ponderado
-// pelo quadrado da força — os melhores marcam mais, mas não são os únicos a marcar.
+// Peso de finalização por posição: atacantes concentram os gols, meias chegam com
+// frequência, zagueiros aparecem na bola parada e goleiro é lenda de fim de jogo.
+const SHOT_WEIGHT: Record<Position, number> = {
+  ATA: 1, MEI: 0.32, DEF: 0.09, GOL: 0.003,
+};
+
+// Sorteia quem finaliza dentre todos em campo, ponderado pelo quadrado da força
+// e pelo peso da posição — os melhores marcam mais, mas não são os únicos.
 function pickStriker(rng: Rng, lineup: LivePlayer[], idx: PlayersIndex): Player | null {
-  const attackers = lineup
-    .filter((lp) => lp.onField && !lp.sentOff && idx[lp.playerId].pos === "ATA")
+  const pool = lineup
+    .filter((lp) => lp.onField && !lp.sentOff)
     .map((lp) => idx[lp.playerId]);
-  const pool = attackers.length > 0
-    ? attackers
-    : lineup
-        .filter((lp) => lp.onField && !lp.sentOff && idx[lp.playerId].pos === "MEI")
-        .map((lp) => idx[lp.playerId]);
   if (pool.length === 0) return null;
-  return pickWeighted(rng, pool, (p) => p.strength ** 2);
+  return pickWeighted(rng, pool, (p) => p.strength ** 2 * SHOT_WEIGHT[p.pos]);
 }
 
 function randomOnField(rng: Rng, lineup: LivePlayer[], idx: PlayersIndex): Player {

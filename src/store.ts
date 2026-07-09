@@ -39,7 +39,7 @@ export function seasonRevenue(baseBudget: number): number {
 // Agressividade tática da IA (0 conservador .. 1 agressivo), derivada da posição do
 // clube na tabela: quem está em crise/rebaixamento joga mais para frente e arrisca
 // mais cedo; quem está no G4/topo tem mais a perder e joga mais seguro.
-function clubAggression(game: GameState, clubId: string): number {
+export function clubAggression(game: GameState, clubId: string): number {
   const club = game.clubs.find((c) => c.id === clubId);
   if (!club) return 0.5;
   const table = game.tables[club.division];

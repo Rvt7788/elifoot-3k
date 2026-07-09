@@ -97,6 +97,19 @@ export default function NewGame() {
         </button>
       </div>
 
+      {clubId && (
+        <button
+          onClick={() =>
+            managerName.trim() &&
+            startGame(Date.now() >>> 0, clubId, managerName.trim())
+          }
+          disabled={!managerName.trim()}
+          className="btn-cta mb-6 w-full py-3.5"
+        >
+          Começar carreira
+        </button>
+      )}
+
       <div className="border-t border-[rgba(30,42,56,0.6)]">
         {list.map((c) => (
           <button
@@ -118,17 +131,6 @@ export default function NewGame() {
           </button>
         ))}
       </div>
-
-      <button
-        disabled={!clubId || !managerName.trim()}
-        onClick={() =>
-          clubId && managerName.trim() &&
-          startGame(Date.now() >>> 0, clubId, managerName.trim())
-        }
-        className="btn-cta mt-8 w-full py-3.5"
-      >
-        Começar carreira
-      </button>
     </div>
   );
 }

@@ -17,6 +17,11 @@ function colorDistance(a: [number, number, number], b: [number, number, number])
   return Math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2);
 }
 
+// Preto ou branco, o que for mais legível sobre a cor de fundo dada.
+export function readableOn(bgHex: string): string {
+  return luminance(hexToRgb(bgHex)) > 140 ? "#09090b" : "#ffffff";
+}
+
 // Se as cores primárias de dois clubes forem parecidas demais (confuso no mosaico),
 // escurece/clareia uma delas para criar contraste, mantendo o matiz reconhecível.
 export function distinctPair(homeHex: string, awayHex: string): [string, string] {

@@ -40,10 +40,11 @@ export function pitchLayout(formation: Formation): Record<Position, { x: number;
 }
 
 export function PlayerPin({
-  p, x, y, selected, dim, energyOverride, onClick,
+  p, x, y, selected, dim, energyOverride, colors, onClick,
 }: {
   p: Player; x: number; y: number; selected: boolean; dim?: boolean;
   energyOverride?: number; // energia ao vivo (LivePlayer), quando diferente da persistida
+  colors?: { bg: string; border: string }; // camisa do clube (prancheta de tática)
   onClick: () => void;
 }) {
   const energy = energyOverride ?? p.energy;
@@ -55,7 +56,13 @@ export function PlayerPin({
       title={`Energia: ${Math.round(energy)}% · Pé ${p.foot}`}
     >
       <span
-        style={dim ? undefined : { background: energyColor(energy), borderColor: energyBorderColor(energy) }}
+        style={
+          dim
+            ? undefined
+            : colors
+              ? { background: colors.bg, borderColor: colors.border }
+              : { background: energyColor(energy), borderColor: energyBorderColor(energy) }
+        }
         className={`flex h-5 w-5 items-center justify-center rounded-full border text-[9px] font-bold shadow ${
           selected ? "ring-2 ring-sky-400 ring-offset-1 ring-offset-emerald-950" : ""
         } ${

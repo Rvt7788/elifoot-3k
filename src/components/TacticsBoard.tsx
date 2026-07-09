@@ -4,13 +4,15 @@ import { bestXI, DEFAULT_TACTICS } from "../game/engine";
 import type { Formation, Marking, Mentality, Player, Position } from "../types";
 import { FORMATIONS } from "../types";
 import { pitchLayout, PlayerPin, EmptySlot, PitchBackground } from "./PitchField";
+import { readableOn } from "../game/color";
 import Toggle from "./Toggle";
 import EnergyBar from "./EnergyBar";
 
 const TIER_BADGE: Record<string, string> = {
-  bagre: "", bom: "★", craque: "★★", extra: "💎",
+  bagre: "", bom: "★", craque: "★★", extra: "★★★",
 };
 const POS_ORDER = { GOL: 0, DEF: 1, MEI: 2, ATA: 3 } as const;
+const POS_KEYS = ["GOL", "DEF", "MEI", "ATA"] as const;
 
 function PlayerDetails({ p }: { p: Player }) {
   return (
@@ -18,10 +20,10 @@ function PlayerDetails({ p }: { p: Player }) {
       <span>Idade: <b>{p.age}</b></span>
       <span>Pé: <b className="capitalize">{p.foot}</b></span>
       <span>Energia: <b className={p.energy < 60 ? "text-red-400" : "text-emerald-400"}>{p.energy}%</b></span>
-      <span>⚽ Gols: <b>{p.goals}</b></span>
-      <span>🎯 Assist.: <b>{p.assists}</b></span>
-      <span>🟨 Amarelos: <b>{p.yellows}</b></span>
-      <span>🟥 Vermelhos: <b>{p.reds}</b></span>
+      <span>Gols: <b>{p.goals}</b></span>
+      <span>Assist.: <b>{p.assists}</b></span>
+      <span>Amarelos: <b>{p.yellows}</b></span>
+      <span>Vermelhos: <b>{p.reds}</b></span>
       <span className="col-span-2">
         Características: {p.traits.length ? p.traits.join(", ") : "—"}
       </span>
@@ -31,31 +33,32 @@ function PlayerDetails({ p }: { p: Player }) {
 }
 
 function PlayerRow({
-  p, selected, onClick, expanded, onToggleExpand,
+  p, selected, selColor, onClick, expanded, onToggleExpand,
 }: {
-  p: Player; selected: boolean; onClick: () => void;
+  p: Player; selected: boolean; selColor: string; onClick: () => void;
   expanded: boolean; onToggleExpand: () => void;
 }) {
   return (
     <div className="mb-0.5">
       <button
         onClick={onClick}
+        style={selected ? { background: selColor, color: readableOn(selColor) } : undefined}
         className={`flex w-full items-center justify-between rounded px-1.5 py-0.5 text-left text-[11px] leading-tight ${
-          selected ? "bg-sky-700" : "bg-zinc-800 hover:bg-zinc-700"
+          selected ? "" : "bg-zinc-800 hover:bg-zinc-700"
         }`}
       >
         <span className="flex min-w-0 items-center gap-1">
-          <b className="shrink-0 text-zinc-400">{p.pos}</b>
+          <b className={`shrink-0 ${selected ? "opacity-70" : "text-zinc-400"}`}>{p.pos}</b>
           <span className={`truncate ${p.suspended ? "text-zinc-500 line-through" : ""}`}>{p.name}</span>
           <span className="shrink-0 text-amber-400">{TIER_BADGE[p.tier]}</span>
-          {p.suspended && <span className="shrink-0 text-[10px] text-red-400">🟥</span>}
+          {p.suspended && <span className="shrink-0 text-[9px] font-bold text-red-400">SUSP</span>}
         </span>
         <span className="flex shrink-0 items-center gap-1.5">
           <EnergyBar value={p.energy} />
           <b>{p.strength}</b>
           <span
             onClick={(e) => { e.stopPropagation(); onToggleExpand(); }}
-            className="cursor-pointer text-zinc-500 hover:text-white"
+            className={`cursor-pointer ${selected ? "opacity-70" : "text-zinc-500"} hover:text-white`}
           >
             {expanded ? "▲" : "▼"}
           </span>
@@ -67,15 +70,15 @@ function PlayerRow({
 }
 
 const MENT: { key: Mentality; label: string }[] = [
-  { key: "defensivo", label: "🛡 Defensivo" },
-  { key: "equilibrado", label: "⚖ Equilibrado" },
-  { key: "ofensivo", label: "⚔ Ofensivo" },
+  { key: "defensivo", label: "Defensivo" },
+  { key: "equilibrado", label: "Equilibrado" },
+  { key: "ofensivo", label: "Ofensivo" },
 ];
 
 const MARK: { key: Marking; label: string }[] = [
-  { key: "leve", label: "🪶 Leve" },
-  { key: "frouxa", label: "〰 Frouxa" },
-  { key: "apertada", label: "🔒 Apertada" },
+  { key: "leve", label: "Leve" },
+  { key: "frouxa", label: "Frouxa" },
+  { key: "apertada", label: "Apertada" },
 ];
 
 export default function TacticsBoard() {
@@ -94,6 +97,7 @@ export default function TacticsBoard() {
 
   const squad = game.players.filter((p) => p.clubId === game.userClubId);
   const userClub = game.clubs.find((c) => c.id === game.userClubId)!;
+  const kit = { bg: userClub.primaryColor, border: userClub.secondaryColor };
   const formation = game.formation ?? "4-4-2";
   const starters = game.starters?.length >= 11 ? game.starters : bestXI(squad, formation);
   const titulares = squad
@@ -103,67 +107,78 @@ export default function TacticsBoard() {
     .filter((p) => !starters.includes(p.id))
     .sort((a, b) => POS_ORDER[a.pos] - POS_ORDER[b.pos] || b.strength - a.strength);
 
-  const pos = pitchLayout(formation);
-  const slots: { pos: Position; x: number; y: number; player?: Player }[] = [];
-  (["GOL", "DEF", "MEI", "ATA"] as const).forEach((posKey) => {
+  // Jogadores de cada posição na ordem em que ocupam os slots do desenho.
+  // Usa a ordem manual salva (slotOrder) quando ela cobre exatamente os mesmos
+  // jogadores da posição; senão cai no ordenamento automático por força.
+  const posPlayers: Record<Position, Player[]> = { GOL: [], DEF: [], MEI: [], ATA: [] };
+  POS_KEYS.forEach((posKey) => {
     const byForce = titulares
       .filter((p) => p.pos === posKey)
       .sort((a, b) => b.strength - a.strength);
-    // usa a ordem manual salva (slotOrder) quando ela cobre exatamente os mesmos
-    // jogadores dessa posição; senão cai no ordenamento automático por força.
     const manual = (game.slotOrder ?? [])
       .map((id) => titulares.find((p) => p.id === id))
       .filter((p): p is Player => !!p && p.pos === posKey);
-    const players =
+    posPlayers[posKey] =
       manual.length === byForce.length &&
       manual.every((p) => byForce.some((b) => b.id === p.id))
         ? manual
         : byForce;
-    pos[posKey].forEach((coord, i) => {
-      slots.push({ pos: posKey, ...coord, player: players[i] });
+  });
+
+  const layout = pitchLayout(formation);
+  const slots: { pos: Position; slotIdx: number; x: number; y: number; player?: Player }[] = [];
+  POS_KEYS.forEach((posKey) => {
+    layout[posKey].forEach((coord, i) => {
+      slots.push({ pos: posKey, slotIdx: i, ...coord, player: posPlayers[posKey][i] });
     });
   });
 
-  const clickPlayer = (id: string, isStarter: boolean) => {
+  // ordem completa dos slots (GOL→DEF→MEI→ATA), base de qualquer troca
+  const flatOrder = (pp: Record<Position, Player[]>) =>
+    POS_KEYS.flatMap((k) => pp[k].map((p) => p.id));
+
+  // Clique em jogador (pin do campo ou linha da lista). Regra única:
+  // troca só entre jogadores da MESMA posição; quem entra assume exatamente
+  // o slot de quem sai. Clique em posição diferente apenas move a seleção.
+  const clickPlayer = (id: string) => {
     if (!sel) { setSel(id); return; }
     if (sel === id) { setSel(null); return; }
-    const selIsStarter = starters.includes(sel);
-    if (selIsStarter === isStarter) {
-      // dois titulares da mesma posição: troca o lado deles no campo
-      if (isStarter) {
-        const selPlayer = squad.find((p) => p.id === sel);
-        const idPlayer = squad.find((p) => p.id === id);
-        if (selPlayer && idPlayer && selPlayer.pos === idPlayer.pos) {
-          const order = titulares.map((p) => p.id);
-          const ia = order.indexOf(sel);
-          const ib = order.indexOf(id);
-          [order[ia], order[ib]] = [order[ib], order[ia]];
-          setSlotOrder(order);
-          setSel(null);
-          return;
-        }
-      }
+    const a = squad.find((p) => p.id === sel);
+    const b = squad.find((p) => p.id === id);
+    if (!a || !b || a.pos !== b.pos) { setSel(id); return; }
+    const aStarter = starters.includes(a.id);
+    const bStarter = starters.includes(b.id);
+    if (aStarter && bStarter) {
+      // dois titulares: trocam de lugar no desenho
+      const arr = posPlayers[a.pos].map((p) => p.id);
+      const ia = arr.indexOf(a.id);
+      const ib = arr.indexOf(b.id);
+      [arr[ia], arr[ib]] = [arr[ib], arr[ia]];
+      setSlotOrder(flatOrder({ ...posPlayers, [a.pos]: arr.map((x) => squad.find((p) => p.id === x)!) }));
+    } else if (aStarter !== bStarter) {
+      // titular ↔ reserva: o reserva entra no slot exato do titular
+      const starterId = aStarter ? a.id : b.id;
+      const benchId = aStarter ? b.id : a.id;
+      const arr = posPlayers[a.pos].map((p) => p.id === starterId ? benchId : p.id);
+      setStarters(starters.map((s) => (s === starterId ? benchId : s)));
+      setSlotOrder(flatOrder({ ...posPlayers, [a.pos]: arr.map((x) => squad.find((p) => p.id === x)!) }));
+    } else {
+      // dois reservas: nada a trocar, move a seleção
       setSel(id);
       return;
     }
-    const starterId = selIsStarter ? sel : id;
-    const benchId = selIsStarter ? id : sel;
-    // trava: só GOL troca por GOL (nunca deixa o time sem goleiro ou com 2)
-    const starterPos = squad.find((p) => p.id === starterId)?.pos;
-    const benchPos = squad.find((p) => p.id === benchId)?.pos;
-    if ((starterPos === "GOL") !== (benchPos === "GOL")) { setSel(null); return; }
-    setStarters(starters.map((s) => (s === starterId ? benchId : s)));
     setSel(null);
   };
 
-  // Slot vazio (posição sem titular suficiente): clicar preenche com o reserva selecionado.
-  const clickEmptySlot = (posKey: Position) => {
-    if (!sel) return;
-    const selIsStarter = starters.includes(sel);
-    if (selIsStarter) { setSel(null); return; } // já é titular, nada a fazer
+  // Slot vazio: o reserva selecionado (da posição certa) entra exatamente ali.
+  const clickEmptySlot = (posKey: Position, slotIdx: number) => {
+    if (!sel || starters.includes(sel)) { setSel(null); return; }
     const benchPlayer = squad.find((p) => p.id === sel);
-    if (!benchPlayer || benchPlayer.pos !== posKey) return; // só entra na posição certa
+    if (!benchPlayer || benchPlayer.pos !== posKey) return;
+    const arr = [...posPlayers[posKey]];
+    arr.splice(Math.min(slotIdx, arr.length), 0, benchPlayer);
     setStarters([...starters, sel]);
+    setSlotOrder(flatOrder({ ...posPlayers, [posKey]: arr }));
     setSel(null);
   };
 
@@ -175,46 +190,47 @@ export default function TacticsBoard() {
 
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
-      {/* Campo, à esquerda — sem moldura, só a grama */}
-      <PitchBackground className="relative mx-auto w-full shrink-0 overflow-hidden rounded-lg sm:mx-0 sm:w-64">
-        {slots.map((s, i) =>
-          s.player ? (
-            <PlayerPin
-              key={s.player.id}
-              p={s.player}
-              x={s.x}
-              y={s.y}
-              selected={sel === s.player.id}
-              onClick={() => clickPlayer(s.player!.id, true)}
-            />
-          ) : (
-            <EmptySlot
-              key={i}
-              x={s.x}
-              y={s.y}
-              label={s.pos}
-              pulse={!!sel && !starters.includes(sel) && squad.find((p) => p.id === sel)?.pos === s.pos}
-              onClick={() => clickEmptySlot(s.pos)}
-            />
-          ),
-        )}
-      </PitchBackground>
-
-      {/* Coluna de comando tático: formação → melhor time → mentalidade → marcação → truculência */}
-      <div className="flex w-full shrink-0 flex-col gap-3 lg:w-40">
-        <div>
-          <p className="mb-1 text-[10px] font-bold text-zinc-500">FORMAÇÃO</p>
-          <select
-            value={formation}
-            onChange={(e) => setFormation(e.target.value as Formation)}
-            className="w-full rounded bg-zinc-800 px-2 py-1 text-xs"
-          >
-            {Object.keys(FORMATIONS).map((f) => (
-              <option key={f} value={f}>{f}</option>
-            ))}
-          </select>
+      {/* Campo à esquerda, com as formações clicáveis em cima */}
+      <div className="mx-auto w-full shrink-0 sm:mx-0 sm:w-64">
+        <div className="mb-2 flex justify-between">
+          {(Object.keys(FORMATIONS) as Formation[]).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFormation(f)}
+              className={`country-tab !px-1 !text-[11px] ${formation === f ? "active" : ""}`}
+            >
+              {f}
+            </button>
+          ))}
         </div>
+        <PitchBackground className="relative w-full overflow-hidden rounded-lg">
+          {slots.map((s, i) =>
+            s.player ? (
+              <PlayerPin
+                key={s.player.id}
+                p={s.player}
+                x={s.x}
+                y={s.y}
+                colors={kit}
+                selected={sel === s.player.id}
+                onClick={() => clickPlayer(s.player!.id)}
+              />
+            ) : (
+              <EmptySlot
+                key={i}
+                x={s.x}
+                y={s.y}
+                label={s.pos}
+                pulse={!!sel && !starters.includes(sel) && squad.find((p) => p.id === sel)?.pos === s.pos}
+                onClick={() => clickEmptySlot(s.pos, s.slotIdx)}
+              />
+            ),
+          )}
+        </PitchBackground>
+      </div>
 
+      {/* Coluna de comando tático: melhor time → mentalidade → marcação → disposição */}
+      <div className="flex w-full shrink-0 flex-col gap-3 lg:w-40">
         <div>
           <button
             onClick={() => setStarters(ideal)}
@@ -222,7 +238,7 @@ export default function TacticsBoard() {
               isBestActive ? "bg-emerald-600 text-white" : "bg-zinc-800 hover:bg-zinc-700"
             }`}
           >
-            ⚡ Melhor time
+            Melhor time
           </button>
           <div className="mt-1 flex gap-1">
             <button
@@ -247,7 +263,7 @@ export default function TacticsBoard() {
         </div>
 
         <div>
-          <p className="mb-1 text-[10px] font-bold text-zinc-500">MENTALIDADE</p>
+          <p className="ui-label mb-1">Mentalidade</p>
           <div className="flex flex-col gap-1">
             {MENT.map((m) => (
               <button
@@ -264,7 +280,7 @@ export default function TacticsBoard() {
         </div>
 
         <div>
-          <p className="mb-1 text-[10px] font-bold text-zinc-500">MARCAÇÃO</p>
+          <p className="ui-label mb-1">Marcação</p>
           <div className="flex flex-col gap-1">
             {MARK.map((m) => (
               <button
@@ -281,11 +297,11 @@ export default function TacticsBoard() {
         </div>
 
         <div>
-          <p className="mb-1 text-[10px] font-bold text-zinc-500">DISPOSIÇÃO</p>
+          <p className="ui-label mb-1">Disposição</p>
           <Toggle
             checked={tactics.truculencia}
             onChange={() => setDefaultTactics({ truculencia: !tactics.truculencia })}
-            label="🦵 Truculência"
+            label="Truculência"
             color="#b91c1c"
             hint="Bônus pesado de desarme, mas 3× mais cartões"
           />
@@ -293,7 +309,7 @@ export default function TacticsBoard() {
             <Toggle
               checked={tactics.autoSub ?? false}
               onChange={() => setDefaultTactics({ autoSub: !tactics.autoSub })}
-              label="🔁 Sub. automática"
+              label="Sub. automática"
               color="#0891b2"
               hint="No segundo tempo, troca sozinho jogadores esgotados por reservas descansados da mesma posição"
             />
@@ -308,7 +324,7 @@ export default function TacticsBoard() {
               disabled={!tactics.bicho && game.budget < bichoCost(userClub.baseBudget)}
               label={
                 <>
-                  💰 Bicho{" "}
+                  Bicho{" "}
                   <span className="text-[10px] text-zinc-400">
                     €{(bichoCost(userClub.baseBudget) / 1e6).toFixed(2)}M
                   </span>
@@ -324,7 +340,7 @@ export default function TacticsBoard() {
       {/* Titulares e reservas, à direita, mesmo espaço */}
       <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="min-w-0">
-          <p className="mb-1 text-xs font-bold text-emerald-500">
+          <p className="mb-1 text-xs font-bold" style={{ color: userClub.primaryColor }}>
             TITULARES ({titulares.length})
           </p>
           {titulares.map((p) => (
@@ -332,7 +348,8 @@ export default function TacticsBoard() {
               key={p.id}
               p={p}
               selected={sel === p.id}
-              onClick={() => clickPlayer(p.id, true)}
+              selColor={userClub.primaryColor}
+              onClick={() => clickPlayer(p.id)}
               expanded={expanded === p.id}
               onToggleExpand={() => toggleExpand(p.id)}
             />
@@ -347,7 +364,8 @@ export default function TacticsBoard() {
               key={p.id}
               p={p}
               selected={sel === p.id}
-              onClick={() => clickPlayer(p.id, false)}
+              selColor={userClub.primaryColor}
+              onClick={() => clickPlayer(p.id)}
               expanded={expanded === p.id}
               onToggleExpand={() => toggleExpand(p.id)}
             />
