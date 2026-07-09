@@ -5,14 +5,31 @@ import { buildLeagueFixtures, initTable } from "./schedule";
 import { drawCup } from "./cup";
 import { bestXI, DEFAULT_TACTICS } from "./engine";
 import clubsData from "../data/clubs.json";
+import rostersData from "../data/rosters.json";
 
-// Elenco base de 22: 3 GOL, 7 DEF, 7 MEI, 5 ATA
-const SQUAD_SHAPE: Position[] = [
-  "GOL", "GOL", "GOL",
-  "DEF", "DEF", "DEF", "DEF", "DEF", "DEF", "DEF",
-  "MEI", "MEI", "MEI", "MEI", "MEI", "MEI", "MEI",
-  "ATA", "ATA", "ATA", "ATA", "ATA",
-];
+const rosters = rostersData as Record<string, Record<Position, string[]>>;
+
+// Cada elenco tem um tamanho variável entre 16 e 22 jogadores, mantendo a
+// proporção base 3 GOL / 7 DEF / 7 MEI / 5 ATA (22 titulares "cheios"); times
+// menores cortam reservas nas posições de linha, nunca abaixo de 2 goleiros.
+function squadShape(rng: Rng): Position[] {
+  const size = randInt(rng, 16, 22);
+  const base: Position[] = [
+    "GOL", "GOL", "GOL",
+    "DEF", "DEF", "DEF", "DEF", "DEF", "DEF", "DEF",
+    "MEI", "MEI", "MEI", "MEI", "MEI", "MEI", "MEI",
+    "ATA", "ATA", "ATA", "ATA", "ATA",
+  ];
+  while (base.length > size) {
+    // remove reservas de linha (nunca a última vaga de GOL, DEF, MEI ou ATA)
+    const removable = (["DEF", "MEI", "ATA"] as const).filter(
+      (pos) => base.filter((p) => p === pos).length > 2,
+    );
+    const posToCut = removable.length > 0 ? pick(rng, removable) : "DEF";
+    base.splice(base.lastIndexOf(posToCut), 1);
+  }
+  return base;
+}
 
 const TRAITS_BY_POS: Record<Position, Trait[]> = {
   GOL: ["Paredão", "Raçudo"],
@@ -21,25 +38,31 @@ const TRAITS_BY_POS: Record<Position, Trait[]> = {
   ATA: ["Goleador", "Veloz", "Criativo"],
 };
 
-// Sorteio de tier escalado pelo "poder" do clube (0 = lanterna da Série B,
-// 1 = gigante da Série A, pelo ranking de orçamento dentro do país). Times ricos
-// têm elencos visivelmente melhores: um gigante roda ~30% craque / 50% bom,
-// enquanto o clube mais pobre roda ~2% craque / 75% bagre.
-function rollTier(rng: Rng, power: number): Tier {
-  const pCraque = 0.02 + 0.28 * power;
-  const pBom = 0.23 + 0.27 * power;
-  const r = rng();
-  if (r < pCraque) return "craque";
-  if (r < pCraque + pBom) return "bom";
+// Faixa de força média do elenco por divisão: dentro de cada divisão, o "poder"
+// (percentil de orçamento no país) escala a média dentro da faixa — o lanterna
+// da Série B mira ~17, o campeão ~23; na Série A vai de ~27 até ~38. Isso é o que
+// determina o nível do time, não sorteio livre: um time fraco do mundo real tem
+// elenco fraco, ponto — só cresce jogando/treinando (ver training.ts).
+function targetStrength(division: string, power: number): number {
+  return division === "Série A"
+    ? 27 + power * 13 // 27 (pior da A) .. 40 (melhor da A)
+    : 15 + power * 10; // 15 (pior da B) .. 25 (melhor da B)
+}
+
+// Tier é só rótulo (badge/traço), derivado da força final do jogador — não é
+// mais ele quem decide a força.
+function tierFromStrength(strength: number): Tier {
+  if (strength >= 33) return "craque";
+  if (strength >= 22) return "bom";
   return "bagre";
 }
 
-function tierRanges(tier: Tier): { str: [number, number]; cap: number } {
+function capFor(tier: Tier): number {
   switch (tier) {
-    case "bagre": return { str: [10, 20], cap: 25 };
-    case "bom": return { str: [18, 30], cap: 38 };
-    case "craque": return { str: [30, 42], cap: 46 };
-    case "extra": return { str: [35, 44], cap: 50 };
+    case "bagre": return 25;
+    case "bom": return 38;
+    case "craque": return 46;
+    case "extra": return 50;
   }
 }
 
@@ -54,12 +77,19 @@ export function makePlayer(
   clubId: string,
   country: string,
   pos: Position,
-  tier: Tier,
+  target: number,
   idNum: number,
   young = false,
+  realName?: string,
 ): Player {
-  const { str, cap } = tierRanges(tier);
-  const strength = young ? randInt(rng, 10, 15) : randInt(rng, str[0], str[1]);
+  // dispersão em torno da média do time: a maioria fica perto do nível do clube,
+  // com cauda para cima (revelação) e para baixo (reserva fraco)
+  const spread = randInt(rng, -6, 6) + randInt(rng, -3, 3);
+  const strength = young
+    ? randInt(rng, 10, 15)
+    : Math.max(8, Math.min(44, Math.round(target + spread)));
+  const tier = tierFromStrength(strength);
+  const cap = young ? 46 : Math.max(capFor(tier), strength + randInt(rng, 2, 8));
   const age = young ? 17 : randInt(rng, 18, 34);
   const traits: Trait[] = chance(rng, tier === "bagre" ? 0.25 : 0.7)
     ? [pick(rng, TRAITS_BY_POS[pos])]
@@ -67,7 +97,7 @@ export function makePlayer(
   const p: Player = {
     id: `${clubId}_p${idNum}`,
     clubId,
-    name: playerName(rng, country),
+    name: realName ?? playerName(rng, country),
     pos,
     age,
     strength,
@@ -108,9 +138,15 @@ export function newGame(seed: number, userClubId: string): GameState {
 
   let n = 0;
   for (const club of clubs) {
-    SQUAD_SHAPE.forEach((pos) => {
-      const tier = rollTier(rng, power.get(club.id) ?? 0.3);
-      players.push(makePlayer(rng, club.id, club.country, pos, tier, ++n));
+    const target = targetStrength(club.division, power.get(club.id) ?? 0.3);
+    const roster = rosters[club.name];
+    // cada posição consome os nomes reais pesquisados na ordem listada; quando
+    // acabam (elenco real menor que o shape sorteado), cai no gerador procedural
+    const used: Record<Position, number> = { GOL: 0, DEF: 0, MEI: 0, ATA: 0 };
+    squadShape(rng).forEach((pos) => {
+      const names = roster?.[pos];
+      const realName = names && used[pos] < names.length ? names[used[pos]++] : undefined;
+      players.push(makePlayer(rng, club.id, club.country, pos, target, ++n, false, realName));
     });
   }
 

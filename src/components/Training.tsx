@@ -87,7 +87,7 @@ export default function Training() {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-zinc-700 text-left text-zinc-400">
-            <th className="py-1">Pos</th>
+            <th className="py-1 pr-3">Pos</th>
             <th>Nome</th>
             <th className="hidden text-center sm:table-cell">Idade</th>
             <th className="text-center">Força</th>
@@ -106,7 +106,7 @@ export default function Training() {
             const weekly = weeklyXp(p, playedLast.has(p.id), training);
             return (
               <tr key={p.id} className="border-b border-zinc-800">
-                <td className="py-1.5 text-zinc-400">{p.pos}</td>
+                <td className="py-1.5 pr-3 text-zinc-400">{p.pos}</td>
                 <td>
                   {p.name} <span className="text-amber-400">{TIER_BADGE[p.tier]}</span>
                   {playedLast.has(p.id) && (

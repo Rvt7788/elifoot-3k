@@ -91,6 +91,9 @@ export default function TacticsBoard() {
   const [sel, setSel] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [byEnergy, setByEnergy] = useState(false);
+  // Resetar zera starters para montagem manual: enquanto o time tiver menos de
+  // 11, mostramos o campo vazio em vez de cair automaticamente no melhor time.
+  const [manualMode, setManualMode] = useState(false);
   if (!game) return null;
 
   const tactics = game.defaultTactics ?? DEFAULT_TACTICS;
@@ -99,7 +102,8 @@ export default function TacticsBoard() {
   const userClub = game.clubs.find((c) => c.id === game.userClubId)!;
   const kit = { bg: userClub.primaryColor, border: userClub.secondaryColor };
   const formation = game.formation ?? "4-4-2";
-  const starters = game.starters?.length >= 11 ? game.starters : bestXI(squad, formation);
+  const hasFullXI = (game.starters?.length ?? 0) >= 11;
+  const starters = hasFullXI ? game.starters : manualMode ? game.starters ?? [] : bestXI(squad, formation);
   const titulares = squad
     .filter((p) => starters.includes(p.id))
     .sort((a, b) => POS_ORDER[a.pos] - POS_ORDER[b.pos] || b.strength - a.strength);
@@ -232,18 +236,11 @@ export default function TacticsBoard() {
       {/* Coluna de comando tático: melhor time → mentalidade → marcação → disposição */}
       <div className="flex w-full shrink-0 flex-col gap-3 lg:w-40">
         <div>
-          <button
-            onClick={() => setStarters(ideal)}
-            className={`w-full rounded px-2 py-1 text-xs font-semibold ${
-              isBestActive ? "bg-emerald-600 text-white" : "bg-zinc-800 hover:bg-zinc-700"
-            }`}
-          >
-            Melhor time
-          </button>
-          <div className="mt-1 flex gap-1">
+          <p className="ui-label mb-1">Escalar por</p>
+          <div className="flex gap-1">
             <button
               onClick={() => setByEnergy(false)}
-              className={`flex-1 rounded px-1.5 py-0.5 text-[10px] ${
+              className={`flex-1 rounded px-1.5 py-1 text-[11px] ${
                 !byEnergy ? "bg-zinc-700 text-white" : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"
               }`}
               title="Escala sempre o jogador de maior força nominal, ignorando cansaço"
@@ -252,14 +249,30 @@ export default function TacticsBoard() {
             </button>
             <button
               onClick={() => setByEnergy(true)}
-              className={`flex-1 rounded px-1.5 py-0.5 text-[10px] ${
+              className={`flex-1 rounded px-1.5 py-1 text-[11px] ${
                 byEnergy ? "bg-zinc-700 text-white" : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"
               }`}
               title="Considera o cansaço: energia abaixo de 70% já reduz a força em campo, chegando a 50% com energia muito baixa"
             >
-              +Energia
+              Energia
             </button>
           </div>
+          <p className="mb-1 mt-2 text-[10px] text-zinc-600">Por posição, sempre respeitando a formação escolhida.</p>
+          <button
+            onClick={() => { setStarters(ideal); setManualMode(false); }}
+            className={`w-full rounded px-2 py-1 text-xs font-semibold ${
+              isBestActive ? "bg-emerald-600 text-white" : "bg-zinc-800 hover:bg-zinc-700"
+            }`}
+          >
+            Aplicar melhor time
+          </button>
+          <button
+            onClick={() => { setStarters([]); setSel(null); setManualMode(true); }}
+            className="mt-1 w-full rounded bg-zinc-900 px-2 py-1 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+            title="Limpa a escalação para montar o time manualmente, clicando nos jogadores"
+          >
+            Resetar escalação
+          </button>
         </div>
 
         <div>
