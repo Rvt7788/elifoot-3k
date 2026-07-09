@@ -83,14 +83,68 @@ export function bestXI(
   ].map((p) => p.id);
 }
 
+// Ordena uma linha (DEF/MEI/ATA) esquerda→direita encaixando cada jogador no seu
+// melhor lado: canhotos à esquerda, destros à direita; jogadores de característica
+// ofensiva de flanco (Veloz) puxam para as pontas. O centro fica com os demais.
+function arrangeLine(players: Player[]): Player[] {
+  const n = players.length;
+  if (n < 2) return players;
+  const mid = (n - 1) / 2;
+  // pontuação de "quão à esquerda" o jogador deve ficar (menor = mais à esquerda)
+  const laneScore = (p: Player) => {
+    let s = p.foot === "canhoto" ? -1 : 1; // pé define o lado natural
+    if (p.traits.includes("Veloz")) s *= 1.5; // veloz reforça a vocação de flanco
+    return s;
+  };
+  // os mais "de flanco" ocupam as pontas; os neutros ficam no miolo
+  const byFlank = [...players].sort((a, b) => Math.abs(laneScore(b)) - Math.abs(laneScore(a)));
+  const slots: (Player | null)[] = new Array(n).fill(null);
+  let left = 0;
+  let right = n - 1;
+  for (const p of byFlank) {
+    const wantsLeft = laneScore(p) < 0;
+    if (Math.abs(laneScore(p)) < 1e-9) break; // neutros preenchem o centro depois
+    if (wantsLeft && left <= mid && slots[left] === null) slots[left++] = p;
+    else if (!wantsLeft && right >= mid && slots[right] === null) slots[right--] = p;
+    else if (left <= right) {
+      // lado preferido cheio: cai na vaga livre mais próxima do centro
+      if (Math.abs(left - mid) <= Math.abs(right - mid)) slots[left++] = p;
+      else slots[right--] = p;
+    }
+  }
+  // sobra (neutros) preenche o miolo restante, mantendo a força como desempate
+  const placed = new Set(slots.filter(Boolean).map((p) => p!.id));
+  const rest = players.filter((p) => !placed.has(p.id)).sort((a, b) => b.strength - a.strength);
+  for (let i = 0; i < n && rest.length; i++) if (slots[i] === null) slots[i] = rest.shift()!;
+  return slots.filter(Boolean) as Player[];
+}
+
+// Melhor XI encaixando cada jogador na função/lado ideal: mesma seleção do bestXI
+// por força, mas cada linha é ordenada por pé/característica (canhoto à esquerda etc.).
+// Retorna os titulares e a disposição esquerda→direita (slotOrder) para a prancheta.
+export function bestXIByPosition(
+  squad: Player[], formation: Formation = "4-4-2", competition: "league" | "cup" = "league",
+  custom?: CustomFormation,
+): { starters: string[]; slotOrder: string[] } {
+  const ids = bestXI(squad, formation, false, competition, custom);
+  const byId = (id: string) => squad.find((p) => p.id === id)!;
+  const line = (pos: Position) => arrangeLine(ids.map(byId).filter((p) => p.pos === pos));
+  const ordered = [...line("GOL"), ...line("DEF"), ...line("MEI"), ...line("ATA")].map((p) => p.id);
+  return { starters: ordered, slotOrder: ordered };
+}
+
 // Escalação: usa os titulares definidos pelo usuário (descontando suspensos) ou o melhor XI
 export function pickLineup(
-  squad: Player[], starterIds?: string[], competition: "league" | "cup" = "league",
+  squad: Player[],
+  starterIds?: string[],
+  competition: "league" | "cup" = "league",
+  formation: Formation = "4-4-2",
+  custom?: CustomFormation,
 ): LivePlayer[] {
   const valid = starterIds?.filter(
     (id) => squad.some((p) => p.id === id && !isSuspended(p, competition)),
   ) ?? [];
-  const starters = new Set(valid.length === 11 ? valid : bestXI(squad, "4-4-2", false, competition));
+  const starters = new Set(valid.length === 11 ? valid : bestXI(squad, formation, false, competition, custom));
   return squad.map((p) => ({
     playerId: p.id,
     energy: p.energy,
@@ -134,6 +188,10 @@ export function createLiveMatch(
   homeSlotOrder?: string[],
   awaySlotOrder?: string[],
   competition: "league" | "cup" = "league",
+  homeFormation: Formation = "4-4-2",
+  awayFormation: Formation = "4-4-2",
+  homeCustomFormation?: CustomFormation,
+  awayCustomFormation?: CustomFormation,
 ): LiveMatch {
   return {
     competition,
@@ -148,8 +206,8 @@ export function createLiveMatch(
     awayTactics: awayDefaultTactics
       ? { ...DEFAULT_TACTICS, ...awayDefaultTactics }
       : aiPregameTactics(awaySquad, homeSquad, awayAggression),
-    homeLineup: pickLineup(homeSquad, homeStarters, competition),
-    awayLineup: pickLineup(awaySquad, awayStarters, competition),
+    homeLineup: pickLineup(homeSquad, homeStarters, competition, homeFormation, homeCustomFormation),
+    awayLineup: pickLineup(awaySquad, awayStarters, competition, awayFormation, awayCustomFormation),
     homeSubsLeft: 5, awaySubsLeft: 5,
     finished: false,
     lastAiCheck: 0,

@@ -1,10 +1,15 @@
 import { useState } from "react";
 import { useStore, nextPlayableWeek, clubAggression, isCupEliminated } from "../store";
-import { weekInfo, tiesForLeg, CUP_STAGE_NAMES } from "../game/cup";
+import { weekInfo, tiesForLeg, CUP_STAGE_NAMES, CONT_STAGE_NAMES } from "../game/cup";
 import { sortTable } from "../game/schedule";
 import { aiPregameTactics } from "../game/engine";
 import type { Club, GameState, Player } from "../types";
 import TacticsBoard from "./TacticsBoard";
+import { leagueName } from "../data/leagues";
+import { IconPlay } from "./icons";
+import ClubModal from "./ClubModal";
+import { readableOn } from "../game/color";
+import { formatMatchDate } from "../game/calendar";
 
 const sectorAvg = (squad: Player[], poss: string[]) => {
   const ps = squad.filter((p) => poss.includes(p.pos));
@@ -15,8 +20,8 @@ const sectorAvg = (squad: Player[], poss: string[]) => {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="circuit-line mb-3">
-      <span className="ui-label" style={{ color: "var(--accent)" }}>
+    <div className="mb-3">
+      <span className="ui-label" style={{ color: "#fbbf24" }}>
         {children}
       </span>
     </div>
@@ -52,7 +57,7 @@ function OpponentModal({
       onClick={onClose}
     >
       <div
-        className="max-h-[85vh] w-full max-w-lg overflow-y-auto border border-[var(--accent-dim)] bg-[#0a0f16] p-5 shadow-[0_0_30px_rgba(34,211,238,0.15)]"
+        className="max-h-[85vh] w-full max-w-lg overflow-y-auto border border-zinc-700 bg-[#0a0f16] p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between">
@@ -69,13 +74,13 @@ function OpponentModal({
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-zinc-500 hover:text-cyan-400">✕</button>
+          <button onClick={onClose} className="text-zinc-500 hover:text-amber-400">✕</button>
         </div>
 
         <SectionLabel>Estratégia provável</SectionLabel>
         <p className="mb-1 text-sm text-zinc-200">
-          Postura <span className="font-semibold text-cyan-400">{tactics.mentality}</span>
-          {" · "}marcação <span className="font-semibold text-cyan-400">{tactics.marking}</span>
+          Postura <span className="font-semibold text-amber-400">{tactics.mentality}</span>
+          {" · "}marcação <span className="font-semibold text-amber-400">{tactics.marking}</span>
           {tactics.truculencia && (
             <> · <span className="font-semibold text-red-400">truculência</span></>
           )}
@@ -89,7 +94,7 @@ function OpponentModal({
           {(["GOL", "DEF", "MEI", "ATA"] as const).map((s) => (
             <span key={s}>
               <span className="ui-label mr-1">{s}</span>
-              <span className="text-cyan-400">{sectorAvg(squad, [s])}</span>
+              <span className="text-amber-400">{sectorAvg(squad, [s])}</span>
             </span>
           ))}
         </div>
@@ -123,7 +128,7 @@ function OpponentModal({
               {topScorers.filter((p) => p.goals > 0).map((p) => (
                 <div key={p.id} className="flex justify-between border-b border-[rgba(30,42,56,0.6)] py-1.5 text-sm text-zinc-200">
                   <span>{p.name}</span>
-                  <span className="font-display font-semibold text-cyan-400">{p.goals}</span>
+                  <span className="font-display font-semibold text-amber-400">{p.goals}</span>
                 </div>
               ))}
             </div>
@@ -138,7 +143,7 @@ function OpponentModal({
               <span className="ui-label w-8">{p.pos}</span>
               <span className="flex-1 text-zinc-200">{p.name}</span>
               <span className="text-xs text-zinc-500">{p.age} anos</span>
-              <span className="w-8 text-right font-display font-semibold text-cyan-400">
+              <span className="w-8 text-right font-display font-semibold text-amber-400">
                 {p.strength}
               </span>
             </div>
@@ -149,9 +154,10 @@ function OpponentModal({
   );
 }
 
-export default function ClubHome() {
+export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => void }) {
   const game = useStore((s) => s.game);
   const [analyzing, setAnalyzing] = useState(false);
+  const [viewClub, setViewClub] = useState<Club | null>(null);
   if (!game) return null;
 
   const club = game.clubs.find((c) => c.id === game.userClubId)!;
@@ -160,28 +166,32 @@ export default function ClubHome() {
   const pos = table.findIndex((r) => r.clubId === club.id) + 1;
   const row = table[pos - 1];
 
-  // próximo compromisso do clube: rodada da liga ou jogo de copa, o que vier antes
+  // próximo compromisso do clube: rodada da liga, copa ou continental, o que vier antes
   const week = nextPlayableWeek(game);
   const info = week !== null ? weekInfo(week) : null;
-  const isCupNext = info?.type === "cup";
+  const isCupNext = info?.type === "cup" || info?.type === "continental";
+  const knockout =
+    info?.type === "cup" ? game.cup : info?.type === "continental" ? game.continental : undefined;
   const cupTie =
-    isCupNext && game.cup
-      ? tiesForLeg(game.cup, (info as any).stage, (info as any).leg).find(
+    isCupNext && knockout
+      ? tiesForLeg(knockout, (info as any).stage, (info as any).leg).find(
           (x) => x.homeId === club.id || x.awayId === club.id,
         )
       : undefined;
   const next = cupTie
     ? { homeId: cupTie.homeId, awayId: cupTie.awayId, round: 0 }
-    : game.fixtures.find(
-        (f) =>
-          f.week === week &&
-          !f.played &&
-          (f.homeId === club.id || f.awayId === club.id),
-      );
+    : !isCupNext
+      ? game.fixtures.find(
+          (f) =>
+            f.week === week &&
+            !f.played &&
+            (f.homeId === club.id || f.awayId === club.id),
+        )
+      : undefined;
   // placar da ida, para mostrar em "próximo jogo" quando for a volta
   const firstLeg =
-    isCupNext && info?.type === "cup" && info.leg === 2 && game.cup && cupTie
-      ? game.cup.rounds[info.stage]?.[cupTie.tieIndex]
+    isCupNext && info && (info as any).leg === 2 && knockout && cupTie
+      ? knockout.rounds[info.stage]?.[cupTie.tieIndex]
       : undefined;
   const nextOpp = next
     ? game.clubs.find(
@@ -194,35 +204,78 @@ export default function ClubHome() {
     .filter((f) => f.played && (f.homeId === club.id || f.awayId === club.id))
     .slice(-5);
 
-  const topScorers = [...squad].sort((a, b) => b.goals - a.goals).slice(0, 3);
+  const topScorers = [...squad].sort((a, b) => b.goals - a.goals).slice(0, 10);
   const squadValue = squad.reduce((s, p) => s + p.value, 0);
 
   return (
     <div className="mx-auto max-w-4xl px-4 pb-10 pt-6">
-      {/* Cabeçalho do clube */}
-      <div className="mb-2 flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
-        <span
-          className="inline-block h-9 w-9 shrink-0 rotate-45 border-2"
-          style={{ background: club.primaryColor, borderColor: club.secondaryColor }}
-        />
-        <div>
-          <h1 className="ui-title text-zinc-50">{club.name}</h1>
-          <p className="text-sm text-zinc-400">
-            {club.division} · {club.country}
-            {game.managerName && <> · Téc. {game.managerName}</>}
-          </p>
+      {/* Cabeçalho do clube: bandeira com as cores do time (nome, liga e técnico) à esquerda,
+          posição e orçamento à direita */}
+      <div className="mb-2 flex flex-col items-stretch gap-4 border-b border-[rgba(30,42,56,0.8)] pb-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* Bandeira do clube */}
+        <div
+          className="relative overflow-hidden rounded-md border border-black/40 shadow-inner"
+          style={{ background: club.primaryColor }}
+        >
+          {/* faixa vertical na cor secundária, como o mastro de uma bandeira */}
+          <div
+            className="absolute inset-y-0 left-0 w-2"
+            style={{ background: club.secondaryColor }}
+          />
+          <div className="relative px-4 py-2.5 pl-6">
+            <h1
+              className="ui-title leading-tight drop-shadow"
+              style={{ color: readableOn(club.primaryColor) }}
+            >
+              {club.name}
+            </h1>
+            <p
+              className="text-sm opacity-90"
+              style={{ color: readableOn(club.primaryColor) }}
+            >
+              {leagueName(club.country)}
+              {game.managerName && <> · Téc. {game.managerName}</>}
+            </p>
+          </div>
+        </div>
+        <div className="flex justify-start gap-8 text-left sm:justify-center sm:text-center">
+          <div>
+            <p className="ui-label mb-1">Posição</p>
+            <p className="ui-stat">{pos}º</p>
+            <p className="text-xs text-zinc-500">
+              {row ? `${row.pts} pts · ${row.p} jogos` : ""}
+            </p>
+          </div>
+          <div>
+            <p className="ui-label mb-1">Orçamento</p>
+            <p className="ui-stat">€{(game.budget / 1e6).toFixed(1)}M</p>
+            <p className="text-xs text-zinc-500">
+              Elenco €{(squadValue / 1e6).toFixed(1)}M
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Próximo jogo: o destaque da tela */}
-      <div className="mt-8">
+      {/* Próximo jogo · Iniciar jogo · Últimos resultados · Artilheiros —
+          colunas flex: as vazias somem por completo (sem reservar espaço) */}
+      <div className="mt-8 flex flex-col gap-8 md:flex-row md:items-stretch">
+        {/* No mobile, Próximo jogo + Iniciar jogo ficam lado a lado nesta linha;
+            no md+ o wrapper some (contents) e cada um vira coluna do flex normal. */}
+        <div className="flex flex-row items-center justify-between gap-4 md:contents">
+        {/* Coluna 1: Próximo jogo — largura do conteúdo, para o Iniciar jogo ficar colado ao lado */}
+        <div className="md:shrink-0">
         <SectionLabel>Próximo jogo</SectionLabel>
         {nextOpp && next ? (
-          <div className="text-center">
-            <p className="font-display text-2xl font-semibold text-zinc-50">
+          <div className="text-left">
+            <p className="font-display text-xl font-semibold text-zinc-50">
               {next.homeId === club.id ? (
                 <>{club.name} <span className="text-zinc-600">vs</span>{" "}
-                  <span className="text-zinc-300">{nextOpp.name}</span></>
+                  <span
+                    onClick={() => setViewClub(nextOpp)}
+                    className="cursor-pointer text-emerald-400 hover:underline"
+                  >
+                    {nextOpp.name}
+                  </span></>
               ) : (
                 <><span className="text-zinc-300">{nextOpp.name}</span>{" "}
                   <span className="text-zinc-600">vs</span> {club.name}</>
@@ -233,10 +286,17 @@ export default function ClubHome() {
                 {next.homeId === club.id ? "Em casa" : "Fora"}
               </span>{" "}
               ·{" "}
-              {isCupNext && info?.type === "cup"
+              {info?.type === "cup"
                 ? `🏆 Copa — ${CUP_STAGE_NAMES[info.stage]} (${info.leg === 1 ? "ida" : "volta"})`
-                : `Rodada ${next.round}`}
+                : info?.type === "continental"
+                  ? `🌎 ${["BR", "AR"].includes(club.country) ? "Libertadores" : "Champions"} — ${CONT_STAGE_NAMES[info.stage]} (${info.leg === 1 ? "ida" : "volta"})`
+                  : `Rodada ${next.round}`}
             </p>
+            {week !== null && (
+              <p className="mt-0.5 text-xs text-zinc-500">
+                {formatMatchDate(game.season, week)}
+              </p>
+            )}
             {firstLeg && (
               <p className="mt-0.5 text-xs text-zinc-600">
                 Jogo de ida:{" "}
@@ -246,13 +306,27 @@ export default function ClubHome() {
             )}
             <button
               onClick={() => setAnalyzing(true)}
-              className="country-tab active mt-2"
+              className="country-tab active mt-3 !text-[10px]"
             >
-              Analisar adversário
+              Analisar
             </button>
           </div>
+        ) : isCupNext && week !== null ? (
+          // semana de mata-mata sem jogo do clube (fora ou eliminado): rodada corre sem você
+          <div className="text-left">
+            <p className="text-sm font-semibold uppercase tracking-wide text-zinc-300">
+              {info?.type === "continental"
+                ? `🌎 Semana de ${["BR", "AR"].includes(club.country) ? "Libertadores" : "Champions"}`
+                : "🏆 Semana de Copa Nacional"}
+            </p>
+            <p className="mt-1 text-xs text-zinc-500">
+              {eliminated && info?.type === "cup"
+                ? "Você foi eliminado — a rodada corre sem o seu clube."
+                : "Seu clube não disputa esta fase — acompanhe na aba Tabela."}
+            </p>
+          </div>
         ) : eliminated && nextPlayableWeek(game) !== null ? (
-          <div className="text-center">
+          <div className="text-left">
             <p className="text-sm font-semibold uppercase tracking-wide text-red-400">
               Copa Nacional: Eliminado
             </p>
@@ -261,44 +335,27 @@ export default function ClubHome() {
             </p>
           </div>
         ) : (
-          <p className="text-center text-sm text-zinc-400">Temporada encerrada</p>
+          <p className="text-sm text-zinc-400">Temporada encerrada</p>
         )}
-      </div>
+        </div>
 
-      {/* Situação do clube: números lado a lado, sem caixas */}
-      <div className="mt-8 grid grid-cols-3 divide-x divide-[rgba(30,42,56,0.8)] border-y border-[rgba(30,42,56,0.8)] py-4 text-center">
-        <div>
-          <p className="ui-label mb-1">Posição</p>
-          <p className="ui-stat">{pos}º</p>
-          <p className="text-xs text-zinc-500">
-            {row ? `${row.pts} pts · ${row.p} jogos · SG ${row.gf - row.ga}` : "—"}
-          </p>
-        </div>
-        <div>
-          <p className="ui-label mb-1">Orçamento</p>
-          <p className="ui-stat">€{(game.budget / 1e6).toFixed(1)}M</p>
-          <p className="text-xs text-zinc-500">
-            Elenco €{(squadValue / 1e6).toFixed(1)}M
-          </p>
-        </div>
-        <div>
-          <p className="ui-label mb-1">Força por setor</p>
-          <p className="font-display text-sm font-semibold leading-6 text-zinc-100">
-            GOL <span className="text-cyan-400">{sectorAvg(squad, ["GOL"])}</span>{" "}
-            DEF <span className="text-cyan-400">{sectorAvg(squad, ["DEF"])}</span>
-            <br />
-            MEI <span className="text-cyan-400">{sectorAvg(squad, ["MEI"])}</span>{" "}
-            ATA <span className="text-cyan-400">{sectorAvg(squad, ["ATA"])}</span>
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-8 grid gap-x-10 gap-y-8 sm:grid-cols-2">
-        <div>
-          <SectionLabel>Últimos resultados</SectionLabel>
-          {lastResults.length === 0 && (
-            <p className="text-sm text-zinc-400">Nenhum jogo disputado.</p>
+        {/* Coluna 2: Iniciar jogo — ao lado do próximo jogo, centralizado verticalmente */}
+        <div className="flex items-center justify-start md:justify-center md:px-4">
+          {onStartMatchday && week !== null && (
+            <button
+              onClick={onStartMatchday}
+              className="flex items-center gap-2 px-6 py-4 text-xl font-bold btn-text-green"
+            >
+              <IconPlay className="h-6 w-6" />
+              {nextOpp && next ? "Iniciar jogo" : "Simular rodada"}
+            </button>
           )}
+        </div>
+        </div>
+
+        {/* Coluna 3: Últimos resultados — some por completo quando não há jogos */}
+        <div className={lastResults.length === 0 ? "hidden" : "md:flex-1"}>
+          <SectionLabel>Últimos resultados</SectionLabel>
           {lastResults.map((f, i) => {
             const home = game.clubs.find((c) => c.id === f.homeId)!;
             const away = game.clubs.find((c) => c.id === f.awayId)!;
@@ -307,43 +364,51 @@ export default function ClubHome() {
             const ga = isHome ? f.awayScore! : f.homeScore!;
             const badge = gf > ga ? "bg-emerald-500" : gf < ga ? "bg-red-500" : "bg-zinc-500";
             return (
-              <div key={i} className="flex items-center gap-2 border-b border-[rgba(30,42,56,0.6)] py-2 text-sm text-zinc-200">
+              <div key={i} className="flex items-center gap-2 border-b border-[rgba(30,42,56,0.6)] py-1.5 text-sm text-zinc-200">
                 <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${badge}`} />
                 <span className="text-xs text-zinc-600">R{f.round}</span>
-                <span>
-                  {home.name}{" "}
+                <span className="truncate">
+                  {home.shortName}{" "}
                   <span className="font-display font-semibold text-zinc-50">
-                    {f.homeScore} - {f.awayScore}
+                    {f.homeScore}-{f.awayScore}
                   </span>{" "}
-                  {away.name}
+                  {away.shortName}
                 </span>
               </div>
             );
           })}
         </div>
-        <div>
+
+        {/* Coluna 4: Artilheiros — some por completo quando não há gols */}
+        <div className={topScorers.every((p) => p.goals === 0) ? "hidden" : "md:flex-1"}>
           <SectionLabel>Artilheiros do clube</SectionLabel>
-          {topScorers.every((p) => p.goals === 0) ? (
-            <p className="text-sm text-zinc-400">Nenhum gol na temporada.</p>
-          ) : (
+          {topScorers.every((p) => p.goals === 0) ? null : (
             topScorers
               .filter((p) => p.goals > 0)
               .map((p) => (
-                <div key={p.id} className="flex justify-between border-b border-[rgba(30,42,56,0.6)] py-2 text-sm text-zinc-200">
-                  <span>{p.name}</span>
-                  <span className="font-display font-semibold text-cyan-400">{p.goals}</span>
+                <div key={p.id} className="flex items-center gap-2 border-b border-[rgba(30,42,56,0.6)] py-1.5 text-sm text-zinc-200">
+                  <span className="truncate">{p.name}</span>
+                  <span className="font-display font-semibold text-amber-400">{p.goals}</span>
                 </div>
               ))
           )}
         </div>
+
       </div>
 
+      {/* Divisor entre a área de informações e a prancheta/formação */}
+      <hr className="mt-8 border-t border-[rgba(30,42,56,0.8)]" />
+
+      {/* Formação e titulares logo abaixo */}
       <div className="mt-8">
         <TacticsBoard />
       </div>
 
       {analyzing && nextOpp && (
         <OpponentModal game={game} opp={nextOpp} onClose={() => setAnalyzing(false)} />
+      )}
+      {viewClub && (
+        <ClubModal game={game} club={viewClub} onClose={() => setViewClub(null)} />
       )}
     </div>
   );

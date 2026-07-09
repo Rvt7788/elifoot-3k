@@ -71,9 +71,9 @@ export function PlayerPin({
       {!compact && (
         <>
           <span className="mt-0.5 max-w-[44px] truncate rounded bg-black/60 px-1 text-[8px] leading-tight text-white">
-            {p.foot === "canhoto" && <span className="text-sky-300">◂</span>}
+            {p.foot === "canhoto" && <span className="text-red-400">◂</span>}
             {p.name.split(" ").slice(-1)[0]}
-            {p.foot === "destro" && <span className="text-sky-300">▸</span>}
+            {p.foot === "destro" && <span className="text-sky-400">▸</span>}
           </span>
           <EnergyBar value={energy} className="mt-0.5 scale-75" />
         </>
@@ -101,13 +101,15 @@ export function EmptySlot({
 }
 
 export function PitchBackground({
-  className, children,
-}: { className?: string; children: React.ReactNode }) {
+  className, children, fill = false,
+}: { className?: string; children: React.ReactNode; fill?: boolean }) {
   return (
     <div
       className={className}
       style={{
-        aspectRatio: "3 / 4",
+        // fill: ocupa a altura do container (ex.: casar com a lista de titulares);
+        // padrão: mantém proporção 3/4 de um campo.
+        aspectRatio: fill ? undefined : "3 / 4",
         background:
           "repeating-linear-gradient(0deg, #14532d, #14532d 10%, #166534 10%, #166534 20%)",
       }}

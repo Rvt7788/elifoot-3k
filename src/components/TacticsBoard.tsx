@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStore, bichoCost, nextPlayableWeek } from "../store";
-import { bestXI, DEFAULT_TACTICS } from "../game/engine";
+import { bestXI, bestXIByPosition, DEFAULT_TACTICS } from "../game/engine";
 import { weekInfo } from "../game/cup";
 import type { Formation, Marking, Mentality, Player, Position } from "../types";
 import { FORMATIONS } from "../types";
@@ -13,6 +13,13 @@ const TIER_BADGE: Record<string, string> = {
   bagre: "", bom: "★", craque: "★★", extra: "★★★",
 };
 const POS_ORDER = { GOL: 0, DEF: 1, MEI: 2, ATA: 3 } as const;
+
+const sectorAvg = (squad: Player[], pos: Position) => {
+  const ps = squad.filter((p) => p.pos === pos);
+  return ps.length
+    ? (ps.reduce((s, p) => s + p.strength, 0) / ps.length).toFixed(1)
+    : "-";
+};
 const POS_KEYS = ["GOL", "DEF", "MEI", "ATA"] as const;
 
 function PlayerDetails({ p }: { p: Player }) {
@@ -52,6 +59,12 @@ function PlayerRow({
           <span className={`w-4 shrink-0 text-right tabular-nums ${selected ? "opacity-70" : "text-zinc-500"}`}>{p.number}</span>
           <b className={`shrink-0 ${selected ? "opacity-70" : "text-zinc-400"}`}>{p.pos}</b>
           <span className={`truncate ${suspendedNext ? "text-zinc-500 line-through" : ""}`}>{p.name}</span>
+          <span
+            className={`shrink-0 font-bold ${p.foot === "canhoto" ? "text-red-500" : "text-sky-400"}`}
+            title={p.foot === "canhoto" ? "Canhoto" : "Destro"}
+          >
+            {p.foot === "canhoto" ? "◀" : "▶"}
+          </span>
           <span className="shrink-0 text-amber-400">{TIER_BADGE[p.tier]}</span>
           {suspendedNext && <span className="shrink-0 text-[9px] font-bold text-red-400">SUSP</span>}
         </span>
@@ -111,7 +124,32 @@ export default function TacticsBoard() {
   const payBicho = useStore((s) => s.payBicho);
   const [sel, setSel] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [byEnergy, setByEnergy] = useState(false);
+  const [scaleBy, setScaleBy] = useState<"forca" | "posicao" | "energia">("forca");
+  const byEnergy = scaleBy === "energia";
+
+  // O campo (prancheta) deve terminar exatamente na última linha dos titulares.
+  // Medimos a posição real da lista de titulares e aplicamos a altura ao campo,
+  // em vez de chutar proporções CSS — funciona com qualquer fonte/zoom/nº de linhas.
+  const pitchRef = useRef<HTMLDivElement | null>(null);
+  const titularesListRef = useRef<HTMLDivElement | null>(null);
+  const [pitchHeight, setPitchHeight] = useState<number | null>(null);
+  useEffect(() => {
+    const measure = () => {
+      const pitch = pitchRef.current;
+      const list = titularesListRef.current;
+      if (!pitch || !list) return;
+      const h = Math.round(list.getBoundingClientRect().bottom - pitch.getBoundingClientRect().top);
+      if (h > 100) setPitchHeight(h);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (titularesListRef.current) ro.observe(titularesListRef.current);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  });
   const [editorOpen, setEditorOpen] = useState(false);
   // Resetar zera starters para montagem manual: enquanto o time tiver menos de
   // 11, mostramos o campo vazio em vez de cair automaticamente no melhor time.
@@ -122,7 +160,8 @@ export default function TacticsBoard() {
 
   // suspensão é por competição: descobre se o próximo jogo do usuário é copa ou liga
   const nextWeek = nextPlayableWeek(game);
-  const nextCompetition = nextWeek !== null && weekInfo(nextWeek).type === "cup" ? "cup" : "league";
+  // copa e continental compartilham o regime de suspensões de mata-mata
+  const nextCompetition = nextWeek !== null && weekInfo(nextWeek).type !== "league" ? "cup" : "league";
   const isSuspendedNext = (p: Player) =>
     nextCompetition === "cup" ? p.suspendedCup : p.suspendedLeague;
 
@@ -131,8 +170,9 @@ export default function TacticsBoard() {
   const kit = { bg: userClub.primaryColor, border: userClub.secondaryColor };
   const formation = game.formation ?? "4-4-2";
   const custom = game.customFormation;
-  const hasFullXI = (game.starters?.length ?? 0) >= 11;
-  const starters = hasFullXI ? game.starters : manualMode ? game.starters ?? [] : bestXI(squad, formation, false, "league", custom);
+  const savedStarters = game.starters ?? [];
+  const hasFullXI = savedStarters.length >= 11;
+  const starters = savedStarters;
   const titulares = squad
     .filter((p) => starters.includes(p.id))
     .sort((a, b) => POS_ORDER[a.pos] - POS_ORDER[b.pos] || b.strength - a.strength);
@@ -243,11 +283,12 @@ export default function TacticsBoard() {
   };
 
   return (
-    <div className="flex flex-row gap-3">
-      {/* Prancheta à esquerda: campo (visual) + números da formação abaixo + escalar por + reservas */}
-      <div className="w-[38%] shrink-0 sm:w-40">
+    <div className="flex flex-row items-start gap-3">
+      {/* Prancheta à esquerda: campo mais alto para terminar na altura do último titular. */}
+      <div className="flex w-[42%] shrink-0 flex-col sm:w-48">
         <p className="ui-label mb-1">Formação</p>
-        <PitchBackground className="relative w-full overflow-hidden rounded-lg">
+        <div ref={pitchRef} style={pitchHeight ? { height: pitchHeight } : undefined}>
+        <PitchBackground fill className={`relative w-full overflow-hidden rounded ${pitchHeight ? "h-full" : "aspect-[3/5]"}`}>
           {slots.map((s, i) =>
             s.player ? (
               <PlayerPin
@@ -273,19 +314,24 @@ export default function TacticsBoard() {
             ),
           )}
         </PitchBackground>
-        <div className="mb-2 mt-1.5 flex flex-wrap justify-between gap-x-1 gap-y-0.5">
+        </div>
+        <div className="mb-2 mt-4 grid grid-cols-3 gap-1">
           {(Object.keys(FORMATIONS) as Formation[]).map((f) => (
             <button
               key={f}
               onClick={() => setFormation(f)}
-              className={`country-tab !px-1 !text-[10px] ${formation === f ? "active" : ""}`}
+              className={`rounded px-2 py-1 text-[11px] ${
+                formation === f ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
+              }`}
             >
               {f}
             </button>
           ))}
           <button
             onClick={() => setEditorOpen(true)}
-            className={`country-tab !px-1 !text-[10px] ${formation === "custom" ? "active" : ""}`}
+            className={`rounded px-2 py-1 text-[11px] ${
+              formation === "custom" ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
+            }`}
             title="Criar ou editar sua própria formação"
           >
             {formation === "custom" ? "Editar" : "+ Criar"}
@@ -304,29 +350,43 @@ export default function TacticsBoard() {
           />
         )}
 
-        <div className="mt-2">
+        <div className="mt-4">
           <p className="ui-label mb-1">Escalar por</p>
-          <div className="flex gap-1">
+          <div className="flex gap-1.5">
             <button
               onClick={() => {
-                setByEnergy(false);
+                setScaleBy("forca");
                 setStarters(bestXI(squad, formation, false, "league", custom));
                 setManualMode(false);
               }}
-              className={`flex-1 rounded px-1.5 py-1 text-[11px] ${
-                !byEnergy && isBestActive ? "bg-emerald-600 text-white" : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"
+              className={`flex-1 rounded px-2 py-1 text-[11px] ${
+                scaleBy === "forca" && isBestActive ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
               }`}
             >
               Força
             </button>
             <button
               onClick={() => {
-                setByEnergy(true);
+                setScaleBy("posicao");
+                const { starters, slotOrder } = bestXIByPosition(squad, formation, "league", custom);
+                setStarters(starters);
+                setSlotOrder(slotOrder);
+                setManualMode(false);
+              }}
+              className={`flex-1 rounded px-2 py-1 text-[11px] ${
+                scaleBy === "posicao" && isBestActive ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
+              }`}
+            >
+              Posição
+            </button>
+            <button
+              onClick={() => {
+                setScaleBy("energia");
                 setStarters(bestXI(squad, formation, true, "league", custom));
                 setManualMode(false);
               }}
-              className={`flex-1 rounded px-1.5 py-1 text-[11px] ${
-                byEnergy && isBestActive ? "bg-emerald-600 text-white" : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"
+              className={`flex-1 rounded px-2 py-1 text-[11px] ${
+                scaleBy === "energia" && isBestActive ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
               }`}
             >
               Energia
@@ -348,37 +408,31 @@ export default function TacticsBoard() {
           )}
         </div>
 
-        <p className="mb-1 mt-3 text-xs font-bold text-zinc-500">
-          RESERVAS ({reservas.length})
-        </p>
-        <div>
-          {reservas.map((p) => (
-            <PlayerRow
-              key={p.id}
-              p={p}
-              selected={sel === p.id}
-              selColor={userClub.primaryColor}
-              onClick={() => clickPlayer(p.id)}
-              expanded={expanded === p.id}
-              onToggleExpand={() => toggleExpand(p.id)}
-              suspendedNext={isSuspendedNext(p)}
-            />
-          ))}
+        <div className="mt-2">
+          <p className="ui-label mb-1">Força por setor</p>
+          <div className="grid grid-cols-2 gap-1">
+            {POS_KEYS.map((s) => (
+              <div key={s} className="flex items-center justify-between rounded bg-zinc-800 px-2 py-1 text-[11px]">
+                <span className="text-zinc-400">{s}</span>
+                <b className="text-amber-400">{sectorAvg(titulares, s)}</b>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Ao lado: titulares, depois mentalidade + marcação/extras */}
       <div className="min-w-0 flex-1">
-        <p className="mb-1 text-xs font-bold" style={{ color: userClub.primaryColor }}>
+        <p className="mb-1 text-xs font-bold text-zinc-300">
           TITULARES ({titulares.length})
         </p>
-        <div className="mb-3">
+        <div ref={titularesListRef} className="mb-3">
           {titulares.map((p) => (
             <PlayerRow
               key={p.id}
               p={p}
               selected={sel === p.id}
-              selColor={userClub.primaryColor}
+              selColor="#3f3f46"
               onClick={() => clickPlayer(p.id)}
               expanded={expanded === p.id}
               onToggleExpand={() => toggleExpand(p.id)}
@@ -459,6 +513,27 @@ export default function TacticsBoard() {
                 }
               />
             </div>
+          </div>
+        </div>
+
+        {/* Reservas: logo abaixo de mentalidade e marcação */}
+        <div className="mt-4">
+          <p className="mb-1 text-xs font-bold text-zinc-500">
+            RESERVAS ({reservas.length})
+          </p>
+          <div>
+            {reservas.map((p) => (
+              <PlayerRow
+                key={p.id}
+                p={p}
+                selected={sel === p.id}
+                selColor="#3f3f46"
+                onClick={() => clickPlayer(p.id)}
+                expanded={expanded === p.id}
+                onToggleExpand={() => toggleExpand(p.id)}
+                suspendedNext={isSuspendedNext(p)}
+              />
+            ))}
           </div>
         </div>
       </div>

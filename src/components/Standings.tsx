@@ -1,12 +1,23 @@
 import { useState } from "react";
 import { useStore } from "../store";
 import { sortTable } from "../game/schedule";
-import { CUP_STAGE_NAMES, cupChampion, cupStageWeeks, type CupState, type CupTie } from "../game/cup";
+import {
+  CONT_STAGES, CONT_STAGE_NAMES, contStageWeeks, CUP_STAGE_NAMES, CUP_STAGES,
+  cupChampion, cupStageWeeks, type CupState, type CupTie,
+} from "../game/cup";
 import type { Club, TableRow } from "../types";
+import ClubModal from "./ClubModal";
+import { readableOn } from "../game/color";
 
-function CupBracket({ cup, clubs, userClubId }: { cup: CupState; clubs: Club[]; userClubId: string }) {
+function CupBracket({
+  cup, clubs, userClubId, stageNames, stageWeeks, totalStages, championLabel,
+}: {
+  cup: CupState; clubs: Club[]; userClubId: string;
+  stageNames: string[]; stageWeeks: (s: number) => [number, number];
+  totalStages: number; championLabel: string;
+}) {
   const name = (id: string) => clubs.find((c) => c.id === id)?.name ?? "?";
-  const champion = cupChampion(cup);
+  const champion = cupChampion(cup, totalStages);
   const TieRow = ({ t }: { t: CupTie }) => {
     const isUser = t.homeId === userClubId || t.awayId === userClubId;
     const cls = (id: string) =>
@@ -28,15 +39,15 @@ function CupBracket({ cup, clubs, userClubId }: { cup: CupState; clubs: Club[]; 
     <div className="mb-6">
       {champion && (
         <p className="mb-3 rounded bg-amber-950/40 px-3 py-2 text-center text-sm font-bold text-amber-400">
-          🏆 Campeão da Copa: {name(champion)}
+          🏆 {championLabel}: {name(champion)}
         </p>
       )}
       {cup.rounds.map((ties, s) => {
-        const [ida, volta] = cupStageWeeks(s);
+        const [ida, volta] = stageWeeks(s);
         return (
           <div key={s} className="mb-4">
             <h4 className="mb-1 text-sm font-bold text-amber-400">
-              {CUP_STAGE_NAMES[s]}{" "}
+              {stageNames[s]}{" "}
               <span className="text-xs font-normal text-zinc-500">
                 (semanas {ida} e {volta} · ida e volta)
               </span>
@@ -60,11 +71,13 @@ function DivisionTable({
   clubs,
   tableData,
   userClubId,
+  onSelect,
 }: {
   division: string;
   clubs: Club[];
   tableData: TableRow[];
   userClubId: string;
+  onSelect: (club: Club) => void;
 }) {
   const sortedTable = sortTable(tableData);
   return (
@@ -95,12 +108,14 @@ function DivisionTable({
             return (
               <tr
                 key={r.clubId}
-                className={`border-b border-zinc-800 ${zone} ${
-                  r.clubId === userClubId ? "bg-emerald-950/50 font-bold" : ""
+                onClick={() => c && onSelect(c)}
+                style={{ background: c.primaryColor, color: readableOn(c.primaryColor) }}
+                className={`cursor-pointer border-b border-black/40 hover:brightness-110 ${zone} ${
+                  r.clubId === userClubId ? "font-bold" : ""
                 }`}
               >
-                <td className="py-1 pl-2 pr-2 text-zinc-500">{i + 1}</td>
-                <td>{c?.name}</td>
+                <td className="py-1 pl-2 pr-2 opacity-70">{i + 1}</td>
+                <td className="hover:underline">{c?.name}</td>
                 <td className="text-center font-bold">{r.pts}</td>
                 <td className="text-center">{r.p}</td>
                 <td className="text-center">{r.w}</td>
@@ -118,31 +133,29 @@ function DivisionTable({
 
 export default function Standings() {
   const game = useStore((s) => s.game);
-  const [view, setView] = useState<"liga" | "copa">("liga");
+  const [view, setView] = useState<"liga" | "copa" | "continental">("liga");
+  const [selected, setSelected] = useState<Club | null>(null);
   if (!game) return null;
   const userClub = game.clubs.find((c) => c.id === game.userClubId)!;
+  const contName = ["BR", "AR"].includes(userClub.country) ? "Libertadores" : "Champions";
 
   // Render all active divisions in the save
   const divisions = Object.keys(game.tables).sort((a, b) => a.localeCompare(b));
 
+  const tabCls = (v: typeof view) =>
+    `rounded px-3 py-1 text-sm ${view === v ? "bg-emerald-600 font-semibold text-white" : "text-zinc-400 hover:text-zinc-200"}`;
+
   return (
     <div className="mx-auto max-w-2xl p-4">
-      <h2 className="mb-3 text-center text-lg font-bold uppercase tracking-wider text-zinc-200">
-        {view === "liga" ? "Classificação Geral" : "Copa Nacional"} — {userClub.country}
-      </h2>
-
       <div className="mb-4 flex justify-center gap-1">
-        <button
-          onClick={() => setView("liga")}
-          className={`rounded px-3 py-1 text-sm ${view === "liga" ? "btn-metal-tab" : "tab-button"}`}
-        >
+        <button onClick={() => setView("liga")} className={tabCls("liga")}>
           Liga
         </button>
-        <button
-          onClick={() => setView("copa")}
-          className={`rounded px-3 py-1 text-sm ${view === "copa" ? "btn-metal-tab" : "tab-button"}`}
-        >
-          🏆 Copa
+        <button onClick={() => setView("copa")} className={tabCls("copa")}>
+          🏆 Copa Nacional
+        </button>
+        <button onClick={() => setView("continental")} className={tabCls("continental")}>
+          🌎 Copa Continental
         </button>
       </div>
 
@@ -155,16 +168,45 @@ export default function Standings() {
               clubs={game.clubs}
               tableData={game.tables[div] ?? []}
               userClubId={game.userClubId}
+              onSelect={setSelected}
             />
           ))}
           <p className="mt-2 text-xs text-zinc-500 text-center">
             🟩 Acesso / título (2 primeiros) · 🟥 Rebaixamento (2 últimos)
           </p>
         </>
-      ) : game.cup ? (
-        <CupBracket cup={game.cup} clubs={game.clubs} userClubId={game.userClubId} />
+      ) : view === "copa" ? (
+        game.cup ? (
+          <CupBracket
+            cup={game.cup}
+            clubs={game.clubs}
+            userClubId={game.userClubId}
+            stageNames={CUP_STAGE_NAMES}
+            stageWeeks={cupStageWeeks}
+            totalStages={CUP_STAGES}
+            championLabel="Campeão da Copa"
+          />
+        ) : (
+          <p className="text-center text-sm text-zinc-500">A copa começa após a 5ª rodada.</p>
+        )
+      ) : game.continental ? (
+        <CupBracket
+          cup={game.continental}
+          clubs={game.clubs}
+          userClubId={game.userClubId}
+          stageNames={CONT_STAGE_NAMES}
+          stageWeeks={contStageWeeks}
+          totalStages={CONT_STAGES}
+          championLabel={`Campeão da ${contName}`}
+        />
       ) : (
-        <p className="text-center text-sm text-zinc-500">A copa começa após a 5ª rodada.</p>
+        <p className="text-center text-sm text-zinc-500">
+          A continental será sorteada na próxima temporada.
+        </p>
+      )}
+
+      {selected && (
+        <ClubModal game={game} club={selected} onClose={() => setSelected(null)} />
       )}
     </div>
   );

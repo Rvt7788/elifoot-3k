@@ -293,9 +293,9 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
                     return { game: { ...state.game, formation: f } };
                   });
                 }}
-                className={`flex-1 rounded px-2.5 py-1.5 text-xs transition-all ${
+                className={`flex-1 whitespace-nowrap rounded px-1 py-1.5 text-[10px] transition-all sm:px-2.5 sm:text-xs ${
                   formation === f
-                    ? "bg-cyan-600 font-bold border border-cyan-400"
+                    ? "bg-emerald-600 font-bold border border-emerald-400"
                     : "bg-zinc-800 hover:bg-zinc-700"
                 }`}
               >
@@ -391,11 +391,11 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
                       onClick={() => pickOut(l.playerId)}
                       className={`mb-1 flex w-full justify-between rounded px-2 py-1 text-left text-xs transition-all ${
                         isSelected
-                          ? "bg-cyan-600 border border-cyan-400 font-bold"
+                          ? "bg-emerald-600 border border-emerald-400 font-bold"
                           : "bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40"
                       }`}
                     >
-                      <span><span className="tabular-nums text-zinc-500">{p.number}</span> {p.pos} {p.name} ({p.strength}) <span className="text-sky-400">{p.foot === "canhoto" ? "C" : "D"}</span></span>
+                      <span><span className="tabular-nums text-zinc-500">{p.number}</span> {p.pos} {p.name} ({p.strength}) <span className={p.foot === "canhoto" ? "text-red-500" : "text-sky-400"}>{p.foot === "canhoto" ? "◀" : "▶"}</span></span>
                       <EnergyBar value={l.energy} />
                     </button>
                   );
@@ -420,12 +420,12 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
                       onClick={() => pickIn(l.playerId)}
                       className={`mb-1 flex w-full justify-between rounded px-2 py-1 text-left text-xs transition-all ${
                         isSelected
-                          ? "bg-cyan-600 border border-cyan-400 font-bold"
+                          ? "bg-emerald-600 border border-emerald-400 font-bold"
                           : "bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40"
                       }`}
                       title={!isCompatible ? "Só é possível repor um goleiro por outro goleiro" : undefined}
                     >
-                      <span><span className="tabular-nums text-zinc-500">{p.number}</span> {p.pos} {p.name} ({p.strength}) <span className="text-sky-400">{p.foot === "canhoto" ? "C" : "D"}</span></span>
+                      <span><span className="tabular-nums text-zinc-500">{p.number}</span> {p.pos} {p.name} ({p.strength}) <span className={p.foot === "canhoto" ? "text-red-500" : "text-sky-400"}>{p.foot === "canhoto" ? "◀" : "▶"}</span></span>
                       <EnergyBar value={l.energy} />
                     </button>
                   );

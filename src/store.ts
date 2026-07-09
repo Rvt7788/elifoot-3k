@@ -1,14 +1,16 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { CustomFormation, Fixture, Formation, GameState, LiveMatch, Player, Tactics, TrainingIntensity } from "./types";
+import type { Club, CustomFormation, Fixture, Formation, GameState, LiveMatch, Player, Tactics, TrainingIntensity } from "./types";
 import { shapeOf } from "./types";
 import { applyWeeklyGain, RECOVERY } from "./game/training";
 import {
-  applyCupResults, drawCup, leagueWeek, nextCupWeek, tiesForLeg, weekInfo,
+  applyCupResults, CONT_STAGES, drawContinental, drawCup, leagueWeek,
+  nextContWeek, nextCupWeek, tiesForLeg, weekInfo,
 } from "./game/cup";
+import continentalData from "./data/continental.json";
 import { newGame, assignShirtNumbers } from "./game/seeder";
 import { createLiveMatch, simulateMinute } from "./game/engine";
-import { applyResult, sortTable } from "./game/schedule";
+import { applyResult, buildLeagueFixtures, initTable, sortTable } from "./game/schedule";
 import { mulberry32 } from "./game/rng";
 import { aiAcceptChance, askingPrice } from "./game/market";
 
@@ -94,12 +96,14 @@ export const nextLeagueWeek = (g: GameState): number | null => {
 // jogo encerrado) — nesse caso a classificação é decidida numa disputa de pênaltis
 // interativa antes de encerrar a rodada.
 export function needsUserShootout(g: GameState, live: LiveMatch[] | null): boolean {
-  if (!live || !g.cup) return false;
+  if (!live) return false;
   const info = weekInfo(g.week);
-  if (info.type !== "cup" || info.leg !== 2) return false;
+  if (info.type === "league" || info.leg !== 2) return false;
+  const knockout = info.type === "cup" ? g.cup : g.continental;
+  if (!knockout) return false;
   const m = live.find((x) => x.homeId === g.userClubId || x.awayId === g.userClubId);
   if (!m || !m.finished) return false;
-  const tie = g.cup.rounds[info.stage]?.find(
+  const tie = knockout.rounds[info.stage]?.find(
     (t) => t.homeId === g.userClubId || t.awayId === g.userClubId,
   );
   if (!tie || tie.winnerId) return false;
@@ -123,13 +127,14 @@ export const isCupEliminated = (g: GameState): boolean => {
   );
 };
 
-// Próxima semana a disputar, considerando liga e copa intercaladas no calendário.
+// Próxima semana a disputar, considerando liga, copa e continental intercaladas.
 export const nextPlayableWeek = (g: GameState): number | null => {
-  const league = nextLeagueWeek(g);
-  const cup = g.cup ? nextCupWeek(g.cup) : null;
-  if (league === null) return cup;
-  if (cup === null) return league;
-  return Math.min(league, cup);
+  const candidates = [
+    nextLeagueWeek(g),
+    g.cup ? nextCupWeek(g.cup) : null,
+    g.continental ? nextContWeek(g.continental) : null,
+  ].filter((w): w is number => w !== null);
+  return candidates.length ? Math.min(...candidates) : null;
 };
 
 export const useStore = create<Store>()(
@@ -215,26 +220,48 @@ export const useStore = create<Store>()(
       startMatchday: () => {
         let g = get().game;
         if (!g) return;
-        // temporada anterior toda disputada (liga e copa): reinicia o calendário,
-        // sorteia nova copa e credita o aporte da nova temporada
+        // temporada anterior toda disputada (liga e copas): aplica acesso e
+        // rebaixamento, reconstrói o calendário, sorteia novas copas e credita o
+        // aporte da nova temporada
         if (nextPlayableWeek(g) === null) {
           const userClub = g.clubs.find((c) => c.id === g!.userClubId)!;
+          const seasonRng = mulberry32((g.seed ^ ((g.season + 1) * 48271)) >>> 0);
+          // acesso/rebaixamento: 2 últimos da Série A trocam com os 2 primeiros da B
+          const finalA = sortTable(g.tables["Série A"] ?? []);
+          const finalB = sortTable(g.tables["Série B"] ?? []);
+          const relegated = new Set(finalA.slice(-2).map((r) => r.clubId));
+          const promoted = new Set(finalB.slice(0, 2).map((r) => r.clubId));
+          const clubs = g.clubs.map((c) =>
+            relegated.has(c.id) ? { ...c, division: "Série B" }
+            : promoted.has(c.id) ? { ...c, division: "Série A" }
+            : c,
+          );
+          const countryClubs = clubs.filter((c) => c.country === userClub.country);
           g = {
             ...g,
+            clubs,
             season: g.season + 1,
             week: 1,
-            fixtures: g.fixtures.map((f) => ({ ...f, played: false, homeScore: undefined, awayScore: undefined })),
+            // divisões mudaram: novo sorteio de confrontos da liga
+            fixtures: buildLeagueFixtures(seasonRng, countryClubs),
             tables: Object.fromEntries(
-              Object.entries(g.tables).map(([div, rows]) => [
-                div, rows.map((r) => ({ ...r, pts: 0, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0 })),
+              ["Série A", "Série B"].map((div) => [
+                div, initTable(countryClubs.filter((c) => c.division === div)),
               ]),
             ),
             budget: g.budget + seasonRevenue(userClub.baseBudget),
             players: g.players.map((p) => ({ ...p, gained: 0 })),
             cup: drawCup(
-              mulberry32((g.seed ^ ((g.season + 1) * 48271)) >>> 0),
-              g.clubs.filter((c) => c.country === userClub.country && c.division === "Série A").map((c) => c.id),
-              g.clubs.filter((c) => c.country === userClub.country && c.division === "Série B").map((c) => c.id),
+              seasonRng,
+              countryClubs.filter((c) => c.division === "Série A").map((c) => c.id),
+              countryClubs.filter((c) => c.division === "Série B").map((c) => c.id),
+            ),
+            continental: drawContinental(
+              mulberry32((g.seed ^ ((g.season + 1) * 79087)) >>> 0),
+              clubs, g.userClubId,
+              continentalData as unknown as Record<string, Record<string, string[]>>,
+              // classificados: os 4 primeiros da Série A na tabela final da temporada
+              finalA.slice(0, 4).map((r) => r.clubId),
             ),
           };
           set({ game: g });
@@ -244,11 +271,13 @@ export const useStore = create<Store>()(
         if (g.week !== week) set({ game: { ...g, week } });
         const userClub = g.clubs.find((c) => c.id === g!.userClubId)!;
         const info = weekInfo(week);
-        // semana de copa: confrontos da perna atual; semana de liga: jogos da rodada
+        // semana de copa/continental: confrontos da perna atual; liga: jogos da rodada
         const pairs: { homeId: string; awayId: string }[] =
           info.type === "cup" && g.cup
             ? tiesForLeg(g.cup, info.stage, info.leg)
-            : weekFixtures(g, week);
+            : info.type === "continental" && g.continental
+              ? tiesForLeg(g.continental, info.stage, info.leg)
+              : weekFixtures(g, week);
         // o jogo do usuário primeiro; depois os da divisão dele
         const divOrder = (f: { homeId: string; awayId: string }) => {
           if (f.homeId === g!.userClubId || f.awayId === g!.userClubId) return -1;
@@ -256,7 +285,8 @@ export const useStore = create<Store>()(
           return div === userClub.division ? 0 : 1;
         };
         const sorted = [...pairs].sort((a, b) => divOrder(a) - divOrder(b));
-        const matchCompetition = info.type === "cup" ? "cup" : "league";
+        // continental usa o mesmo regime de suspensões da copa (competição mata-mata)
+        const matchCompetition = info.type === "league" ? "league" : "cup";
         const live = sorted.map((f) =>
           createLiveMatch(
             f.homeId, f.awayId,
@@ -271,6 +301,10 @@ export const useStore = create<Store>()(
             f.homeId === g.userClubId ? g.slotOrder : undefined,
             f.awayId === g.userClubId ? g.slotOrder : undefined,
             matchCompetition,
+            f.homeId === g.userClubId ? g.formation : undefined,
+            f.awayId === g.userClubId ? g.formation : undefined,
+            f.homeId === g.userClubId ? g.customFormation : undefined,
+            f.awayId === g.userClubId ? g.customFormation : undefined,
           ),
         );
         set({ live, lastResults: null, liveDivision: null, paused: false });
@@ -429,16 +463,23 @@ export const useStore = create<Store>()(
         const { game, live, liveDivision } = get();
         if (!game || !live) return;
         const info = weekInfo(game.week);
-        const isCup = info.type === "cup" && !!game.cup;
+        const isContinental = info.type === "continental" && !!game.continental;
+        const isCup = (info.type === "cup" && !!game.cup) || isContinental;
         let fixtures = game.fixtures;
         let tables = game.tables;
         let cup = game.cup;
+        let continental = game.continental;
         let cupPrize = 0;
-        if (isCup && info.type === "cup") {
-          // grava os placares na copa; ao fechar a volta define classificados
-          // (pênaltis em agregado empatado) e sorteia a fase seguinte
-          cup = JSON.parse(JSON.stringify(game.cup)) as typeof game.cup;
-          const ties = tiesForLeg(cup, info.stage, info.leg);
+        if (isCup && info.type !== "league" as string) {
+          // grava os placares no mata-mata (copa ou continental); ao fechar a volta
+          // define classificados (pênaltis em agregado empatado) e sorteia a fase seguinte
+          const knockout = JSON.parse(
+            JSON.stringify(isContinental ? game.continental : game.cup),
+          ) as typeof game.cup;
+          if (isContinental) continental = knockout;
+          else cup = knockout;
+          const totalStages = isContinental ? CONT_STAGES : undefined;
+          const ties = tiesForLeg(knockout, info.stage, info.leg);
           const results = ties.flatMap((t) => {
             const m = live.find((x) => x.homeId === t.homeId && x.awayId === t.awayId);
             return m ? [{ tieIndex: t.tieIndex, homeScore: m.homeScore, awayScore: m.awayScore }] : [];
@@ -446,35 +487,44 @@ export const useStore = create<Store>()(
           const rng = mulberry32((game.seed ^ (game.week * 15485863)) >>> 0);
           // vencedor da disputa de pênaltis interativa (empate no agregado do usuário)
           const decided = userTieWinnerId
-            ? cup.rounds[info.stage]
+            ? knockout.rounds[info.stage]
                 .map((t, i) => ({ t, i }))
                 .filter(({ t }) => t.homeId === game.userClubId || t.awayId === game.userClubId)
                 .map(({ i }) => ({ tieIndex: i, winnerId: userTieWinnerId }))
             : undefined;
-          applyCupResults(rng, cup, info.stage, info.leg, results, decided);
+          applyCupResults(rng, knockout, info.stage, info.leg, results, decided, totalStages);
           const userClub2 = game.clubs.find((c) => c.id === game.userClubId)!;
           const gate = matchdayRevenue(userClub2.baseBudget);
-          // premiação por jogo: vencer uma partida de copa rende mais que um jogo normal
+          // premiação por jogo: vencer uma partida de mata-mata rende mais que um jogo normal
           const userMatch = live.find(
             (m) => m.homeId === game.userClubId || m.awayId === game.userClubId,
           );
           if (userMatch) {
             const myScore = userMatch.homeId === game.userClubId ? userMatch.homeScore : userMatch.awayScore;
             const oppScore = userMatch.homeId === game.userClubId ? userMatch.awayScore : userMatch.homeScore;
-            if (myScore > oppScore) cupPrize += Math.round(gate * 1.5);
+            if (myScore > oppScore) cupPrize += Math.round(gate * (isContinental ? 2 : 1.5));
           }
           // premiação por chaveamento: avançar de fase paga forte e escala até a final
           if (info.leg === 2) {
-            const userTie = cup.rounds[info.stage].find(
+            const userTie = knockout.rounds[info.stage].find(
               (t) => t.homeId === game.userClubId || t.awayId === game.userClubId,
             );
             if (userTie?.winnerId === game.userClubId) {
-              // preliminar, 32, oitavas, quartas, semi: multiplicador crescente da bilheteria
-              const STAGE_PRIZE = [3, 5, 8, 12, 20];
-              cupPrize +=
-                info.stage === 5
-                  ? seasonRevenue(userClub2.baseBudget) * 2 // campeão da copa
-                  : gate * STAGE_PRIZE[info.stage];
+              if (isContinental) {
+                // oitavas, quartas, semi: prêmios continentais são os mais gordos do jogo
+                const STAGE_PRIZE = [10, 15, 25];
+                cupPrize +=
+                  info.stage === CONT_STAGES - 1
+                    ? seasonRevenue(userClub2.baseBudget) * 3 // campeão continental
+                    : gate * STAGE_PRIZE[info.stage];
+              } else {
+                // preliminar, 32, oitavas, quartas, semi: multiplicador crescente da bilheteria
+                const STAGE_PRIZE = [3, 5, 8, 12, 20];
+                cupPrize +=
+                  info.stage === 5
+                    ? seasonRevenue(userClub2.baseBudget) * 2 // campeão da copa
+                    : gate * STAGE_PRIZE[info.stage];
+              }
             }
           }
         } else {
@@ -538,7 +588,7 @@ export const useStore = create<Store>()(
         const revenue = playedHome ? matchdayRevenue(userClub.baseBudget) : 0;
         set({
           game: {
-            ...game, fixtures, tables, players, cup,
+            ...game, fixtures, tables, players, cup, continental,
             week: game.week + 1,
             budget: game.budget + revenue + cupPrize,
             // bicho vale só para a partida da rodada: pago, consumido, resetado
@@ -552,7 +602,7 @@ export const useStore = create<Store>()(
     }),
     {
       name: "retro-manager-save",
-      version: 7,
+      version: 8,
       // saves antigos: preenche campos de treinamento/pé/número/suspensão e encaixa a copa no calendário
       migrate: (state: any) => {
         const g = state?.game;
@@ -580,6 +630,24 @@ export const useStore = create<Store>()(
               mulberry32((g.seed ^ (g.season * 48271)) >>> 0),
               g.clubs.filter((c: any) => c.country === userClub.country && c.division === "Série A").map((c: any) => c.id),
               g.clubs.filter((c: any) => c.country === userClub.country && c.division === "Série B").map((c: any) => c.id),
+            );
+          }
+          // copa continental entrou no calendário: sorteia para saves antigos
+          if (!g.continental) {
+            const userClub2 = g.clubs.find((c: any) => c.id === g.userClubId);
+            const serieA = (g.clubs as Club[]).filter(
+              (c: any) => c.country === userClub2.country && c.division === "Série A",
+            );
+            const table = g.tables?.["Série A"] ?? [];
+            // save em andamento: usa a classificação atual; sem jogos, o orçamento
+            const top4 = table.some((r: any) => r.p > 0)
+              ? sortTable(table).slice(0, 4).map((r: any) => r.clubId)
+              : serieA.sort((a, b) => b.baseBudget - a.baseBudget).slice(0, 4).map((c) => c.id);
+            g.continental = drawContinental(
+              mulberry32((g.seed ^ (g.season * 79087)) >>> 0),
+              g.clubs, g.userClubId,
+              continentalData as unknown as Record<string, Record<string, string[]>>,
+              top4,
             );
           }
           // reancora as rodadas da liga no calendário intercalado atual (idempotente:

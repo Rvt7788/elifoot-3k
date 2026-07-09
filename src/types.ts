@@ -172,4 +172,5 @@ export interface GameState {
   fixtures: Fixture[]; // liga nacional do país do usuário (A e B)
   tables: Record<string, TableRow[]>; // por divisão
   cup: CupState; // copa nacional (mata-mata de ida e volta com os 40 clubes do país)
+  continental?: CupState; // copa continental (Libertadores/Champions, 16 clubes históricos)
 }

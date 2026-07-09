@@ -2,32 +2,28 @@ import type { Club, GameState, Player, Position, Tier, Trait } from "../types";
 import { mulberry32, randInt, chance, pick, type Rng } from "./rng";
 import { playerName } from "./names";
 import { buildLeagueFixtures, initTable } from "./schedule";
-import { drawCup } from "./cup";
+import { drawCup, drawContinental } from "./cup";
 import { bestXI, DEFAULT_TACTICS } from "./engine";
 import clubsData from "../data/clubs.json";
 import rostersData from "../data/rosters.json";
+import continentalData from "../data/continental.json";
 
 const rosters = rostersData as Record<string, Record<Position, string[]>>;
 
-// Cada elenco tem um tamanho variável entre 16 e 22 jogadores, mantendo a
-// proporção base 3 GOL / 7 DEF / 7 MEI / 5 ATA (22 titulares "cheios"); times
-// menores cortam reservas nas posições de linha, nunca abaixo de 2 goleiros.
+const MIN_GOALKEEPERS = 3;
+const MIN_LINE_PLAYERS_BY_POS = 5;
+const LINE_POSITIONS: Position[] = ["DEF", "MEI", "ATA"];
+
+// Cada elenco nasce com profundidade m�nima nas posi��es de linha. Isso impede
+// saves em que uma forma��o v�lida fica imposs�vel por falta de defensores,
+// meias ou atacantes dispon�veis no clube.
 function squadShape(rng: Rng): Position[] {
-  const size = randInt(rng, 16, 22);
   const base: Position[] = [
-    "GOL", "GOL", "GOL",
-    "DEF", "DEF", "DEF", "DEF", "DEF", "DEF", "DEF",
-    "MEI", "MEI", "MEI", "MEI", "MEI", "MEI", "MEI",
-    "ATA", "ATA", "ATA", "ATA", "ATA",
+    ...Array.from({ length: MIN_GOALKEEPERS }, () => "GOL" as const),
+    ...LINE_POSITIONS.flatMap((pos) => Array.from({ length: MIN_LINE_PLAYERS_BY_POS }, () => pos)),
   ];
-  while (base.length > size) {
-    // remove reservas de linha (nunca a última vaga de GOL, DEF, MEI ou ATA)
-    const removable = (["DEF", "MEI", "ATA"] as const).filter(
-      (pos) => base.filter((p) => p === pos).length > 2,
-    );
-    const posToCut = removable.length > 0 ? pick(rng, removable) : "DEF";
-    base.splice(base.lastIndexOf(posToCut), 1);
-  }
+  const extraSlots = randInt(rng, 0, 4);
+  for (let i = 0; i < extraSlots; i++) base.push(pick(rng, LINE_POSITIONS));
   return base;
 }
 
@@ -49,11 +45,13 @@ function targetStrength(division: string, power: number): number {
     : 15 + power * 10; // 15 (pior da B) .. 25 (melhor da B)
 }
 
-// Tier é só rótulo (badge/traço), derivado da força final do jogador — não é
-// mais ele quem decide a força.
-function tierFromStrength(strength: number): Tier {
-  if (strength >= 33) return "craque";
-  if (strength >= 22) return "bom";
+// Tier é só rótulo (badge de estrela / traço) e NÃO depende da força: craque é
+// raridade, não "quem é forte". Assim um craque pode surgir em qualquer time e
+// nem todo titular de Série A vira estrela. (extra é atribuído à parte.)
+function rollTier(rng: Rng): Tier {
+  const r = rng();
+  if (r < 0.03) return "craque"; // ~3% ★★
+  if (r < 0.15) return "bom"; // ~12% ★
   return "bagre";
 }
 
@@ -88,8 +86,10 @@ export function makePlayer(
   const strength = young
     ? randInt(rng, 10, 15)
     : Math.max(8, Math.min(44, Math.round(target + spread)));
-  const tier = tierFromStrength(strength);
-  const cap = young ? 46 : Math.max(capFor(tier), strength + randInt(rng, 2, 8));
+  const tier = rollTier(rng);
+  // teto de evolução: parte da força atual + folga; craque tem mais talento a crescer
+  const tierBonus = tier === "craque" ? randInt(rng, 6, 12) : tier === "bom" ? randInt(rng, 3, 7) : randInt(rng, 1, 4);
+  const cap = young ? 46 : Math.min(50, Math.max(capFor(tier), strength + tierBonus));
   const age = young ? 17 : randInt(rng, 18, 34);
   const traits: Trait[] = chance(rng, tier === "bagre" ? 0.25 : 0.7)
     ? [pick(rng, TRAITS_BY_POS[pos])]
@@ -224,6 +224,16 @@ export function newGame(seed: number, userClubId: string): GameState {
       rng,
       countryClubs.filter((c) => c.division === "Série A").map((c) => c.id),
       countryClubs.filter((c) => c.division === "Série B").map((c) => c.id),
+    ),
+    continental: drawContinental(
+      rng, clubs, userClubId,
+      continentalData as unknown as Record<string, Record<string, string[]>>,
+      // temporada 1 (sem tabela): os 4 maiores orçamentos da Série A do país
+      countryClubs
+        .filter((c) => c.division === "Série A")
+        .sort((a, b) => b.baseBudget - a.baseBudget)
+        .slice(0, 4)
+        .map((c) => c.id),
     ),
   };
 }

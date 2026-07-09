@@ -276,9 +276,9 @@ h1, h2, h3, .font-display {
 }
 .country-tab:hover { color: var(--metal-300); }
 .country-tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-  text-shadow: 0 0 10px rgba(34, 211, 238, 0.45);
+  color: #34d399; /* emerald-400: cor de ação/positivo */
+  border-bottom-color: #34d399;
+  text-shadow: 0 0 10px rgba(52, 211, 153, 0.45);
 }
 
 /* Linha de clube: sem caixa — hairline entre linhas, marcador cyan na seleção */
@@ -294,14 +294,14 @@ h1, h2, h3, .font-display {
   border-bottom: 1px solid rgba(30, 42, 56, 0.6);
   transition: background 0.12s, border-color 0.12s;
 }
-.club-row:hover { background: rgba(34, 211, 238, 0.04); }
+.club-row:hover { background: rgba(52, 211, 153, 0.05); }
 .club-row.selected {
-  border-left-color: var(--accent);
-  background: linear-gradient(90deg, rgba(34, 211, 238, 0.1), transparent 70%);
+  border-left-color: #34d399;
+  background: linear-gradient(90deg, rgba(52, 211, 153, 0.12), transparent 70%);
 }
 .club-row.selected .club-name {
-  color: var(--accent);
-  text-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+  color: #34d399;
+  text-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
 }
 
 /* CTA chanfrado, metálico com contorno neon */
@@ -313,15 +313,15 @@ h1, h2, h3, .font-display {
   text-transform: uppercase;
   color: var(--metal-100);
   background: linear-gradient(180deg, #17222f, #0b1219);
-  border: 1px solid var(--accent-dim);
+  border: 1px solid #0f766e; /* emerald-700 */
   clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
   transition: all 0.15s;
 }
 .btn-cta:not(:disabled):hover {
   color: #fff;
-  border-color: var(--accent);
-  box-shadow: 0 0 18px rgba(34, 211, 238, 0.35), inset 0 0 12px rgba(34, 211, 238, 0.12);
-  text-shadow: 0 0 8px rgba(34, 211, 238, 0.6);
+  border-color: #34d399;
+  box-shadow: 0 0 18px rgba(52, 211, 153, 0.35), inset 0 0 12px rgba(52, 211, 153, 0.12);
+  text-shadow: 0 0 8px rgba(52, 211, 153, 0.6);
 }
 .btn-cta:disabled { opacity: 0.35; }
 

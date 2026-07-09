@@ -86,8 +86,17 @@ export default function App() {
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur">
         {/* mobile: 3 linhas empilhadas (logo, abas, iniciar rodada); md+: 1 linha centralizada */}
-        <div className="mx-auto flex max-w-5xl flex-col items-center gap-1.5 px-3 py-2 md:flex-row md:justify-center md:gap-4">
-          <img src="/elifoot3k.png" alt="Elifoot 3k" className="h-16 w-auto" />
+        <div className="mx-auto flex max-w-5xl flex-col items-center gap-1.5 px-3 py-2 md:flex-row md:flex-wrap md:justify-center md:gap-4">
+          <img
+            src="/elifoot3k.png"
+            alt="Elifoot 3k"
+            className="h-16 w-auto"
+            style={{
+              // feather: bordas da logo se dissolvem no fundo em todas as direções
+              WebkitMaskImage: "radial-gradient(ellipse 75% 75% at 50% 50%, black 60%, transparent 100%)",
+              maskImage: "radial-gradient(ellipse 75% 75% at 50% 50%, black 60%, transparent 100%)",
+            }}
+          />
           <div className="flex w-full items-center gap-0.5 md:w-auto">
             {TABS.map((t) => (
               <button
@@ -110,10 +119,12 @@ export default function App() {
               <IconGear className="h-5 w-5" />
             </button>
           </div>
-          {showHeaderBtn && (
+          {/* Botão só aparece no cabeçalho durante a rodada ao vivo (Ao vivo / Encerrar).
+              O "Iniciar jogo" fica dentro da seção Próximo jogo, na tela do clube. */}
+          {liveRunning && showHeaderBtn && (
             <button
               onClick={headerBtnOnClick}
-              className={`flex items-center gap-2 px-4 py-2 text-base font-semibold ${headerBtnClass}`}
+              className={`flex items-center justify-center gap-2 px-4 py-2 text-base font-semibold md:w-full ${headerBtnClass}`}
             >
               {headerBtnIcon}
               {headerBtnLabel}
@@ -133,7 +144,14 @@ export default function App() {
         />
       )}
 
-      {tab === "clube" && <ClubHome />}
+      {tab === "clube" && (
+        <ClubHome
+          onStartMatchday={() => {
+            startMatchday();
+            setTab("rodada");
+          }}
+        />
+      )}
       {tab === "rodada" && <MatchDay onFinishRound={() => setTab("clube")} />}
       {tab === "tabela" && <Standings />}
       {tab === "elenco" && <Squad />}

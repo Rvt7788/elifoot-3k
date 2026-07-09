@@ -4,14 +4,16 @@ import type { Club, Fixture, LiveMatch, MatchEvent } from "../types";
 import TacticsModal from "./TacticsModal";
 import { playGoal, playGoalConceded, playRed } from "../game/sound";
 import { distinctPair } from "../game/color";
-import { weekInfo, tiesForLeg, CUP_STAGE_NAMES } from "../game/cup";
+import { weekInfo, tiesForLeg, CUP_STAGE_NAMES, CONT_STAGE_NAMES } from "../game/cup";
 
-// Título da semana: rodada da liga ou fase da copa (ida/volta)
+// Título da semana: rodada da liga, fase da copa ou da continental (ida/volta)
 function weekLabel(week: number): string {
   const info = weekInfo(week);
-  return info.type === "cup"
-    ? `🏆 Copa Nacional — ${CUP_STAGE_NAMES[info.stage]} · ${info.leg === 1 ? "ida" : "volta"}`
-    : `Rodada ${info.round}`;
+  if (info.type === "cup")
+    return `🏆 Copa Nacional — ${CUP_STAGE_NAMES[info.stage]} · ${info.leg === 1 ? "ida" : "volta"}`;
+  if (info.type === "continental")
+    return `🌎 Continental — ${CONT_STAGE_NAMES[info.stage]} · ${info.leg === 1 ? "ida" : "volta"}`;
+  return `Rodada ${info.round}`;
 }
 
 const BASE_TICK_MS = 350; // 1 minuto de jogo por tick em 1×
@@ -308,7 +310,7 @@ function MatchDetailModal({
                 return (
                   <div key={l.playerId} className={`flex items-center justify-between ${l.sentOff ? "text-zinc-600 line-through" : l.subbedOut ? "text-zinc-500" : "text-zinc-300"}`}>
                     <span><span className="tabular-nums text-zinc-500">{p?.number}</span> {p?.pos} {p?.name}</span>
-                    <span className="text-cyan-400 text-[10px]">{p?.strength}</span>
+                    <span className="text-amber-400 text-[10px]">{p?.strength}</span>
                   </div>
                 );
               })}
@@ -323,7 +325,7 @@ function MatchDetailModal({
                 return (
                   <div key={l.playerId} className={`flex items-center justify-between ${l.sentOff ? "text-zinc-600 line-through" : l.subbedOut ? "text-zinc-500" : "text-zinc-300"}`}>
                     <span><span className="tabular-nums text-zinc-500">{p?.number}</span> {p?.pos} {p?.name}</span>
-                    <span className="text-cyan-400 text-[10px]">{p?.strength}</span>
+                    <span className="text-amber-400 text-[10px]">{p?.strength}</span>
                   </div>
                 );
               })}
@@ -424,10 +426,11 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
     if (!lastResults) {
       const week = nextPlayableWeek(game);
       const info = week !== null ? weekInfo(week) : null;
-      const isCup = info?.type === "cup";
+      const isCup = info?.type === "cup" || info?.type === "continental";
+      const knockout = info?.type === "cup" ? game.cup : info?.type === "continental" ? game.continental : undefined;
       const upcoming: { homeId: string; awayId: string }[] =
         week === null ? []
-        : isCup && game.cup ? tiesForLeg(game.cup, (info as any).stage, (info as any).leg)
+        : isCup && knockout ? tiesForLeg(knockout, (info as any).stage, (info as any).leg)
         : weekFixtures(game, week);
       return (
         <div className="mx-auto max-w-4xl p-4">
@@ -479,7 +482,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
     );
     // game.week já foi incrementado ao encerrar a rodada: a semana disputada é a anterior
     const lastInfo = weekInfo(game.week - 1);
-    const lastIsCup = lastInfo.type === "cup";
+    const lastIsCup = lastInfo.type !== "league";
     return (
       <div className="mx-auto max-w-4xl p-4">
         <p className={`mb-4 text-center text-lg font-bold uppercase tracking-wide ${lastIsCup ? "text-amber-400" : "text-zinc-200"}`}>
@@ -543,7 +546,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
     (m) => m.homeId === game.userClubId || m.awayId === game.userClubId,
   );
 
-  const liveIsCup = weekInfo(game.week).type === "cup";
+  const liveIsCup = weekInfo(game.week).type !== "league";
 
   const openTactics = () => {
     setPaused(true);

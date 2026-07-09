@@ -49,21 +49,31 @@ export default function NewGame() {
         src="/elifoot3k.png"
         alt="Elifoot 3K — Manager de futebol do futuro"
         className="mx-auto mb-8 w-full max-w-md"
+        style={{
+          // feather: as bordas da logo se dissolvem no fundo em todas as direções
+          WebkitMaskImage: "radial-gradient(ellipse 70% 70% at 50% 50%, black 55%, transparent 100%)",
+          maskImage: "radial-gradient(ellipse 70% 70% at 50% 50%, black 55%, transparent 100%)",
+        }}
       />
 
       <div className="circuit-line mb-6">
-        <span className="ui-label" style={{ color: "var(--accent)" }}>
+        <span className="ui-label" style={{ color: "#fbbf24" }}>
           Técnico, escreva seu nome e escolha seu time
         </span>
       </div>
 
+      {/* não-controlado de propósito: a digitação nunca depende de re-render;
+          o estado só guarda o valor para habilitar o "Começar carreira" */}
       <input
         type="text"
-        value={managerName}
-        onChange={(e) => setManagerName(e.target.value)}
+        name="managerName"
+        defaultValue={managerName}
+        onInput={(e) => setManagerName((e.target as HTMLInputElement).value)}
         placeholder="Seu Nome"
         maxLength={30}
-        className="mx-auto mb-6 block w-full max-w-xs border-b border-[var(--accent-dim)] bg-transparent px-2 py-2 text-center font-semibold tracking-wide text-zinc-100 placeholder-zinc-600 outline-none transition-colors focus:border-[var(--accent)]"
+        autoComplete="off"
+        spellCheck={false}
+        className="mx-auto mb-6 block w-full max-w-xs border-b border-zinc-700 bg-transparent px-2 py-2 text-center font-semibold tracking-wide text-zinc-100 placeholder-zinc-600 outline-none transition-colors focus:border-emerald-500"
       />
 
       <nav className="mb-6 flex flex-wrap justify-center gap-x-5 gap-y-1">
