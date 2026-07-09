@@ -23,7 +23,7 @@ export default function Toggle({
       disabled={disabled}
       onClick={() => onChange(!checked)}
       title={hint}
-      className="flex w-full items-center justify-between gap-2 rounded bg-zinc-800/60 px-2 py-1.5 text-left text-sm hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
+      className="flex w-full items-center justify-between gap-2 rounded bg-zinc-800/60 px-2 py-1.5 text-left text-[11px] hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
     >
       <span>{label}</span>
       <span
