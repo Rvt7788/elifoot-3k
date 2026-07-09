@@ -30,6 +30,10 @@ const POOLS: Record<string, { first: string[]; last: string[] }> = {
     first: ["Gonçalo", "Diogo", "Rúben", "Bernardo", "Vitinha", "Nuno", "Rafael", "Francisco", "Tiago", "André", "Pedro", "Ricardo", "Fábio", "Tomás", "Duarte", "Afonso", "Miguel", "Renato", "Hélder", "Paulo"],
     last: ["Silva", "Santos", "Ferreira", "Costa", "Pereira", "Carvalho", "Fernandes", "Gonçalves", "Rodrigues", "Martins", "Sousa", "Gomes", "Lopes", "Marques", "Alves", "Ramos", "Neves", "Leão", "Semedo", "Mendes"],
   },
+  IT: {
+    first: ["Alessandro", "Lorenzo", "Federico", "Nicolò", "Davide", "Matteo", "Gianluigi", "Sandro", "Giacomo", "Riccardo", "Andrea", "Marco", "Giovanni", "Antonio", "Francesco", "Luca", "Stefano", "Domenico", "Ciro", "Salvatore"],
+    last: ["Rossi", "Russo", "Ferrari", "Esposito", "Bianchi", "Romano", "Colombo", "Ricci", "Marino", "Greco", "Bruno", "Gallo", "Conti", "De Luca", "Mancini", "Costa", "Giordano", "Rizzo", "Lombardi", "Barella"],
+  },
 };
 
 export function playerName(rng: Rng, country: string): string {

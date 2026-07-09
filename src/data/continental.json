@@ -46,6 +46,10 @@
     ],
     "PT": [
       "Benfica", "Sporting CP", "Porto", "Braga", "Boavista"
+    ],
+    "IT": [
+      "Inter de Milão", "Juventus", "Milan", "Napoli", "Roma", "Lazio",
+      "Atalanta", "Fiorentina", "Bologna", "Torino", "Sampdoria"
     ]
   }
 }

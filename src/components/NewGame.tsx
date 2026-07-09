@@ -10,6 +10,7 @@ const COUNTRIES: Record<string, { flag: string; name: string }> = {
   ES: { flag: "🇪🇸", name: "Espanha" },
   DE: { flag: "🇩🇪", name: "Alemanha" },
   FR: { flag: "🇫🇷", name: "França" },
+  IT: { flag: "🇮🇹", name: "Itália" },
   PT: { flag: "🇵🇹", name: "Portugal" },
 };
 

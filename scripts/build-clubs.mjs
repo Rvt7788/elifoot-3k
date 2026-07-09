@@ -13,6 +13,7 @@ const SOURCES = [
   { file: "ligaalema.json", country: "DE", region: "Europa" },
   { file: "ligafrancesa.json", country: "FR", region: "Europa" },
   { file: "ligaportuguesa.json", country: "PT", region: "Europa" },
+  { file: "ligaitaliana.json", country: "IT", region: "Europa" },
 ];
 
 const extras = JSON.parse(
