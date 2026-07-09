@@ -240,30 +240,30 @@ export default function TacticsBoard() {
           <p className="ui-label mb-1">Escalar por</p>
           <div className="flex gap-1">
             <button
-              onClick={() => setByEnergy(false)}
+              onClick={() => {
+                setByEnergy(false);
+                setStarters(bestXI(squad, formation, false));
+                setManualMode(false);
+              }}
               className={`flex-1 rounded px-1.5 py-1 text-[11px] ${
-                !byEnergy ? "bg-zinc-700 text-white" : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"
+                !byEnergy && isBestActive ? "bg-emerald-600 text-white" : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"
               }`}
             >
               Força
             </button>
             <button
-              onClick={() => setByEnergy(true)}
+              onClick={() => {
+                setByEnergy(true);
+                setStarters(bestXI(squad, formation, true));
+                setManualMode(false);
+              }}
               className={`flex-1 rounded px-1.5 py-1 text-[11px] ${
-                byEnergy ? "bg-zinc-700 text-white" : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"
+                byEnergy && isBestActive ? "bg-emerald-600 text-white" : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"
               }`}
             >
               Energia
             </button>
           </div>
-          <button
-            onClick={() => { setStarters(ideal); setManualMode(false); }}
-            className={`mt-1 w-full rounded px-2 py-1 text-[11px] font-semibold ${
-              isBestActive ? "bg-emerald-600 text-white" : "bg-zinc-800 hover:bg-zinc-700"
-            }`}
-          >
-            Aplicar melhor time
-          </button>
           <button
             onClick={() => { setStarters([]); setSel(null); setManualMode(true); }}
             className="mt-1 w-full rounded bg-zinc-900 px-2 py-1 text-[11px] text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
