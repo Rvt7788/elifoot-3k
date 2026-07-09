@@ -240,20 +240,43 @@ function bestOnField(
     .sort((a, b) => b.strength - a.strength)[0];
 }
 
-// Peso de finalização por posição: atacantes concentram os gols, meias chegam com
-// frequência, zagueiros aparecem na bola parada e goleiro é lenda de fim de jogo.
+// Peso-base de finalização por posição: atacantes concentram os gols, meias chegam
+// com frequência, zagueiros aparecem na bola parada e goleiro é lenda de fim de jogo.
 const SHOT_WEIGHT: Record<Position, number> = {
   ATA: 1, MEI: 0.32, DEF: 0.09, GOL: 0.003,
 };
 
-// Sorteia quem finaliza dentre todos em campo, ponderado pelo quadrado da força
-// e pelo peso da posição — os melhores marcam mais, mas não são os únicos.
-function pickStriker(rng: Rng, lineup: LivePlayer[], idx: PlayersIndex): Player | null {
-  const pool = lineup
-    .filter((lp) => lp.onField && !lp.sentOff)
-    .map((lp) => idx[lp.playerId]);
-  if (pool.length === 0) return null;
-  return pickWeighted(rng, pool, (p) => p.strength ** 2 * SHOT_WEIGHT[p.pos]);
+// Mentalidade também empurra quem finaliza: time ofensivo joga mais pelos pontas/
+// atacantes, defensivo se apoia mais no meio (contra-ataque) e na bola parada do DEF.
+const MENTALITY_SHOT_TILT: Record<Mentality, Partial<Record<Position, number>>> = {
+  ofensivo: { ATA: 1.25, MEI: 0.9 },
+  equilibrado: {},
+  defensivo: { ATA: 0.8, MEI: 1.15, DEF: 1.3 },
+};
+
+// Sorteia quem finaliza dentre todos em campo. O peso de cada jogador não é só
+// a posição fixa: depende de quantos companheiros de setor estão em campo (a
+// formação) — um 3-5-2 com 5 meias reparte mais chances de finalização entre
+// eles; um 4-3-3 concentra mais no ataque — mais a mentalidade do time e uma
+// dose de sorte (roll aleatório por jogador) para não ficar sempre previsível.
+function pickStriker(
+  rng: Rng, lineup: LivePlayer[], idx: PlayersIndex, mentality: Mentality,
+): Player | null {
+  const onField = lineup.filter((lp) => lp.onField && !lp.sentOff).map((lp) => idx[lp.playerId]);
+  if (onField.length === 0) return null;
+
+  const countBySector: Partial<Record<Position, number>> = {};
+  for (const p of onField) countBySector[p.pos] = (countBySector[p.pos] ?? 0) + 1;
+  const tilt = MENTALITY_SHOT_TILT[mentality];
+
+  return pickWeighted(rng, onField, (p) => {
+    // formação: setor com mais gente em campo espalha (mas também soma) mais chances
+    const sectorSize = countBySector[p.pos] ?? 1;
+    const formationFactor = 0.6 + 0.4 * Math.min(sectorSize / 3, 1.5);
+    const mentalityFactor = tilt[p.pos] ?? 1;
+    const luck = 0.7 + rng() * 0.6; // 0.7x .. 1.3x — mesmo azarão tem seu momento
+    return p.strength ** 2 * SHOT_WEIGHT[p.pos] * formationFactor * mentalityFactor * luck;
+  });
 }
 
 function randomOnField(rng: Rng, lineup: LivePlayer[], idx: PlayersIndex): Player {
@@ -266,7 +289,8 @@ function tryShot(
 ) {
   const atkLineup = side === "home" ? m.homeLineup : m.awayLineup;
   const defLineup = side === "home" ? m.awayLineup : m.homeLineup;
-  const striker = pickStriker(rng, atkLineup, idx);
+  const atkTactics = side === "home" ? m.homeTactics : m.awayTactics;
+  const striker = pickStriker(rng, atkLineup, idx, atkTactics.mentality);
   const keeper = bestOnField(defLineup, idx, "GOL");
   const bestDef = bestOnField(defLineup, idx, "DEF");
   if (!striker) return;
