@@ -90,8 +90,8 @@ function ToggleBtn({
       disabled={disabled}
       className="flex w-full items-center justify-between gap-1.5 rounded bg-zinc-800 px-2 py-1 text-left text-[11px] hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40"
     >
-      <span>{label}</span>
-      <span className={checked ? "text-emerald-400" : "text-zinc-600"}>●</span>
+      <span className="min-w-0 truncate">{label}</span>
+      <span className={`shrink-0 ${checked ? "text-emerald-400" : "text-zinc-600"}`}>●</span>
     </button>
   );
 }
@@ -297,7 +297,32 @@ export default function TacticsBoard() {
     setSlotOrder(flatOrder(nextPosPlayers));
   };
 
+  // lista de reservas renderizada em dois lugares: coluna direita (desktop) e
+  // largura total abaixo da prancheta (mobile)
+  const reservasBlock = (
+    <>
+      <p className="mb-1 text-xs font-bold text-zinc-500">
+        RESERVAS ({reservas.length})
+      </p>
+      <div>
+        {reservas.map((p) => (
+          <PlayerRow
+            key={p.id}
+            p={p}
+            selected={sel === p.id}
+            selColor="#3f3f46"
+            onClick={() => clickPlayer(p.id)}
+            expanded={expanded === p.id}
+            onToggleExpand={() => toggleExpand(p.id)}
+            suspendedNext={isSuspendedNext(p)}
+          />
+        ))}
+      </div>
+    </>
+  );
+
   return (
+    <>
     <div className="flex flex-row items-start gap-3">
       {/* Prancheta à esquerda: campo mais alto para terminar na altura do último titular. */}
       <div className="flex w-[42%] shrink-0 flex-col sm:w-48">
@@ -330,7 +355,7 @@ export default function TacticsBoard() {
           )}
         </PitchBackground>
         </div>
-        <div className="mb-2 mt-4 grid grid-cols-3 gap-1">
+        <div className="mt-4 grid grid-cols-3 gap-1">
           {(Object.keys(FORMATIONS) as Formation[]).map((f) => (
             <button
               key={f}
@@ -423,7 +448,7 @@ export default function TacticsBoard() {
           )}
         </div>
 
-        <div className="mt-2">
+        <div className="mt-4">
           <p className="ui-label mb-1">Força por setor</p>
           <div className="grid grid-cols-2 gap-1">
             {POS_KEYS.map((s) => (
@@ -539,27 +564,12 @@ export default function TacticsBoard() {
           </div>
         </div>
 
-        {/* Reservas: logo abaixo de mentalidade e marcação */}
-        <div className="mt-4">
-          <p className="mb-1 text-xs font-bold text-zinc-500">
-            RESERVAS ({reservas.length})
-          </p>
-          <div>
-            {reservas.map((p) => (
-              <PlayerRow
-                key={p.id}
-                p={p}
-                selected={sel === p.id}
-                selColor="#3f3f46"
-                onClick={() => clickPlayer(p.id)}
-                expanded={expanded === p.id}
-                onToggleExpand={() => toggleExpand(p.id)}
-                suspendedNext={isSuspendedNext(p)}
-              />
-            ))}
-          </div>
-        </div>
+        {/* Reservas no desktop: logo abaixo de mentalidade e marcação, na coluna direita */}
+        <div className="mt-4 hidden sm:block">{reservasBlock}</div>
       </div>
     </div>
+    {/* Reservas no mobile: fora das colunas, ocupando a largura inteira da tela */}
+    <div className="mt-4 sm:hidden">{reservasBlock}</div>
+    </>
   );
 }

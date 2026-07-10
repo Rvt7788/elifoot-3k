@@ -1,250 +1,435 @@
 {
   "Athletico Paranaense": {
     "GOL": [
-      "Léo Linck:23"
+      "Santos:36",
+      "Mycael:22",
+      "Matheus Soares:21"
     ],
     "DEF": [
-      "Thiago Heleno:37",
-      "Kaique Rocha:24",
-      "Esquivel:25"
+      "Gilberto:33",
+      "Gastón Benavídez:30",
+      "Léo Pelé:30",
+      "Juan Felipe Aguirre:29",
+      "Dudu:29",
+      "Hayen Palacios:26",
+      "Carlos Terán:25",
+      "Lucas Esquivel:24",
+      "Gilberto Junior:21",
+      "Léo Derik:20",
+      "Arthur Dias:19"
     ],
     "MEI": [
-      "Fernandinho:40",
-      "Erick:28",
-      "Zapelli:23"
+      "Luiz Gustavo:38",
+      "Jádson:32",
+      "Juan Portilla:27",
+      "Alejandro García:25",
+      "Bruno Zapelli:24",
+      "Felipinho:24",
+      "Dudu:20",
+      "João Cruz:20",
+      "Chiqueti:20"
     ],
     "ATA": [
-      "Mastriani:32",
-      "Pablo:33",
-      "Canobbio:26"
+      "Stiven Mendoza:34",
+      "Leozinho:27",
+      "Kevin Viveros:26",
+      "Renan Peixoto:26",
+      "Renan Viana:23",
+      "Isaac:22",
+      "Jorge Rivaldo:22",
+      "Daniel Aguilar:22",
+      "Bruninho:17"
     ]
   },
   "Atlético Mineiro": {
     "GOL": [
-      "Everson:35"
+      "Everson:35",
+      "Gabriel Delfim:24",
+      "Robert:21",
+      "Pedro Cobra:20"
     ],
     "DEF": [
-      "Junior Alonso:32",
-      "Battaglia:34",
-      "Lyanco:28",
-      "Saravia:32",
-      "Guilherme Arana:28"
+      "Vitor Hugo:35",
+      "Júnior Alonso:33",
+      "Lyanco:29",
+      "Léo Duarte:29",
+      "Renan Lodi:28",
+      "Angelo Preciado:28",
+      "Ruan Tressoldi:27",
+      "Natanael:24",
+      "Rômulo:22",
+      "Iván Román:19",
+      "Vitão:18",
+      "Kauã Pascini:18"
     ],
     "MEI": [
-      "Otávio:30",
-      "Alan Franco:29",
-      "Fausto Vera:25",
-      "Zaracho:27",
-      "Gustavo Scarpa:31",
-      "Bernard:33"
+      "Gustavo Scarpa:32",
+      "Maycon:28",
+      "Alan Franco:27",
+      "Igor Gomes:27",
+      "Reinier Jesus:24",
+      "Alexsander:22",
+      "Patrick:22",
+      "Victor Hugo:22",
+      "Tomás Pérez:20",
+      "Mamady Cissé:19",
+      "Índio:18"
     ],
     "ATA": [
-      "Hulk:39",
-      "Paulinho:25",
-      "Deyverson:34",
-      "Eduardo Vargas:35"
+      "Dudu:34",
+      "Bernard:33",
+      "Mateo Cassierra:29",
+      "Tomás Cuello:26",
+      "Alan Minda:23",
+      "Cauã Soares:18"
     ]
   },
   "Bahia": {
     "GOL": [
-      "Marcos Felipe:29"
+      "Léo Vieira:35",
+      "Ronaldo:29",
+      "Victor:20"
     ],
     "DEF": [
-      "Gabriel Xavier:32",
-      "Kanu:28",
-      "Santiago Arias:33",
-      "Luciano Juba:26"
+      "David Duarte:31",
+      "Kanu:29",
+      "Iago Borduchi:29",
+      "Luciano Juba:26",
+      "Marco Moreno:25",
+      "Santiago Ramos Mingo:24",
+      "Marcos Victor:24",
+      "Zé Guilherme:21",
+      "Román Gómez:21",
+      "Luiz Gustavo:20"
     ],
     "MEI": [
-      "Caio Alexandre:26",
-      "Jean Lucas:27",
-      "Everton Ribeiro:36",
-      "Cauly:30",
-      "Thaciano:30"
+      "Éverton Ribeiro:37",
+      "Erick:28",
+      "Jean Lucas:28",
+      "Caio Alexandre:27",
+      "Nicolás Acevedo:27",
+      "Rodrigo Nestor:25",
+      "Roger Gabriel:19"
     ],
     "ATA": [
-      "Everaldo:34",
-      "Lucho Rodríguez:25",
-      "Biel:27"
+      "Everaldo:35",
+      "Willian José:34",
+      "Ademir:31",
+      "Michel Araújo:29",
+      "Erick Pulga:25",
+      "Cristian Olivera:24",
+      "Mateo Sanabria:22",
+      "Alejo Véliz:22",
+      "Dell:18",
+      "Ruan Pablo:17"
     ]
   },
   "Botafogo": {
     "GOL": [
-      "John:29",
-      "Gatito Fernández:37"
+      "Raul Steffens:28",
+      "Léo Linck:25",
+      "Cristhian Loor:20"
     ],
     "DEF": [
-      "Bastos:34",
-      "Alexander Barboza:30",
-      "Adryelson:27",
-      "Vitinho:26",
-      "Cuiabano:22",
-      "Marçal:36"
+      "Fernando Marçal:37",
+      "Bartolomeu Jacinto Quissanga:35",
+      "Alex Telles:33",
+      "Kaio Pantaleão:30",
+      "Nahuel Ferraresi:27",
+      "Victor Alexander (Vitinho):26",
+      "Caio Roque:24",
+      "Mateo Ponte:23",
+      "Ythallo:21",
+      "Anthony:20",
+      "Carlos Eduardo:20",
+      "Gabriel Justino:20",
+      "Jhoan Hernández:20"
     ],
     "MEI": [
-      "Marlon Freitas:30",
-      "Gregore:31",
-      "Danilo Barbosa:29",
-      "Thiago Almada:24",
-      "Eduardo:29"
+      "Edenilson:36",
+      "Allan:33",
+      "Danilo dos Santos:25",
+      "Cristian Medina:24",
+      "Álvaro Montoro:19"
     ],
     "ATA": [
-      "Luiz Henrique:24",
-      "Igor Jesus:24",
+      "Joaquín Correa:31",
       "Júnior Santos:31",
-      "Tiquinho Soares:34",
-      "Matheus Martins:22"
+      "Arthur Cabral:28",
+      "Elias Manoel:24",
+      "Matheus Martins:22",
+      "Matheus Nascimento:22",
+      "Nathan Fernandes:21"
     ]
   },
   "Corinthians": {
     "GOL": [
-      "Hugo Souza:26"
+      "Hugo Souza:27",
+      "Kauê:22",
+      "Felipe Longo:21"
     ],
     "DEF": [
-      "André Ramalho:33",
-      "Gustavo Henrique:32",
-      "Cacá:26",
-      "Fagner:36",
-      "Hugo:28"
+      "Gabriel Paulista:35",
+      "André Ramalho:34",
+      "Gustavo Henrique:33",
+      "Fabrizio Angileri:32",
+      "Hugo:28",
+      "Matheus Bidu:27",
+      "Matheuzinho:25",
+      "Pedro Milans:24",
+      "João Pedro:22",
+      "João Vitor:19"
     ],
     "MEI": [
+      "André Carrillo:35",
+      "Jesse Lingard:33",
+      "Alex Santana:31",
+      "Charles:30",
+      "Allan:29",
       "Raniele:29",
-      "José Martínez:31",
-      "Rodrigo Garro:27",
-      "Igor Coronado:35",
-      "Carrillo:34"
+      "Matheus Pereira:28",
+      "Rodrigo Garro:28",
+      "Breno Bidon:21",
+      "André:20",
+      "Luiz Gustavo:20",
+      "Dieguinho:18",
+      "Gui Amorim:18"
     ],
     "ATA": [
-      "Memphis Depay:31",
-      "Yuri Alberto:24",
-      "Romero:33",
-      "Talles Magno:23"
+      "Zakaria Labyad:33",
+      "Memphis Depay:32",
+      "Vitinho:32",
+      "Pedro Raul:29",
+      "Yuri Alberto:25",
+      "Kaio César:22",
+      "Kayke:21",
+      "Gui Negão:19"
     ]
   },
   "Criciúma": {
     "GOL": [
-      "Bruno Meneghel:39",
-      "Alex Muralha:36"
+      "Airton Moraes Michellon:32",
+      "Alisson Machado dos Santos:31",
+      "Pedro Santos:21",
+      "Kauã Moroso:20",
+      "Lucas Soratto:18"
     ],
     "DEF": [
-      "Marcelo Benevenuto:30",
-      "Rodrigo Soares:33",
-      "Ronei:28",
-      "Zé Marcos:28"
+      "Rodrigo:39",
+      "Luciano Castán:36",
+      "Bruno Alves:35",
+      "César Henrique Martins:33",
+      "Marcelo Hermes:31",
+      "Marcinho:30",
+      "Willean Lepo:29",
+      "Heitor Roca Santo:28",
+      "Léo Mana:22",
+      "Octávio Henrique:21",
+      "Hiago Alves:20",
+      "Ruan Carvalho:19"
     ],
     "MEI": [
-      "Barreto:30",
-      "Marquinhos Gabriel:35",
-      "Matheusinho:28",
-      "Bolasie:36"
+      "Fellipe Mateus:35",
+      "Rómulo Otero:33",
+      "Jean Irmer:31",
+      "Ronald:29",
+      "Eduardo Biasi:29",
+      "Guilherme Lobo:26",
+      "Sandry:23",
+      "Steven Nufour:21",
+      "Thiaguinho:20"
     ],
     "ATA": [
-      "Marcelinho:23",
-      "Fabinho:26",
-      "Ronald:29"
+      "Waguininho:36",
+      "Nicolas:36",
+      "Romarinho:32",
+      "Diego Gonçalves:31",
+      "Yuri Tanque:28",
+      "Jhonata Robert:26",
+      "João Carlos:25",
+      "Cauê:23",
+      "Thales:19"
     ]
   },
   "Cruzeiro": {
     "GOL": [
-      "Cássio:38"
+      "Cássio:39",
+      "Matheus Cunha:25",
+      "Léo Aragão:24",
+      "Otávio Costa:20"
     ],
     "DEF": [
-      "João Marcelo:25",
-      "Zé Ivaldo:27",
-      "William:30",
-      "Marlon:30"
+      "Fagner:37",
+      "Lucas Villalba:31",
+      "William:31",
+      "Fabrício Bruno:30",
+      "Gabriel Rojas:29",
+      "João Marcelo:26",
+      "Kaiki Bruno:23",
+      "Jonathan Jesus:22",
+      "Pedrão:22",
+      "Kauã Moraes:19",
+      "Kauã Prates:17"
     ],
     "MEI": [
-      "Lucas Romero:31",
-      "Walace:30",
-      "Matheus Henrique:27",
-      "Matheus Pereira:29"
+      "Lucas Silva:33",
+      "Lucas Romero:32",
+      "Matheus Pereira:30",
+      "Gerson:29",
+      "Matheus Henrique:28",
+      "Christian:25",
+      "Fabrizio Peralta:23",
+      "Japa:22",
+      "Murilo Rhikman:20"
     ],
     "ATA": [
-      "Lautaro Díaz:27",
-      "Gabriel Veron:23",
-      "Kaio Jorge:23",
-      "Barreal:25"
+      "Wanderson:31",
+      "Chico da Costa:31",
+      "Bruno Rodrigues:29",
+      "Luis Sinisterra:27",
+      "Kaio Jorge:24",
+      "Marquinhos:23",
+      "Néiser Villarreal:21",
+      "Kaique Kenji:20",
+      "Keny Arroyo:20"
     ]
   },
   "Cuiabá": {
     "GOL": [
-      "Walter:38",
-      "Gabriel Vasconcellos:33"
+      "João Carlos:38",
+      "Marcelo Carné:36",
+      "Jean:25",
+      "Pedro Mello:20"
     ],
     "DEF": [
-      "Alan Empereur:31",
-      "Marllon:33",
-      "João Lucas:27",
-      "Mauricio Lemos:29"
+      "Nino Paraíba:40",
+      "Alan Empereur:32",
+      "Marlon:32",
+      "João Basso:29",
+      "Vitor Mendes:27",
+      "Railan:26",
+      "Eric:25",
+      "Gabriel:22",
+      "Tarcísio:22",
+      "Luis Soares:20",
+      "Lorenzo:18"
     ],
     "MEI": [
-      "Fernando Sobral:31",
-      "Denilson:25",
-      "Max:25",
-      "Pitta:26"
+      "Marcos Júnior:33",
+      "Raul:29",
+      "Luiz Otávio:29",
+      "Pepê:28",
+      "Calebe Costa:23",
+      "Weverson:22",
+      "João Araújo:21",
+      "David Miguel:19"
     ],
     "ATA": [
-      "Isidro Pitta:26",
-      "Deyverson:34",
-      "Rafael Gava:32"
+      "Yamil Asad:31",
+      "Mateus Santos:27",
+      "Hernandes:26",
+      "Rodrigo Rodrigues:26",
+      "Eliel:23",
+      "Vinicius Peixoto:22",
+      "Victor Barbara:21",
+      "Kauan Cristtyan:20",
+      "Nathan Cruz:19",
+      "Aiyran:17"
     ]
   },
   "Flamengo": {
     "GOL": [
-      "Rossi:30",
-      "Matheus Cunha:24"
+      "Agustín Rossi:30",
+      "Andrew:24",
+      "Dyogo Alves:22",
+      "Leó Nannetti:18",
+      "Gabriel Laizo Werneck:17"
     ],
     "DEF": [
-      "Léo Pereira:29",
-      "Fabrício Bruno:29",
+      "Alex Sandro:34",
+      "Guillermo Varela:33",
+      "Danilo:33",
+      "Pablo:33",
       "Léo Ortiz:29",
-      "David Luiz:38",
+      "Léo Pereira:29",
       "Ayrton Lucas:28",
-      "Varela:32",
-      "Viña:26"
+      "Matías Viña:27",
+      "Emerson Royal:26",
+      "Vitão:26",
+      "Cleiton Santos:22",
+      "José Wellington:21",
+      "Daniel Sales:20",
+      "João Pedro da Mata:19",
+      "João Victor:18"
     ],
     "MEI": [
-      "Gerson:28",
-      "De La Cruz:28",
-      "Arrascaeta:31",
-      "Pulgar:31",
-      "Alcaraz:22",
-      "Allan:28"
+      "Bruno Henrique:34",
+      "Jorginho:33",
+      "Erick Pulgar:31",
+      "Giorgian De Arrascaeta:31",
+      "Allan:31",
+      "Saúl Ñíguez:30",
+      "Nicolás De la Cruz:28",
+      "Lucas Paquetá:28",
+      "Jorge Carrascal:27",
+      "Gonzalo Plata:25",
+      "Evertton Araújo:22",
+      "Caio Garcia:21",
+      "João Alves:20",
+      "Luiz Felipe:19",
+      "Luís Aucélio:19",
+      "Pedrinho:18"
     ],
     "ATA": [
-      "Pedro:28",
-      "Gabriel Barbosa:29",
-      "Bruno Henrique:34",
+      "Everton Cebolinha:30",
       "Luiz Araújo:29",
-      "Everton Cebolinha:29",
-      "Gonzalo Plata:24"
+      "Pedro:29",
+      "Carlinhos:28",
+      "Samuel Lino:26",
+      "Wallace Yan:20"
     ]
   },
   "Fluminense": {
     "GOL": [
-      "Fábio:45"
+      "Fábio:45",
+      "Vitor Eudes:27",
+      "Marcelo Pitaluga:23"
     ],
     "DEF": [
       "Thiago Silva:41",
-      "Thiago Santos:36",
-      "Samuel Xavier:35",
-      "Marcelo:37",
-      "Diogo Barbosa:33"
+      "Samuel Xavier:36",
+      "Renê:33",
+      "Igor Rabello:31",
+      "Ignácio:29",
+      "Guilherme Arana:29",
+      "Julián Millán:28",
+      "Guga:27",
+      "Juan Pablo Freytes:26",
+      "Jemmes:26",
+      "Davi Schuindt:22",
+      "Julio Fidelis:19"
     ],
     "MEI": [
-      "Martinelli:24",
-      "Bernal:22",
-      "Ganso:35",
-      "Renato Augusto:37",
-      "Lima:29"
+      "Paulo Henrique Ganso:36",
+      "Alisson:33",
+      "Otávio:32",
+      "Luciano Acosta:32",
+      "David Terans:31",
+      "Jefferson Savarino:29",
+      "Nonato:28",
+      "Hércules:25",
+      "Matheus Martinelli:24"
     ],
     "ATA": [
-      "Jhon Arias:28",
-      "Keno:36",
-      "Kauã Elias:19",
-      "Germán Cano:37",
-      "Serna:27"
+      "Hulk:39",
+      "Germán Cano:38",
+      "Yeferson Soteldo:29",
+      "Kevin Serna:28",
+      "Agustín Canobbio:27",
+      "Rodrigo Castillo:27",
+      "John Kennedy:24",
+      "Riquelme Felipe:19",
+      "Matheus Reis:19"
     ]
   },
   "Fortaleza": {
@@ -271,624 +456,1211 @@
   },
   "Grêmio": {
     "GOL": [
-      "Marchesín:37"
+      "Weverton:38",
+      "Gabriel Grando:26",
+      "Adriel:25",
+      "Thiago Beltrame:23",
+      "Gabriel Menegon:17"
     ],
     "DEF": [
-      "Jemerson:33",
-      "Rodrigo Ely:31",
-      "Kannemann:34",
+      "Marcos Rocha:37",
+      "Walter Kannemann:35",
+      "Fabián Balbuena:34",
+      "Marlon:29",
       "João Pedro:29",
-      "Reinaldo:36"
+      "Caio Paulista:28",
+      "Wagner Leonardo:26",
+      "Gustavo Martins:23",
+      "Wallace:21",
+      "Pedro Gabriel:19",
+      "Luis Eduardo:18"
     ],
     "MEI": [
-      "Villasanti:28",
-      "Dodi:29",
-      "Pepê:28",
-      "Cristaldo:29",
-      "Monsalve:22"
+      "Willian:37",
+      "Dodi:30",
+      "Mathías Villasanti:29",
+      "Erick Noriega:24",
+      "Juan Nardoni:23",
+      "Miguel Monsalve:22",
+      "Leonel Pérez:21",
+      "Riquelme:19",
+      "Tiaguinho:18",
+      "Gabriel Mec:18"
     ],
     "ATA": [
-      "Soteldo:28",
-      "Pavón:29",
-      "Braithwaite:34",
-      "Diego Costa:37"
+      "Martin Braithwaite:35",
+      "Carlos Vinícius:31",
+      "Cristian Pavón:30",
+      "José Enamorado:27",
+      "Francis Amuzu:26",
+      "Tetê:26",
+      "Roger:18"
     ]
   },
   "Internacional": {
     "GOL": [
-      "Rochet:32"
+      "Sergio Rochet:33",
+      "Anthoni:24",
+      "Kauan Jesus:23",
+      "Diego Esser:21"
     ],
     "DEF": [
-      "Vitão:25",
-      "Mercado:38",
-      "Bustos:29",
-      "Bernabei:25"
+      "Gabriel Mercado:39",
+      "Guillermo Maripán:32",
+      "Juninho:31",
+      "Félix Torres:29",
+      "Clayton Sampaio:26",
+      "Matheus Bahia:26",
+      "Alexandro Bernabei:25",
+      "Braian Aguirre:25",
+      "Bruno Gomes:25",
+      "Victor Gabriel:22"
     ],
     "MEI": [
-      "Thiago Maia:28",
-      "Bruno Henrique:35",
-      "Fernando:38",
-      "Alan Patrick:34",
-      "Gabriel Carvalho:18"
+      "Bruno Henrique:36",
+      "Alan Patrick:35",
+      "Bruno Tabata:29",
+      "Paulinho Paula:29",
+      "Thiago Maia:29",
+      "Richard:26",
+      "Alan Rodríguez:25",
+      "Rodrigo Villagra:25",
+      "Ronaldo:21"
     ],
     "ATA": [
-      "Enner Valencia:35",
-      "Rafael Borré:30",
-      "Wesley:26",
-      "Wanderson:31"
+      "Alerrandro:26",
+      "Johan Carbonero:26",
+      "Kayky:23",
+      "Vitinho:22"
     ]
   },
   "Juventude": {
     "GOL": [
-      "Gabriel Vasconcelos:33",
-      "Douglas Friedrich:37"
+      "Ruan Carneiro:36",
+      "Jandrei:33",
+      "Pedro Rocha:28",
+      "Zé Henrique:21"
     ],
     "DEF": [
-      "Rafael Forster:35",
+      "Titi:38",
       "Alan Ruschel:36",
-      "Reynaldo:29",
-      "Danny Morais:41"
+      "Aderlan:35",
+      "Diogo Barbosa:33",
+      "Raí Ramos:32",
+      "Messias:31",
+      "Rodrigo Sam:30",
+      "Gabriel Pinheiro:29",
+      "Wadson:25",
+      "Nathan Santos:24",
+      "Marcos Paulo:23",
+      "Patryck Lanza:23"
     ],
     "MEI": [
-      "Jadson:32",
-      "Jean Irmer:31",
-      "Gilberto:37",
-      "Marcelo Hermes:30"
+      "Lucas Mineiro:30",
+      "Luan Martins:27",
+      "Pablo Roberto:26",
+      "Mandaca:24",
+      "Raí Silva:24",
+      "Iba Ly:23",
+      "Davi Góes:21",
+      "Ray Breno:21"
     ],
     "ATA": [
-      "Ronaldo Henrique:32",
-      "Erick Farias:29",
-      "Chico:35"
+      "Alan Kardec:37",
+      "Alisson Safira:31",
+      "Manuel Castro:30",
+      "Fábio Lima:29",
+      "Allanzinho:26",
+      "Marcos Paulo:25"
     ]
   },
   "Palmeiras": {
     "GOL": [
-      "Weverton:37",
-      "Marcelo Lomba:38"
+      "Marcelo Lomba:39",
+      "Carlos Miguel:27",
+      "Kaique:23",
+      "Luiz Felipe:19",
+      "Kauan Lima:19",
+      "Luiz Fernando:18"
     ],
     "DEF": [
-      "Gustavo Gómez:32",
-      "Murilo:28",
-      "Vitor Reis:19",
-      "Marcos Rocha:36",
-      "Mayke:32",
-      "Piquerez:27",
-      "Caio Paulista:27"
+      "Gustavo Gómez:33",
+      "Murilo:29",
+      "Bruno Fuchs:27",
+      "Joaquín Piquerez:27",
+      "Khellven:25",
+      "Kaiky Naves:24",
+      "Agustín Giay:22",
+      "Jefté:22",
+      "Luiz Benedetti:20",
+      "Arthur Gabriel:20",
+      "André Lucas:20",
+      "Luis Saboia:19",
+      "Thiago Soares:19",
+      "Mohamed Kone:18",
+      "Derick:18",
+      "Luccas Ramon:17"
     ],
     "MEI": [
-      "Aníbal Moreno:26",
-      "Zé Rafael:32",
-      "Richard Ríos:25",
-      "Raphael Veiga:30",
-      "Maurício:24",
-      "Gabriel Menino:25"
+      "Felipe Anderson:33",
+      "Marlon Freitas:31",
+      "Lucas Evangelista:31",
+      "Andreas Pereira:30",
+      "Jhon Arias:28",
+      "Emiliano Martínez:26",
+      "Maurício:25",
+      "Larson:20",
+      "Rafael Coutinho:20",
+      "Erick Machado:19",
+      "Victor Gabriel:19",
+      "Isaac:19",
+      "João Paulo:19",
+      "Guilherme Nogueira:19",
+      "Luis Felipe:18",
+      "Ruan Yago:17"
     ],
     "ATA": [
-      "Estêvão:18",
-      "Felipe Anderson:32",
-      "Flaco López:24",
-      "Rony:30",
-      "Dudu:33"
+      "Ramón Sosa:26",
+      "Paulinho:25",
+      "José Manuel López:25",
+      "Allan Andrade:22",
+      "Vitor Roque:21",
+      "Luighi Hanri:20",
+      "Riquelme:19",
+      "Heittor:18",
+      "Juan Gabriel:18",
+      "Juliano Viana Papille:18",
+      "Kauã:17",
+      "Eduardo:16"
     ]
   },
   "Red Bull Bragantino": {
     "GOL": [
-      "Cleiton:28"
+      "Tiago Volpi:35",
+      "Cleiton Schwengber:28",
+      "Fabrício:25",
+      "Fernando Costa:23",
+      "Gustavo Reis de Alcantara:21"
     ],
     "DEF": [
-      "Léo Ortiz:29",
-      "Lucas Cunha:24",
-      "Fabinho:24",
-      "Andrés Hurtado:23",
-      "Natan:24"
+      "Pedro Henrique:30",
+      "Juninho Capixaba:29",
+      "Lucas Cunha:29",
+      "Eduardo Santos:28",
+      "Agustín Sant'Anna:28",
+      "Guzmán Rodríguez:26",
+      "Alix Vinicius:26",
+      "Gustavo Marques:26",
+      "Luan Cândido:25",
+      "José Hurtado:24",
+      "Vanderlan:23"
     ],
     "MEI": [
-      "Raul:29",
-      "Eric Ramires:24",
-      "Sasha:33",
-      "Praxedes:23"
+      "Gabriel Girotto Franco:34",
+      "Matheus Fernandes:28",
+      "Vitinho:28",
+      "Eric Ramires:25",
+      "Gustavinho:25",
+      "Fabinho:24",
+      "Bruno Praxedes:24",
+      "Bruno Gonçalves:23",
+      "Ignacio Sosa:22",
+      "Rodriguinho:22"
     ],
     "ATA": [
-      "Nacho Laquintana:26",
-      "Vitinho:27",
-      "Thaciano:30"
+      "Eduardo Sasha:34",
+      "Ignacio Laquintana:27",
+      "Gabriel Novaes:27",
+      "Isidro Pitta:26",
+      "Lucas Barbosa:25",
+      "Thiago Borbas:24",
+      "Henry Mosquera:24",
+      "Arthur Sousa:23",
+      "José María Herrera:22",
+      "Fernando:21"
     ]
   },
   "Santos": {
     "GOL": [
-      "João Paulo:30",
-      "Gabriel Brazão:25"
+      "Gabriel Brazão:25",
+      "Diógenes:25",
+      "Rodrigo Falcão:21",
+      "João Pedro:18"
     ],
     "DEF": [
-      "Gil:38",
-      "Jair Cunha:20",
+      "Mayke:33",
+      "Lucas Veríssimo:31",
       "Luan Peres:31",
-      "Escobar:28"
+      "Zé Ivaldo:29",
+      "Gonzalo Escobar:29",
+      "Igor Vinícius:29",
+      "Adonis Frías:28",
+      "Alexis Duarte:26",
+      "Kevyson:22",
+      "JP Chermont:21",
+      "Vinicius Lira:18"
     ],
     "MEI": [
-      "João Schmidt:32",
-      "Diego Pituca:33",
-      "Giuliano:35",
-      "Otero:32"
+      "Willian Arão:34",
+      "João Schmidt:33",
+      "Zé Rafael:33",
+      "Thaciano:31",
+      "Christian Oliva:30",
+      "Gabriel Menino:25",
+      "Miguel Terceros (Miguelito):22",
+      "Gabriel Bontempo:21"
     ],
     "ATA": [
-      "Guilherme:30",
-      "Julio Furch:36",
-      "Willian Bigode:37"
+      "Neymar:34",
+      "Rony:31",
+      "Moisés:29",
+      "Gabriel Barbosa (Gabigol):29",
+      "Benjamín Rollheiser:26",
+      "Álvaro Barreal:25",
+      "Robinho Junior:18"
     ]
   },
   "São Paulo": {
     "GOL": [
-      "Rafael:36"
+      "Rafael:37",
+      "Jandrei:33",
+      "Carlos Coronel:29",
+      "Young:24"
     ],
     "DEF": [
-      "Arboleda:34",
+      "Rafael Tolói:35",
+      "Robert Arboleda:34",
+      "Cédric Soares:34",
+      "Wendell:32",
+      "Enzo Díaz:30",
       "Alan Franco:29",
-      "Igor Vinícius:28",
-      "Rafinha:40",
-      "Welington:24"
+      "Sabino:29",
+      "Patryck Lanza:23",
+      "João Moreira:22"
     ],
     "MEI": [
-      "Luiz Gustavo:38",
-      "Bobadilla:23",
-      "Alisson:32",
-      "Pablo Maia:23",
-      "Nestor:25",
-      "Lucas Moura:33"
+      "Alisson:33",
+      "Marcos Antônio:26",
+      "Damián Bobadilla:25",
+      "Pablo Maia:24"
     ],
     "ATA": [
-      "Calleri:32",
-      "Luciano:32",
-      "Ferreirinha:27",
-      "André Silva:28"
+      "Lucas Moura:33",
+      "Luciano:33",
+      "Jonathan Calleri:32",
+      "Victor Sá:32",
+      "André Silva:29",
+      "Ferreira:28",
+      "Ryan Francisco:19"
     ]
   },
   "Vasco": {
     "GOL": [
-      "Léo Jardim:30"
+      "Léo Jardim:31",
+      "Daniel Fuzato:29",
+      "Pablo:23"
     ],
     "DEF": [
-      "Maicon:37",
-      "João Victor:27",
-      "Lucas Piton:25"
+      "Paulo Henrique:29",
+      "José Luis Rodríguez:29",
+      "Carlos Cuesta:27",
+      "Lucas Freitas:25",
+      "Lucas Piton:25",
+      "Alan Saldivia:24",
+      "Cuiabano:23",
+      "Riquelme:23",
+      "Robert Renan:22",
+      "Paulinho:22",
+      "Walace Falcão:21",
+      "JV Fonseca:21"
     ],
     "MEI": [
-      "Hugo Moura:27",
-      "Mateus Carvalho:23",
-      "Sforza:23",
-      "Payet:38",
-      "Coutinho:33"
+      "Thiago Mendes:34",
+      "Tchê Tchê:33",
+      "Jair:31",
+      "Mateus Carvalho:24",
+      "Johan Rojas:23",
+      "Cauan Barros:22",
+      "JP:21",
+      "Lukas Zuccarello:19"
     ],
     "ATA": [
-      "Vegetti:36",
       "David:30",
+      "Claudio Spinelli:29",
+      "Nuno Moreira:27",
+      "Loide Augusto:26",
+      "Brenner:26",
       "Adson:25",
-      "Rayan:19"
+      "Marino Hinestroza:24",
+      "Andrés Gómez:23"
     ]
   },
   "Vitória": {
     "GOL": [
-      "Lucas Arcanjo:26",
-      "Léo Linck:23"
+      "Gabriel Vasconcelos:33",
+      "Yuri Sena:25",
+      "Alexandre Fintelman:24",
+      "Lucas Willians:24"
     ],
     "DEF": [
+      "Neris:34",
       "Camutanga:32",
-      "Wagner Leonardo:26",
-      "Reynaldo:29",
-      "Alisson Farias:30"
+      "Zé Marcos:28",
+      "Cacá:27",
+      "Riccieli:27",
+      "Mateusinho:27",
+      "Jamerson:27",
+      "Luan Cândido:25",
+      "Claudinho:25",
+      "Ramon:25"
     ],
     "MEI": [
-      "Willian Oliveira:33",
-      "Rodrigo Andrade:29",
-      "Baralhas:27",
-      "Matheusinho:28"
+      "Edenilson:36",
+      "Walace:31",
+      "Machado:30",
+      "Aitor Cantalapiedra:30",
+      "Matheus:28",
+      "Gabriel Baralhas:27",
+      "Zé Vitor:25",
+      "Ronald:23",
+      "Zé Breno:22"
     ],
     "ATA": [
-      "Osvaldo:38",
-      "Janderson:26",
-      "Iury Castilho:30"
+      "Osvaldo:39",
+      "Marinho:36",
+      "Renato Kayzer:30",
+      "Erick:28",
+      "Fabrício:25",
+      "Renê:24",
+      "Pedro Henrique:24",
+      "Diego Tarzia:23",
+      "Lawan:21"
     ]
   },
   "ABC": {
     "GOL": [
-      "Rafael Santos"
+      "Rodolfo:32",
+      "Matheus Alves:31",
+      "Vitor Luiz:30"
     ],
     "DEF": [
-      "Igor Fernandes",
-      "Marlon Silva",
-      "Índio",
-      "Marcos Ytalo"
+      "Wellington Carvalho:33",
+      "Dudu Mandai:33",
+      "Edson:30",
+      "João Victor:28",
+      "Lucas Souza:27",
+      "Lucas Marques:27",
+      "Fabão:26",
+      "Cayo Tenório:26",
+      "Jefferson Vinicius:25",
+      "Maurício:24"
     ],
     "MEI": [
-      "Rafael Longuine",
-      "Erick Varão",
-      "Anderson Lessa"
+      "Wellington Reis:34",
+      "Bruno Leite:26",
+      "Geilson:25",
+      "Jonathan:24",
+      "João Pedro:24",
+      "Lima:23",
+      "Jhosefer:22",
+      "Mateus Bernardo:21"
     ],
     "ATA": [
-      "Vinícius Leite",
-      "Vico",
-      "Rafinha"
+      "Wallyson:37",
+      "Igor Bahia:33",
+      "Brunão:25",
+      "Luís Felipe:25",
+      "Rikelmi:24",
+      "Luiz Fernando:23",
+      "Esquerdinha:20"
     ]
   },
   "América-MG": {
     "GOL": [
-      "Matheus Cavichioli"
+      "Bruno Brígido:35",
+      "Gustavo:33",
+      "Cássio:24",
+      "William Arthur Assmann:22"
     ],
     "DEF": [
-      "Iago Maidana",
-      "Danilo Avelar",
-      "Marlon",
-      "Patrick"
+      "Manoel:36",
+      "Ricardo Silva:33",
+      "Dalbert:32",
+      "Emerson Santos:31",
+      "Artur:30",
+      "Heitor:26",
+      "Léo Alaba:26",
+      "Tobias Ostchega:24",
+      "Jhonny:24",
+      "Samuel Alves:23",
+      "Biel Silva:23",
+      "Rafa Barcelos:22"
     ],
     "MEI": [
-      "Juninho",
-      "Adyson",
-      "Willian Bigode",
-      "Renato Marques"
+      "Alê:36",
+      "Fernando Elizari:35",
+      "Jorge Andrés Roa Jiménez:33",
+      "Eduardo Person:31",
+      "Val:29",
+      "Yago Souza de Santana:24",
+      "Matías Segovia:23",
+      "Yago Santos:23",
+      "Felipe Amaral:22"
     ],
     "ATA": [
-      "Aloísio",
-      "Everton Sena",
-      "Rodrigo Varanda"
+      "Gonzalo Mastriani:33",
+      "Everton Brito:31",
+      "Willian Dubgod:26",
+      "Paulo Victor:25",
+      "Gabriel Barros:24",
+      "Thauan Willians:22",
+      "Breno Teixeira:21",
+      "Jhonatan Lima:21",
+      "Yarlen:20"
     ]
   },
   "Atlético Goianiense": {
     "GOL": [
-      "Fernando Miguel"
+      "Paulo Vítor:37",
+      "Vladimir:36",
+      "Paulo Henrique:32",
+      "Léo:24"
     ],
     "DEF": [
-      "Diego Ivo",
-      "Wanderson",
-      "Klaus",
-      "Marreta"
+      "Adriano Martins:29",
+      "Junior Barreto:28",
+      "Guilherme Romão:28",
+      "Natã Felipe:25",
+      "Tito:25",
+      "Marcão:25",
+      "Ewerthon:25",
+      "Guilherme Lopes:24",
+      "Felipe Guimarães:22",
+      "Gustavo Daniel:21"
     ],
     "MEI": [
-      "Diego Torres",
-      "Zé Roberto",
-      "Airton"
+      "Geovane:37",
+      "Guilherme:35",
+      "Igor Henrique:34",
+      "Leandro Vilela:31",
+      "Ariel Palácio:27",
+      "Matheus Índio:26",
+      "Cristiano:26",
+      "Redney Assis:24"
     ],
     "ATA": [
-      "Rhaldney",
-      "Wellington Rato",
-      "Everaldo"
+      "Jean Dias:35",
+      "Bruno José:28",
+      "Marrony:27",
+      "Gustavo Coutinho:27",
+      "Léo Tocantins:26",
+      "Vitinho:25",
+      "Geovany Soares:25",
+      "Jader Gentil:22",
+      "Lima:21",
+      "Daniel Lima:21",
+      "Léo Jacó:21",
+      "Guilherme Henrique:19"
     ]
   },
   "Avaí": {
     "GOL": [
-      "Gabriel"
+      "Igor Bohn:30",
+      "Léo Aragão:24",
+      "Otávio Passos:21",
+      "Joaquim Paolazzi Ananias:19"
     ],
     "DEF": [
-      "Rodrigo Pinho",
-      "Betão",
-      "Zeca",
-      "Diogo Mateus"
+      "Allyson:35",
+      "Mateus Quaresma:29",
+      "João Victor Maistro Soares:26",
+      "Wesley Gasolina:26",
+      "Douglas Teixeira:25",
+      "Wallison:24",
+      "Nicolas Cabral:23",
+      "Henrique Carrielo:23",
+      "Jamerson dos Santos Nascimento:23",
+      "Jefferson Maciel Bento:22",
+      "Guilherme Vargas:21",
+      "Bruno Baldini:21",
+      "William:21",
+      "Gabriel Simples:19"
     ],
     "MEI": [
-      "Lourenço",
-      "Constantino",
-      "Zé Vitor",
-      "Guga"
+      "Jean Lucas:31",
+      "Zé Ricardo:28",
+      "Wenderson:28",
+      "Daniel Penha:27",
+      "Luiz Henrique:27",
+      "Romildo Del Piage:26",
+      "Nicolas Tedesco:22",
+      "Pedro Cuiaba:21",
+      "Paulo Vitor:21",
+      "Hyan:21",
+      "Vinicius Gugel da Silva:21"
     ],
     "ATA": [
-      "Alex Sandro",
-      "Vagner Love",
-      "William Pottker"
+      "Léo Gamalho:40",
+      "Rafael Bilú:27",
+      "Cristiano:27",
+      "Sorriso:25",
+      "Thayllon Roberth:24",
+      "Gaspar:23",
+      "Isaias Pereira da Silva:23",
+      "Kevin:21",
+      "Joao Vitor Oliveira dos Santos:21",
+      "Marcio Vitor:21",
+      "Caio Brazil:20"
     ]
   },
   "Botafogo-SP": {
     "GOL": [
-      "Ronaldo"
+      "Victor Souza:33",
+      "Jordan:28",
+      "Brenno:23"
     ],
     "DEF": [
-      "Pablo Thomaz",
-      "Wallace Read",
-      "Índio"
+      "Jonathan:33",
+      "Wallace:31",
+      "Gabriel Inocêncio:31",
+      "Gui Mariano:29",
+      "Patrick Brey:29",
+      "Ericson:27",
+      "Felipe Vieira:27",
+      "Gustavo Vilar:26",
+      "Carlos Eduardo:25",
+      "Darlan:22",
+      "Badaró:21",
+      "Henrique Teles:19",
+      "Pedrinho:19"
     ],
     "MEI": [
-      "Reginaldo",
-      "Igor Bahia",
-      "Bruno Alves"
+      "Rafael Gava:33",
+      "Matheus Sales:31",
+      "Leandro Maciel:30",
+      "Everton Morelli:28",
+      "Thiago Moraes:28",
+      "Marco Antônio:26",
+      "Erik:21",
+      "Yuri Felipe:20",
+      "Penha:20",
+      "Matheus Mineiro:20"
     ],
     "ATA": [
-      "Rafael Silva",
-      "Waguininho",
-      "Zé Roberto"
+      "Guilherme Queiroz:36",
+      "Arthur Caíke:34",
+      "Hygor:33",
+      "Jefferson Nem:30",
+      "Kelvin:28",
+      "Márcio Maranhão:27",
+      "Zé Hugo:26",
+      "Wesley Santos:25",
+      "Luizão:23",
+      "Thalles:21",
+      "Ruan:20"
     ]
   },
   "Ceará": {
     "GOL": [
-      "Richard"
+      "Richard:35",
+      "Bruno Ferreira:32",
+      "Jorge Meurer:25",
+      "Gustavo Martins:21"
     ],
     "DEF": [
-      "Kuscevic",
-      "David Ricardo",
-      "Michel Macedo",
-      "Raí Ramos"
+      "Luiz Otávio:37",
+      "Luizão:33",
+      "Alex Silva:32",
+      "Éder:31",
+      "Sávio:31",
+      "Rafael Ramos:31",
+      "Sánchez:30",
+      "Bryan Borges:29",
+      "Ronald Carvalho:26",
+      "Fernando:26",
+      "Júlio César:22",
+      "Stanley Boateng:21",
+      "Pedro Gilmar:20"
     ],
     "MEI": [
-      "Richardson",
-      "Lima",
-      "Lourenço",
-      "Guilherme Castilho"
+      "Vina:35",
+      "Richardson:34",
+      "Lucas Mugni:34",
+      "Juan Alano:29",
+      "Lucas Lima:26",
+      "Vinicius Zanocelo:25",
+      "Matheus Araújo:24",
+      "João Gabriel:20",
+      "Pedro Esli:20"
     ],
     "ATA": [
-      "Erick",
-      "Aylon",
-      "Facundo Barceló"
+      "Renzo López:32",
+      "Fernandinho:28",
+      "Matheusinho:28",
+      "Wendel Silva:25",
+      "Lucca:23",
+      "Gabriel Amaral:22",
+      "Giulio:21",
+      "Gustavo Prado:21",
+      "Enzo Lodovico:21",
+      "Kauã:20",
+      "Melk:19"
     ]
   },
   "Chapecoense": {
     "GOL": [
-      "Gustavo"
+      "Rafael Santos:37",
+      "Léo Vieira:35",
+      "Anderson:28",
+      "Wellington Felipe Pradeiczuk:21",
+      "Kaina Correa Dal Magro:21"
     ],
     "DEF": [
-      "Kanu",
-      "Léo Duarte",
-      "Reinaldo",
-      "Rafael Santos"
+      "Bruno Pacheco:34",
+      "Rafael Thyere:33",
+      "João Paulo:31",
+      "Everton:31",
+      "Walter Clar:31",
+      "Bruno Leonardo:30",
+      "Marcos Vinícius:29",
+      "Victor Caetano:28",
+      "Eduardo Doma:27",
+      "Mancha:25",
+      "Gustavo Talles:23",
+      "Kauan:22",
+      "Marcio Kaique Maciel Figueira:21",
+      "Fernando Carlos da Silva Filho:21",
+      "Vinicius Eduardo:21"
     ],
     "MEI": [
-      "Lucas Marques",
-      "Perotti",
-      "Geuvazio"
+      "Giovanni Augusto:36",
+      "Jean Carlos:34",
+      "Bruno Matias:27",
+      "Camilo Reijers de Oliveira:27",
+      "Wermeson:24",
+      "Robert Santos:23",
+      "Italo:23",
+      "David Antunes:22"
     ],
     "ATA": [
-      "Anselmo Ramon",
-      "Bruno Nazário",
-      "Denner"
+      "Yannick Bolasie:37",
+      "Neto Pessoa:32",
+      "Marcinho:31",
+      "Maurício Garcez:29",
+      "Pedro Henrique Perotti:28",
+      "Mailson Bezerra Silva:27",
+      "Jonathan Palacios:27",
+      "Ênio:25",
+      "Joao Henrique Araujo Bom:21",
+      "Rubens Ricoldi:21",
+      "Bernardo:21"
     ]
   },
   "Coritiba": {
     "GOL": [
-      "Gabriel Pirani"
+      "Gabriel Leite:32",
+      "Keiller:29",
+      "Pedro Rangel:26",
+      "Pedro Morisco:22",
+      "Benassi:22"
     ],
     "DEF": [
-      "Jonathan Bocão",
-      "Andrey Santos",
-      "Matheus Alexandre",
-      "Nathan Ribeiro"
+      "Rodrigo Moledo:38",
+      "Maicon:37",
+      "Thiago Santos:36",
+      "Bruno Melo:33",
+      "Tinga:32",
+      "Jacy:29",
+      "Felipe Jonatan:28",
+      "Tiago Cóser:22",
+      "João Almeida:21",
+      "JP Chermont:21"
     ],
     "MEI": [
-      "Bernanrdo",
-      "Josué",
-      "Willian Farias",
-      "Sabino"
+      "Josué Pesqueira:35",
+      "Willian Oliveira:33",
+      "Fernando Sobral:31",
+      "Sebastián Gómez:30",
+      "Wallisson:28",
+      "Vini Paulista:25",
+      "Matheus Dias:24",
+      "Gustavo:22",
+      "Alejandro Ararat:21"
     ],
     "ATA": [
-      "Robson",
-      "Kayke",
-      "Bill"
+      "Keno:36",
+      "Pedro Rocha:31",
+      "Rodrigo Rodrigues:30",
+      "Breno Lopes:30",
+      "Fabinho:26",
+      "Renato Marques:22",
+      "Joaquín Lavega:21",
+      "Lucas Ronier:21",
+      "Enzo Vagner:20"
     ]
   },
   "CRB": {
     "GOL": [
-      "Diogo Silva"
+      "Matheus Albino:31",
+      "Vitor Caetano:27",
+      "Fabio:24",
+      "Pablo Andrade:22"
     ],
     "DEF": [
-      "Marllon",
-      "Denner",
-      "Edilson",
-      "Léo Rafael"
+      "Bressan:33",
+      "Fabio Alemão:30",
+      "Lucas Lovat:29",
+      "Reverson:29",
+      "Kevin Peterson:28",
+      "Léo Campos:28",
+      "Hereda:27",
+      "Henri:24",
+      "Darlisson:24",
+      "Joao Pedro:23",
+      "Maycon Ribeiro:22",
+      "David Gomes:22",
+      "Lyncon:21",
+      "Ruy Marcos:20"
     ],
     "MEI": [
-      "Erick",
-      "Lucas Gazal",
-      "Rafael Longuine"
+      "Pedro Castro:33",
+      "Daniel Simões:28",
+      "Crystopher:28",
+      "Luizão:27",
+      "Geovane:27",
+      "Patrick de Lucca:26",
+      "Geirton Marques:24",
+      "Mateus Pureza:23",
+      "Rodrigo Jesse:23",
+      "Caua Carvalho:22",
+      "David Medeiros:22",
+      "Guilherme Estrella:21",
+      "Lucas Kallyel:21",
+      "Luiz Fernando:21"
     ],
     "ATA": [
-      "Anselmo Ramon",
-      "Alesson",
-      "Rodrigo Sam"
+      "Luiz Phellype:32",
+      "Douglas Baggio:31",
+      "Dadá Belmonte:29",
+      "Vinicius Barata:27",
+      "Guilherme Pato:25",
+      "Breno Herculano:25",
+      "Thiago Fernandes:25",
+      "João Neto:23",
+      "Mikael:23",
+      "Guilherme Kauan:21",
+      "Kaua Moreira:20"
     ]
   },
   "CSA": {
     "GOL": [
-      "Diogo Silva"
+      "Wellerson:28",
+      "Yago Oliveira:26",
+      "Arthur Silveira:24"
     ],
     "DEF": [
-      "Betinho",
-      "Bruno Collaço",
-      "Naressi"
+      "Rayan:36",
+      "Kaike:31",
+      "Lucão:30",
+      "Marcos Ytalo:30",
+      "Marlon Lopes:29",
+      "Ailton Santos:29",
+      "Félix Jorge:28",
+      "Caio Hila:26",
+      "Amorim:24",
+      "Mikael:24"
     ],
     "MEI": [
-      "Rafael Longuine",
-      "Lucão",
-      "Ítalo"
+      "Camacho:36",
+      "Dudu Figueiredo:35",
+      "Everton Heleno:35",
+      "Ronaldo Mendes:33",
+      "Fabrício Bigode:28",
+      "Matheus Melo:27",
+      "Renato Pitbull:26",
+      "Ramon Batista:26",
+      "Kayllan:25"
     ],
     "ATA": [
-      "Rodrigo Sam",
-      "Emerson Santos",
-      "Vinícius Leite"
+      "Buba:32",
+      "Lucas Lima:29",
+      "Lucas Silva:28",
+      "Venícius Cascais:27",
+      "Rian Santana:25",
+      "Matheus Souza:25"
     ]
   },
   "Goiás": {
     "GOL": [
-      "Tadeu"
+      "Thiago Rodrigues:37",
+      "Tadeu:34",
+      "Ezequiel:24",
+      "Murillo Victorio:23"
     ],
     "DEF": [
-      "Sidnei",
-      "Fábio Sanches",
-      "Reynaldo",
-      "Rafael Gava"
+      "Rodrigo Soares:33",
+      "Luiz Felipe:32",
+      "Ramon Menezes:31",
+      "Djalma:31",
+      "Nicolas:29",
+      "Lucas Ribeiro:27",
+      "Luisão:25",
+      "Murilo Câmara:23",
+      "Danilo:22",
+      "Diego Caito:21"
     ],
     "MEI": [
-      "Sander",
-      "Alex Santana",
-      "Rickson",
-      "Willian Oliveira"
+      "Lucas Lima:36",
+      "Wellington Rato:34",
+      "Gegê:32",
+      "Filipe Machado:30",
+      "Lourenço:28",
+      "Juninho:24",
+      "Brayann:24",
+      "Baldória:22",
+      "Lucas Rodrigues:21"
     ],
     "ATA": [
-      "Diego Gonçalves",
-      "Guilherme Parede",
-      "Edu"
+      "Anselmo Ramon:38",
+      "Jean Carlos:34",
+      "Esli Garcia:26",
+      "Pedrinho:24",
+      "Cadu:24",
+      "Kadu Sousa:21",
+      "Halerrandrio:20"
     ]
   },
   "Guarani": {
     "GOL": [
-      "Ravanelli"
+      "Mateus Claus:32",
+      "Alvaro:26",
+      "Fred Conte:23"
     ],
     "DEF": [
-      "Yan Sasse",
-      "Emerson Santos",
-      "Bruno Alves",
-      "Cássio"
+      "Neuciano Gusmão:38",
+      "Rafael Donato:37",
+      "Jonathan:34",
+      "Maurício Antônio:34",
+      "Renan Castro:31",
+      "Lucas Rafael:28",
+      "Raphael Rodrigues Borges:27",
+      "Emerson:25",
+      "Matheus Povoa Goncalves:23",
+      "Nickollas Silva:23",
+      "Rian:22",
+      "Yan Henrique:20"
     ],
     "MEI": [
-      "Reverson",
-      "Jenison",
-      "Giovanni Augusto"
+      "Ralf:42",
+      "Willian Farias:37",
+      "Diego Torres:35",
+      "Isaque:29",
+      "Carlos Eduardo:29",
+      "Nathan Melo:25",
+      "Mateus Sarará:24",
+      "Kaua Mineiro:23",
+      "Phedro Lucas Garcia Rodrigues:23",
+      "Ryuta Takahashi:21",
+      "Joao Victor:21"
     ],
     "ATA": [
-      "Bruno José",
-      "Fabinho",
-      "Isidro Pitta"
+      "Lucca:36",
+      "Guilherme Parede:30",
+      "Maranhao:26",
+      "Mirandinha:26",
+      "Fabricio Dias Afonso:25",
+      "Guilherme Cachoeira:24",
+      "Kauã:23",
+      "Kewen:21",
+      "Hebert:21"
     ]
   },
   "Náutico": {
     "GOL": [
-      "Vagner"
+      "Muriel Becker:39",
+      "Gastón Guruceaga:31",
+      "Arthur:29"
     ],
     "DEF": [
-      "Gum",
-      "Ronaldo Alves",
-      "Cordeiro",
-      "Nicolas"
+      "Fagner Alemão:35",
+      "Igor Fernandes:34",
+      "Arnaldo:34",
+      "Matheus Ribeiro:33",
+      "Reginaldo:33",
+      "Luiz Paulo:33",
+      "Mateus Silva:31",
+      "Wanderson:31",
+      "Yuri Silva:30",
+      "Betão:27",
+      "Léo Índio:22",
+      "Léo Jance:21",
+      "Gustavo Henrique:20",
+      "Emanuel:17"
     ],
     "MEI": [
-      "Hyuri",
-      "Igor Bahia",
-      "Matheus Ribeiro"
+      "Auremir:34",
+      "Jean Carlos:34",
+      "Leonai Souza:31",
+      "Ramon Carvalho:29",
+      "Luiz Felipe:28",
+      "Wenderson:28",
+      "Dodô:25",
+      "Felipe Cardoso:23",
+      "Samuel:22",
+      "Vitinho:22",
+      "Felipe Redaelli:22",
+      "Halanzinho:20"
     ],
     "ATA": [
-      "Kayke",
-      "Vinicius Leite",
-      "Robinho"
+      "Paulo Sérgio:37",
+      "Junior Todinho:32",
+      "Vinícius:32",
+      "Victor Andrade:30",
+      "Derek:28",
+      "Felipe Saraiva:28",
+      "Kauã Maranhão:22",
+      "Luiz Claudio:21",
+      "Kevyn:19",
+      "Rosa:18"
     ]
   },
   "Novorizontino": {
     "GOL": [
-      "João Vitor"
+      "Jordi:32",
+      "Cesar:31",
+      "Lucas Pereira:26",
+      "Joao Vitor Scapin:21"
     ],
     "DEF": [
-      "Danilo Boza",
-      "Diego Ferreira",
-      "Wallace"
+      "Eduardo Brock:35",
+      "Sander Henrique Bortolotto:35",
+      "Nilson Castrillón:30",
+      "Patrick:27",
+      "Renato Palm:27",
+      "Gabriel Bahia:26",
+      "Jhilmar Lora:25",
+      "Iván Alvariño:25",
+      "Alemão:24",
+      "Dantas:21",
+      "Maykon Jesus:21"
     ],
     "MEI": [
-      "Íago Dias",
-      "Lucas Cânhoto",
-      "Fabrício Daniel"
+      "Luis Oyama:29",
+      "Marlon:28",
+      "Matheus Bianqui:28",
+      "Juninho:25",
+      "Léo Naldi:24",
+      "Rômulo:24",
+      "Diego Galo:20"
     ],
     "ATA": [
-      "Waguininho",
-      "Alesson",
-      "Nicolas"
+      "Christian Ortiz:33",
+      "Robson:31",
+      "Nicolas Careca:29",
+      "Diego Mathias:27",
+      "Hélio Borges:26",
+      "Vinícius Paiva:25",
+      "Ronald Barcellos:24",
+      "Tavinho:23",
+      "Jardiel:21"
     ]
   },
   "Operário-PR": {
     "GOL": [
-      "Gustavo Ludwig"
+      "Vagner da Silva:40",
+      "Elias Martello Curzel:31",
+      "Talles Antonio de Souza Lima:28",
+      "Diego Monteiro:21"
     ],
     "DEF": [
-      "Vinícius Kiss",
-      "Bruno Ferreira",
-      "Rhuan"
+      "Maguinho:34",
+      "Klaus:32",
+      "Charles Raphael de Almeida:31",
+      "Jhan Pool Cuenu:30",
+      "Moraes Jr.:28",
+      "Mikael Doka:26",
+      "Matheus dos Santos Miranda:26",
+      "Gabriel Feliciano da Silva:25",
+      "André Henrique Simplicio Dantas:23",
+      "João Gabriel Rodrigues Botão:23",
+      "Renan Gustavo Ribeiro Moreira:21"
     ],
     "MEI": [
-      "Índio",
-      "Felipinho",
-      "Matheus Bianqui"
+      "Juan Pablo Zuluaga Estrada:33",
+      "Índio:30",
+      "Matheus Trindade:30",
+      "Gabriel Boschilia:30",
+      "Vinicius Diniz:26",
+      "Henrique dos Santos de Oliveira:24",
+      "Pedro Veronez Vilhena:24",
+      "Eduardo Franzon Mosconi:24",
+      "José Gervasio dos Santos Neto:23"
     ],
     "ATA": [
-      "Léo Jabá",
-      "Rafael Carvalheira",
-      "Vinícius Leite"
+      "Pablo:34",
+      "Aylon:34",
+      "Caio Dantas:33",
+      "Felipe Augusto:32",
+      "Hildeberto Pereira:30",
+      "Vinicius Alessandro Mingotti:26",
+      "Edwin Torres:26",
+      "Brenno Pereira Silva:23",
+      "Matheus Galdino Silva:21"
     ]
   },
   "Paysandu": {
     "GOL": [
-      "Thonny Anderson"
+      "Jean Carlos Drosny:32",
+      "Matheus Nogueira:29",
+      "Gabriel Mesquita:27"
     ],
     "DEF": [
-      "Nicolas",
-      "Rodrigo Andrade",
-      "Ronei",
-      "Diego Matos"
+      "Edílson:31",
+      "Yeferson Quintana:30",
+      "Bryan Mascarenhas:30",
+      "F. Bonifazi:30",
+      "Reverson:29",
+      "Lucca Carvalho:23",
+      "Iarley:21"
     ],
     "MEI": [
-      "Robinho",
-      "Ítalo",
-      "Marlon",
-      "Netinho"
+      "Dudu Vieira:32",
+      "Ronaldo Henrique:32",
+      "Marcinho:31",
+      "Edinho:31",
+      "Matheus Vargas:30",
+      "Gustavo Amorim Nicola:28",
+      "Joseph Espinoza:26",
+      "Ramon Vinicius:26",
+      "Caio Melo:25",
+      "Henrique Viana Salomoni:23",
+      "André:21",
+      "Kaua Hinkel Santos Vieira:21",
+      "Arthur Monteiro:20"
     ],
     "ATA": [
-      "Jean Dias",
-      "Chapéu Goiano",
-      "Rafinha"
+      "Maximiliano Cantera:33",
+      "Franco López:33",
+      "Denilson:28",
+      "Matheus Cardoso de Souza:28",
+      "Vinícius Faria:26",
+      "Cleiton Pego:26",
+      "Ítalo:23",
+      "Roger:21"
     ]
   },
   "Ponte Preta": {
     "GOL": [
-      "Ivan"
+      "Guilherme Viana:24"
     ],
     "DEF": [
-      "Yan Sasse",
-      "Matheus Bianqui",
-      "Cortez",
-      "Bruno Collaço"
+      "Wallison Maia:34",
+      "Danilo Barcelos:34",
+      "Diogo Silva:33",
+      "Wallace:31",
+      "Lucas Cunha:29",
+      "Diego Leão:24",
+      "Márcio Silva:24",
+      "Weverton:23",
+      "Júlio:23",
+      "Kevyson:22"
     ],
     "MEI": [
-      "Elvis",
-      "Danielzinho",
-      "Nicolas Careca"
+      "Élvis:35",
+      "Léo Gomes:29",
+      "André Lima:26"
     ],
     "ATA": [
-      "Rafael Longuine",
-      "Nino Paraíba",
-      "Renato Cajá"
+      "Diego Tavares:35",
+      "Hebert:26",
+      "Rodriguinho:25",
+      "Luís Phellype:25",
+      "Daniel Baianinho:23",
+      "Miguel:23",
+      "Brandão:21"
     ]
   },
   "Remo": {
     "GOL": [
-      "Vinícius Dinamite"
+      "Marcelo Rangel:38",
+      "Ygor Vinhas:32",
+      "Ivan:29"
     ],
     "DEF": [
-      "Marcos Vinícius",
-      "Yago Pikachu",
-      "Diegão",
-      "Ranarison Andriamahitsinoro"
+      "Marllon:34",
+      "Cristian Tassano:29",
+      "Braian Cufré:29",
+      "Léo Andrade:28",
+      "João Lucas:28",
+      "Duplexe Tchamba:27",
+      "Matheus Alexandre:27",
+      "Marcelinho:27",
+      "Matheus Felipe:27",
+      "Mayk:26",
+      "Thalisson:24",
+      "Edson Kauã:22",
+      "Kayky Almeida:21",
+      "Kadu Santos:20"
     ],
     "MEI": [
-      "Erick Flores",
-      "Anderson Uchôa",
-      "Matheus Anjos"
+      "Patrick:33",
+      "Zé Welison:31",
+      "Vitor Bueno:31",
+      "Giovanni Pavani:29",
+      "Edson Fernando:28",
+      "Leonel Picco:27",
+      "Zé Ricardo:27",
+      "Franco Catarozzi:26",
+      "David Braga:24",
+      "Freitas:23"
     ],
     "ATA": [
-      "Renan Gorne",
-      "Marlon",
-      "Diego Matos"
+      "Yago Pikachu:34",
+      "Alef Manga:31",
+      "Gabriel Taliari:29",
+      "Carlinhos:29",
+      "Gabriel Poveda:28",
+      "Jajá:27",
+      "Rafael Monti:26",
+      "Jáderson:25",
+      "Eduardo Melo:25"
     ]
   },
   "Sport": {
     "GOL": [
-      "Caíque França"
+      "Denis:39",
+      "Caíque França:31",
+      "Halls:27",
+      "Adriano:21"
     ],
     "DEF": [
-      "Sabino",
-      "Rafael Thyere",
-      "Igor Cariús",
-      "João Silva"
+      "Allyson:35",
+      "Madson:34",
+      "Rafael Thyere:33",
+      "Igor Cariús:33",
+      "Ramon Menezes:31",
+      "Matheus Alexandre:27",
+      "João Silva:21"
     ],
     "MEI": [
-      "Lucas Lima",
-      "Fabricio Domínguez",
-      "Alan Ruiz",
-      "Chico"
+      "Lucas Lima:36",
+      "Sérgio Oliveira:34",
+      "Carlos de Pena:34",
+      "Yago Felipe:31",
+      "Lucas Kal:29",
+      "Pedro Augusto:29",
+      "Christian Rivera:24",
+      "Juan Xavier:24",
+      "Max Alves:24",
+      "Lucas André:23",
+      "Rodrigo Atencio:23"
     ],
     "ATA": [
-      "Wanderson",
-      "Zé Roberto",
-      "Vagner Love"
+      "Pablo:34",
+      "Romarinho:32",
+      "Zé Roberto:32",
+      "Clayson:31",
+      "Chrystian Barletta:25"
     ]
   },
   "Vila Nova": {
@@ -908,7 +1680,7 @@
     ],
     "ATA": [
       "Emerson Santos",
-      "Renato Cajá",
+      "Renato Cajá:33",
       "Wellington Rato"
     ]
   },

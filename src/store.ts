@@ -8,7 +8,7 @@ import {
   groupFixturesForMatchday, leagueWeek, nextContWeek, nextCupWeek, tiesForLeg, weekInfo,
 } from "./game/cup";
 import continentalData from "./data/continental.json";
-import { newGame, assignShirtNumbers } from "./game/seeder";
+import { newGame, assignShirtNumbers, playerSalary, processSeasonTransitions } from "./game/seeder";
 import { bestXI, createLiveMatch, simulateMinute } from "./game/engine";
 import { applyResult, buildLeagueFixtures, initTable, sortTable } from "./game/schedule";
 import { mulberry32, pick } from "./game/rng";
@@ -22,6 +22,17 @@ export interface Settings {
 
 export const MIN_SQUAD = 18;
 export const MAX_SQUAD = 25;
+
+// Rodadas consecutivas no vermelho que a diretoria tolera antes de decretar
+// falência e demitir o técnico.
+export const BANKRUPTCY_WEEKS = 4;
+
+// Folha salarial semanal do elenco do usuário: descontada do caixa a cada rodada.
+export function squadWageBill(g: GameState): number {
+  return g.players
+    .filter((p) => p.clubId === g.userClubId)
+    .reduce((s, p) => s + playerSalary(p), 0);
+}
 
 // Receita de bilheteria por jogo em casa: proporcional ao porte do clube (baseBudget).
 // Usada como unidade de referência de prêmios (copa, bicho); a renda real de cada
@@ -103,6 +114,9 @@ export function clubAggression(game: GameState, clubId: string): number {
 
 interface Store {
   game: GameState | null;
+  // entropia sorteada a cada abertura de rodada (não persiste): garante que
+  // repetir a mesma rodada — mesmo save, mesma semana — produza um jogo diferente
+  matchEntropy: number;
   live: LiveMatch[] | null;
   lastResults: LiveMatch[] | null; // última rodada encerrada, para consulta
   liveDivision: string | null;
@@ -130,6 +144,7 @@ interface Store {
   skipMatchday: () => void;
   acceptJobOffer: () => void;
   declineJobOffer: () => void;
+  promotePlayer: (candidateId: string) => void;
   updateLive: (fn: (matches: LiveMatch[]) => void) => void;
   touchPlayers: (fn: (players: Player[]) => void) => void;
 }
@@ -146,7 +161,7 @@ export const nextLeagueWeek = (g: GameState): number | null => {
 // jogo encerrado) — nesse caso a classificação é decidida numa disputa de pênaltis
 // interativa antes de encerrar a rodada.
 export function needsUserShootout(g: GameState, live: LiveMatch[] | null): boolean {
-  if (!live) return false;
+  if (!live || g.fired) return false; // demitido só observa: empate decide na moeda, como os da IA
   const info = weekInfo(g.week);
   if (info.type === "league" || info.type === "contgroup" || info.leg !== 2) return false;
   const knockout = info.type === "cup" ? g.cup : g.continental;
@@ -191,6 +206,7 @@ export const useStore = create<Store>()(
   persist(
     (set, get) => ({
       game: null,
+      matchEntropy: (Math.random() * 4294967296) >>> 0,
       live: null,
       lastResults: null,
       liveDivision: null,
@@ -203,7 +219,7 @@ export const useStore = create<Store>()(
 
       releasePlayer: (id) => {
         const g = get().game;
-        if (!g) return;
+        if (!g || g.fired) return;
         const squad = g.players.filter((p) => p.clubId === g.userClubId);
         if (squad.length <= MIN_SQUAD) return;
         const players = g.players.filter((p) => p.id !== id);
@@ -218,7 +234,7 @@ export const useStore = create<Store>()(
 
       sellPlayer: (id) => {
         const g = get().game;
-        if (!g) return { ok: false };
+        if (!g || g.fired) return { ok: false };
         const squad = g.players.filter((p) => p.clubId === g.userClubId);
         if (squad.length <= MIN_SQUAD) return { ok: false };
         const player = squad.find((p) => p.id === id);
@@ -238,6 +254,7 @@ export const useStore = create<Store>()(
       buyPlayer: (id, offer) => {
         const g = get().game;
         if (!g) return { ok: false, message: "Sem jogo ativo." };
+        if (g.fired) return { ok: false, message: "Você foi demitido: não comanda mais o clube." };
         const squad = g.players.filter((p) => p.clubId === g.userClubId);
         if (squad.length >= MAX_SQUAD)
           return { ok: false, message: `Elenco no limite máximo de ${MAX_SQUAD} jogadores.` };
@@ -294,7 +311,8 @@ export const useStore = create<Store>()(
           const posA = finalA.findIndex((r) => r.clubId === userClub.id) + 1;
           const posB = finalB.findIndex((r) => r.clubId === userClub.id) + 1;
           const offerChance =
-            posA === 1 ? 0.6 // campeão da Série A: cobiçado, mas mercado é mercado
+            g.fired ? 0 // demitido não recebe convite: só observa
+            : posA === 1 ? 0.6 // campeão da Série A: cobiçado, mas mercado é mercado
             : posA >= 2 && posA <= 4 ? 0.3 // G4 da A chama atenção
             : posB === 1 ? 0.45 // campeão da B: acesso com moral
             : posB === 2 ? 0.25 // vice da B: subiu, mas com menos brilho
@@ -322,8 +340,21 @@ export const useStore = create<Store>()(
                 div, initTable(countryClubs.filter((c) => c.division === div)),
               ]),
             ),
-            budget: g.budget + seasonRevenue(userClub.baseBudget),
-            players: g.players.map((p) => ({ ...p, gained: 0 })),
+            // clube falido não recebe aporte: o caixa fica congelado onde parou
+            budget: g.fired ? g.budget : g.budget + seasonRevenue(userClub.baseBudget),
+            ...(() => {
+              const { updatedPlayers, pendingPromotions, retiredLastSeason } = processSeasonTransitions(
+                seasonRng,
+                g!.players,
+                clubs,
+                g!.userClubId
+              );
+              return {
+                players: updatedPlayers,
+                pendingPromotions: pendingPromotions.length > 0 ? pendingPromotions : undefined,
+                retiredLastSeason: retiredLastSeason.length > 0 ? retiredLastSeason : undefined,
+              };
+            })(),
             cup: drawCup(
               seasonRng,
               countryClubs.filter((c) => c.division === "Série A").map((c) => c.id),
@@ -363,42 +394,49 @@ export const useStore = create<Store>()(
         const sorted = [...pairs].sort((a, b) => divOrder(a) - divOrder(b));
         // continental usa o mesmo regime de suspensões da copa (competição mata-mata)
         const matchCompetition = info.type === "league" ? "league" : "cup";
+        // técnico demitido não comanda: o ex-clube entra em campo escalado pela IA
+        const isUserTeam = (id: string) => id === g!.userClubId && !g!.fired;
         const live = sorted.map((f) =>
           createLiveMatch(
             f.homeId, f.awayId,
             g.players.filter((p) => p.clubId === f.homeId),
             g.players.filter((p) => p.clubId === f.awayId),
-            f.homeId === g.userClubId ? g.starters : undefined,
-            f.awayId === g.userClubId ? g.starters : undefined,
-            f.homeId === g.userClubId ? g.defaultTactics : undefined,
-            f.awayId === g.userClubId ? g.defaultTactics : undefined,
+            isUserTeam(f.homeId) ? g.starters : undefined,
+            isUserTeam(f.awayId) ? g.starters : undefined,
+            isUserTeam(f.homeId) ? g.defaultTactics : undefined,
+            isUserTeam(f.awayId) ? g.defaultTactics : undefined,
             clubAggression(g, f.homeId),
             clubAggression(g, f.awayId),
-            f.homeId === g.userClubId ? g.slotOrder : undefined,
-            f.awayId === g.userClubId ? g.slotOrder : undefined,
+            isUserTeam(f.homeId) ? g.slotOrder : undefined,
+            isUserTeam(f.awayId) ? g.slotOrder : undefined,
             matchCompetition,
-            f.homeId === g.userClubId ? g.formation : undefined,
-            f.awayId === g.userClubId ? g.formation : undefined,
-            f.homeId === g.userClubId ? g.customFormation : undefined,
-            f.awayId === g.userClubId ? g.customFormation : undefined,
+            isUserTeam(f.homeId) ? g.formation : undefined,
+            isUserTeam(f.awayId) ? g.formation : undefined,
+            isUserTeam(f.homeId) ? g.customFormation : undefined,
+            isUserTeam(f.awayId) ? g.customFormation : undefined,
           ),
         );
         // público de cada estádio definido na abertura da rodada (e exibido nela)
         for (const m of live) m.attendance = stadiumAttendance(g, m.homeId, week);
-        set({ live, lastResults: null, liveDivision: null, paused: false });
+        set({
+          live, lastResults: null, liveDivision: null, paused: false,
+          // entropia nova a cada rodada aberta: repetir o mesmo cenário dá outro jogo
+          matchEntropy: (Math.random() * 4294967296) >>> 0,
+        });
       },
 
       tick: () => {
-        const { game, live, paused } = get();
+        const { game, live, paused, matchEntropy } = get();
         if (!game || !live || paused) return;
+        // mistura a entropia da rodada: o mesmo save na mesma semana nunca repete o jogo
         const rng = mulberry32(
-          (game.seed ^ (game.week * 7919) ^ ((live[0]?.minute ?? 0) * 104729)) >>> 0,
+          (game.seed ^ matchEntropy ^ (game.week * 7919) ^ ((live[0]?.minute ?? 0) * 104729)) >>> 0,
         );
         const idx = Object.fromEntries(game.players.map((p) => [p.id, p]));
         const next = live.map((m) => {
           const copy: LiveMatch = JSON.parse(JSON.stringify(m));
-          const userSide =
-            copy.homeId === game.userClubId ? "home"
+          const userSide = game.fired ? null
+            : copy.homeId === game.userClubId ? "home"
             : copy.awayId === game.userClubId ? "away"
             : null;
           simulateMinute(rng, copy, idx, userSide as any);
@@ -439,7 +477,7 @@ export const useStore = create<Store>()(
       // do novo clube (base + aporte de temporada) e escalação inicial do novo elenco.
       acceptJobOffer: () => {
         const g = get().game;
-        if (!g?.jobOffer) return;
+        if (!g?.jobOffer || g.fired) return;
         const club = g.clubs.find((c) => c.id === g.jobOffer);
         if (!club) { set({ game: { ...g, jobOffer: undefined } }); return; }
         const squad = g.players.filter((p) => p.clubId === club.id);
@@ -460,10 +498,47 @@ export const useStore = create<Store>()(
         if (!g) return;
         set({ game: { ...g, jobOffer: undefined } });
       },
+      promotePlayer: (candidateId) => {
+        const g = get().game;
+        if (!g || !g.pendingPromotions || g.pendingPromotions.length === 0) return;
+
+        const currentPromotion = g.pendingPromotions[0];
+        const selectedPlayer = currentPromotion.options.find((p) => p.id === candidateId);
+        if (!selectedPlayer) return;
+
+        const clubPlayers = g.players.filter((p) => p.clubId === g.userClubId);
+        let maxIdNum = 0;
+        for (const p of clubPlayers) {
+          const match = p.id.match(/_p(\d+)$/);
+          if (match) {
+            const val = parseInt(match[1], 10);
+            if (val > maxIdNum) maxIdNum = val;
+          }
+        }
+
+        const newPlayer = {
+          ...selectedPlayer,
+          id: `${g.userClubId}_p${maxIdNum + 1}`,
+        };
+
+        const updatedPlayers = [...g.players, newPlayer];
+        const updatedPromotions = g.pendingPromotions.slice(1);
+
+        const updatedSquad = updatedPlayers.filter((p) => p.clubId === g.userClubId);
+        assignShirtNumbers(updatedSquad);
+
+        set({
+          game: {
+            ...g,
+            players: updatedPlayers,
+            pendingPromotions: updatedPromotions.length > 0 ? updatedPromotions : undefined,
+          },
+        });
+      },
 
       payBicho: (level) => {
         const g = get().game;
-        if (!g || g.defaultTactics.bicho) return false; // já pago para a próxima partida
+        if (!g || g.fired || g.defaultTactics.bicho) return false; // já pago para a próxima partida
         const userClub = g.clubs.find((c) => c.id === g.userClubId)!;
         const cost = Math.round(bichoCost(userClub.baseBudget) * level.costMult);
         if (g.budget < cost) return false;
@@ -624,7 +699,7 @@ export const useStore = create<Store>()(
             const m = live.find((x) => x.homeId === t.homeId && x.awayId === t.awayId);
             return m ? [{ tieIndex: t.tieIndex, homeScore: m.homeScore, awayScore: m.awayScore }] : [];
           });
-          const rng = mulberry32((game.seed ^ (game.week * 15485863)) >>> 0);
+          const rng = mulberry32((game.seed ^ get().matchEntropy ^ (game.week * 15485863)) >>> 0);
           // vencedor da disputa de pênaltis interativa (empate no agregado do usuário)
           const decided = userTieWinnerId
             ? knockout.rounds[info.stage]
@@ -726,17 +801,29 @@ export const useStore = create<Store>()(
         // rodada — a renda é o público real do estádio × preço do ingresso da divisão
         const userClub = game.clubs.find((c) => c.id === game.userClubId)!;
         const userHomeMatch = live.find((m) => m.homeId === game.userClubId);
-        const revenue = userHomeMatch
+        const revenue = !game.fired && userHomeMatch
           ? (userHomeMatch.attendance ?? stadiumAttendance(game, game.userClubId, game.week)) *
             ticketPrice(userClub.division)
           : 0;
+        // folha salarial: paga toda rodada, jogando em casa ou fora. Demitido não
+        // administra mais nada — receitas, prêmios e folha deixam de existir para ele.
+        const wages = game.fired ? 0 : squadWageBill(game);
+        const prize = game.fired ? 0 : cupPrize;
+        const budget = game.budget + revenue + prize - wages;
+        // caixa negativo acumula semanas de dívida; a diretoria tolera até
+        // BANKRUPTCY_WEEKS rodadas no vermelho antes de decretar falência e demitir
+        const debtWeeks = game.fired ? game.debtWeeks : budget < 0 ? (game.debtWeeks ?? 0) + 1 : 0;
+        const fired = game.fired || (debtWeeks ?? 0) >= BANKRUPTCY_WEEKS;
         set({
           game: {
             ...game, fixtures, tables, players, cup, continental,
             week: game.week + 1,
-            budget: game.budget + revenue + cupPrize,
-            // balanço da rodada para a tela do clube: bilheteria, prêmios e o bicho pago
-            lastFinance: { revenue, prize: cupPrize, bicho: game.pendingBicho ?? 0 },
+            budget,
+            debtWeeks,
+            fired,
+            jobOffer: fired ? undefined : game.jobOffer,
+            // balanço da rodada para a tela do clube: bilheteria, prêmios, folha e o bicho pago
+            lastFinance: { revenue, prize, wages, bicho: game.pendingBicho ?? 0 },
             pendingBicho: undefined,
             // bicho vale só para a partida da rodada: pago, consumido, resetado
             defaultTactics: { ...game.defaultTactics, bicho: false, bichoPct: undefined },

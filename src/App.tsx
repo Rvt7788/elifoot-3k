@@ -59,6 +59,125 @@ function JobOfferModal() {
   );
 }
 
+function PendingPromotionsModal() {
+  const game = useStore((s) => s.game);
+  const promotePlayer = useStore((s) => s.promotePlayer);
+
+  if (!game?.pendingPromotions || game.pendingPromotions.length === 0) return null;
+
+  const currentPromotion = game.pendingPromotions[0];
+  const { position, options } = currentPromotion;
+
+  const userClub = game.clubs.find((c) => c.id === game.userClubId);
+  const userRetirements = game.retiredLastSeason?.filter((r) => r.clubName === userClub?.name) || [];
+
+  const posLabels: Record<string, string> = {
+    GOL: "Goleiro",
+    DEF: "Defensor",
+    MEI: "Meio-campista",
+    ATA: "Atacante",
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
+      <div className="w-full max-w-2xl rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/80 md:p-8 animate-in fade-in zoom-in duration-205">
+        <div className="mb-4 flex items-center justify-between border-b border-zinc-900 pb-3">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500">
+              Categoria de Base ({game.pendingPromotions.length} pendente{game.pendingPromotions.length > 1 ? "s" : ""})
+            </span>
+            <h2 className="font-display text-2xl font-black text-zinc-100">
+              Promover Novo {posLabels[position]}
+            </h2>
+          </div>
+          <span className="rounded-full bg-zinc-900 px-3 py-1 text-sm font-bold text-zinc-400 border border-zinc-800">
+            {position}
+          </span>
+        </div>
+
+        {userRetirements.length > 0 && (
+          <div className="mb-4 rounded-lg bg-red-950/20 border border-red-900/30 px-3 py-2 text-xs text-red-400">
+            ⚠️ <b>Aposentado(s) do clube:</b> {userRetirements.map((r) => `${r.name} (${r.age} anos)`).join(", ")}
+          </div>
+        )}
+
+        <p className="mb-6 text-sm text-zinc-400 leading-relaxed">
+          Com a saída de atletas veteranos do elenco, a comissão da base selecionou estas 4 promessas para subir ao time profissional. Avalie as características e assine com um deles:
+        </p>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {options.map((opt) => {
+            const isCraque = opt.tier === "craque";
+            const isBom = opt.tier === "bom";
+            const tierBadge = isCraque ? "★★ Craque" : isBom ? "★ Bom" : "Bagre";
+            const tierColor = isCraque
+              ? "text-amber-400 border-amber-400/30 bg-amber-400/5"
+              : isBom
+              ? "text-zinc-300 border-zinc-700/20 bg-zinc-800/10"
+              : "text-zinc-500 border-zinc-800 bg-transparent";
+
+            return (
+              <div
+                key={opt.id}
+                className="flex flex-col justify-between rounded-xl border border-zinc-850 bg-zinc-900/40 p-4 transition-all duration-200 hover:border-zinc-700 hover:bg-zinc-900/80"
+              >
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-sm font-bold text-zinc-100">{opt.name}</span>
+                    <span className={`rounded border px-2 py-0.5 text-[10px] font-bold ${tierColor}`}>
+                      {tierBadge}
+                    </span>
+                  </div>
+
+                  <div className="mb-3 grid grid-cols-2 gap-y-1.5 text-xs text-zinc-400">
+                    <div>
+                      Idade: <span className="font-semibold text-zinc-200">{opt.age} anos</span>
+                    </div>
+                    <div>
+                      Pé: <span className="font-semibold text-zinc-200 capitalize">{opt.foot}</span>
+                    </div>
+                    <div>
+                      Força: <span className="font-bold text-amber-500">{opt.strength}</span>
+                    </div>
+                    <div>
+                      Potencial: <span className="font-semibold text-zinc-200">{opt.cap}</span>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <span className="text-[10px] uppercase tracking-wider text-zinc-500">Atributos</span>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {opt.traits && opt.traits.length > 0 ? (
+                        opt.traits.map((t: any) => (
+                          <span
+                            key={t}
+                            className="rounded bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-400 border border-amber-500/20"
+                          >
+                            {t}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-[10px] italic text-zinc-600">Nenhuma característica</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => promotePlayer(opt.id)}
+                  className="btn-cta w-full py-2 text-xs font-bold"
+                >
+                  Contratar jogador
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const { game, live, startMatchday, finishMatchday } = useStore();
   const [tab, setTab] = useState<Tab>("clube");
@@ -184,6 +303,7 @@ export default function App() {
       <AppDialogHost />
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
       {!liveRunning && <JobOfferModal />}
+      {!liveRunning && <PendingPromotionsModal />}
       {shootoutOpen && (
         <PenaltyShootout
           onDone={(winnerId) => {

@@ -1,4 +1,4 @@
-import type { Club, GameState, Player, Position, Tier, Trait } from "../types";
+import type { Club, GameState, Player, Position, Tier, Trait, PendingPromotion, RetiredPlayerInfo } from "../types";
 import { mulberry32, randInt, chance, pick, type Rng } from "./rng";
 import { playerName } from "./names";
 import { buildLeagueFixtures, initTable } from "./schedule";
@@ -25,6 +25,49 @@ function squadShape(rng: Rng): Position[] {
   const extraSlots = randInt(rng, 0, 4);
   for (let i = 0; i < extraSlots; i++) base.push(pick(rng, LINE_POSITIONS));
   return base;
+}
+
+function selectPlayersFromRoster(
+  rng: Rng,
+  names: string[],
+  count: number
+): string[] {
+  if (names.length <= count) {
+    return names;
+  }
+
+  const parsed = names.map((raw) => {
+    const m = raw.match(/^(.*):(\d{2})$/);
+    const age = m ? parseInt(m[2], 10) : 25;
+    return { raw, age };
+  });
+
+  const selected: typeof parsed = [];
+  const pool = [...parsed];
+
+  while (selected.length < count && pool.length > 0) {
+    // Sorteio ponderado pelo quadrado da idade para priorizar veteranos
+    // mas ainda dar chances reais para jovens
+    const weights = pool.map((p) => Math.pow(p.age, 2));
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+    let r = rng() * totalWeight;
+
+    let selectedIndex = 0;
+    for (let i = 0; i < pool.length; i++) {
+      r -= weights[i];
+      if (r <= 0) {
+        selectedIndex = i;
+        break;
+      }
+    }
+
+    selected.push(pool[selectedIndex]);
+    pool.splice(selectedIndex, 1);
+  }
+
+  return selected
+    .sort((a, b) => b.age - a.age)
+    .map((p) => p.raw);
 }
 
 const TRAITS_BY_POS: Record<Position, Trait[]> = {
@@ -70,6 +113,13 @@ export function playerValue(p: { strength: number; age: number }): number {
   return Math.round((base * ageFactor) / 1000) * 1000;
 }
 
+// Salário semanal do jogador: fração do valor de mercado (quem vale mais, custa
+// mais para manter). É a principal despesa do clube — elenco caro demais para a
+// receita da divisão leva o caixa ao vermelho e, insistindo, à falência.
+export function playerSalary(p: { strength: number; age: number }): number {
+  return Math.max(300, Math.round((playerValue(p) * 0.008) / 100) * 100);
+}
+
 export function makePlayer(
   rng: Rng,
   clubId: string,
@@ -85,13 +135,15 @@ export function makePlayer(
   // com cauda para cima (revelação) e para baixo (reserva fraco)
   const spread = randInt(rng, -6, 6) + randInt(rng, -3, 3);
   const strength = young
-    ? randInt(rng, 10, 15)
+    ? Math.max(8, randInt(rng, Math.round(target * 0.4) - 2, Math.round(target * 0.4) + 3))
     : Math.max(8, Math.min(44, Math.round(target + spread)));
   const tier = rollTier(rng);
   // teto de evolução: parte da força atual + folga; craque tem mais talento a crescer
   const tierBonus = tier === "craque" ? randInt(rng, 6, 12) : tier === "bom" ? randInt(rng, 3, 7) : randInt(rng, 1, 4);
-  const cap = young ? 46 : Math.min(50, Math.max(capFor(tier), strength + tierBonus));
-  const age = young ? 17 : realAge ?? randInt(rng, 18, 34);
+  const cap = young
+    ? Math.min(50, Math.max(capFor(tier), strength + tierBonus + 5))
+    : Math.min(50, Math.max(capFor(tier), strength + tierBonus));
+  const age = young ? (realAge ?? (rng() < 0.5 ? 17 : 18)) : realAge ?? randInt(rng, 18, 34);
   const traits: Trait[] = chance(rng, tier === "bagre" ? 0.25 : 0.7)
     ? [pick(rng, TRAITS_BY_POS[pos])]
     : [];
@@ -172,9 +224,72 @@ export function newGame(seed: number, userClubId: string): GameState {
     // acabam (elenco real menor que o shape sorteado), cai no gerador procedural
     const used: Record<Position, number> = { GOL: 0, DEF: 0, MEI: 0, ATA: 0 };
     const clubSquad: Player[] = [];
-    squadShape(rng).forEach((pos) => {
-      const names = roster?.[pos];
-      // formato "Nome:idade": a idade real (quando pesquisada) substitui o sorteio
+    let shape: Position[] = [];
+    if (roster) {
+      const golNames = roster.GOL || [];
+      const defNames = roster.DEF || [];
+      const meiNames = roster.MEI || [];
+      const ataNames = roster.ATA || [];
+
+      const golCount = Math.max(MIN_GOALKEEPERS, golNames.length);
+      const defCount = Math.max(MIN_LINE_PLAYERS_BY_POS, defNames.length);
+      const meiCount = Math.max(MIN_LINE_PLAYERS_BY_POS, meiNames.length);
+      const ataCount = Math.max(MIN_LINE_PLAYERS_BY_POS, ataNames.length);
+
+      let g = golCount;
+      let d = defCount;
+      let m = meiCount;
+      let a = ataCount;
+
+      const maxSquadSize = 22;
+      while (g + d + m + a > maxSquadSize) {
+        let bestPos: Position | null = null;
+        let excess = 0;
+
+        if (g > MIN_GOALKEEPERS && (g - MIN_GOALKEEPERS) > excess) {
+          bestPos = "GOL";
+          excess = g - MIN_GOALKEEPERS;
+        }
+        if (d > MIN_LINE_PLAYERS_BY_POS && (d - MIN_LINE_PLAYERS_BY_POS) > excess) {
+          bestPos = "DEF";
+          excess = d - MIN_LINE_PLAYERS_BY_POS;
+        }
+        if (m > MIN_LINE_PLAYERS_BY_POS && (m - MIN_LINE_PLAYERS_BY_POS) > excess) {
+          bestPos = "MEI";
+          excess = m - MIN_LINE_PLAYERS_BY_POS;
+        }
+        if (a > MIN_LINE_PLAYERS_BY_POS && (a - MIN_LINE_PLAYERS_BY_POS) > excess) {
+          bestPos = "ATA";
+          excess = a - MIN_LINE_PLAYERS_BY_POS;
+        }
+
+        if (!bestPos) break;
+
+        if (bestPos === "GOL") g--;
+        else if (bestPos === "DEF") d--;
+        else if (bestPos === "MEI") m--;
+        else if (bestPos === "ATA") a--;
+      }
+
+      for (let i = 0; i < g; i++) shape.push("GOL");
+      for (let i = 0; i < d; i++) shape.push("DEF");
+      for (let i = 0; i < m; i++) shape.push("MEI");
+      for (let i = 0; i < a; i++) shape.push("ATA");
+    } else {
+      shape = squadShape(rng);
+    }
+
+    const selectedRoster: Record<Position, string[]> = { GOL: [], DEF: [], MEI: [], ATA: [] };
+    if (roster) {
+      for (const pos of ["GOL", "DEF", "MEI", "ATA"] as Position[]) {
+        const names = roster[pos] || [];
+        const countForPos = shape.filter((x) => x === pos).length;
+        selectedRoster[pos] = selectPlayersFromRoster(rng, names, countForPos);
+      }
+    }
+
+    shape.forEach((pos) => {
+      const names = selectedRoster[pos];
       const raw = names && used[pos] < names.length ? names[used[pos]++] : undefined;
       const m = raw?.match(/^(.*):(\d{2})$/);
       const realName = m ? m[1] : raw;
@@ -240,5 +355,153 @@ export function newGame(seed: number, userClubId: string): GameState {
         .slice(0, 4)
         .map((c) => c.id),
     ),
+  };
+}
+
+export function rollRetirement(rng: Rng, pos: Position, age: number): boolean {
+  if (age < 30) {
+    return rng() < 0.002; // Aposentadoria precoce (0.2%)
+  }
+
+  const isGol = pos === "GOL";
+  if (isGol) {
+    if (age <= 32) return rng() < 0.01;
+    if (age === 33) return rng() < 0.03;
+    if (age === 34) return rng() < 0.06;
+    if (age === 35) return rng() < 0.12;
+    // Exponencial a partir de 36
+    const excess = age - 35;
+    const chanceValue = Math.min(1.0, 0.15 * Math.pow(2.2, excess));
+    return rng() < chanceValue;
+  } else {
+    if (age === 30) return rng() < 0.01;
+    if (age === 31) return rng() < 0.03;
+    if (age === 32) return rng() < 0.06;
+    // Exponencial a partir de 33/34
+    const excess = age - 32;
+    const chanceValue = Math.min(1.0, 0.10 * Math.pow(2.5, excess));
+    return rng() < chanceValue;
+  }
+}
+
+export function generateYouthOptions(
+  rng: Rng,
+  clubId: string,
+  country: string,
+  pos: Position,
+  target: number,
+  idNumStart: number
+): Player[] {
+  const options: Player[] = [];
+  for (let i = 0; i < 4; i++) {
+    const age = rng() < 0.5 ? 17 : 18;
+    const p = makePlayer(rng, clubId, country, pos, target, idNumStart + i, true, undefined, age);
+    // Temporary ID for candidate options
+    p.id = `${clubId}_p_opt_${i}`;
+    options.push(p);
+  }
+  return options;
+}
+
+export function processSeasonTransitions(
+  rng: Rng,
+  players: Player[],
+  clubs: Club[],
+  userClubId: string
+): { updatedPlayers: Player[]; pendingPromotions: PendingPromotion[]; retiredLastSeason: RetiredPlayerInfo[] } {
+  const activePlayers: Player[] = [];
+  const pendingPromotions: PendingPromotion[] = [];
+  const retiredLastSeason: RetiredPlayerInfo[] = [];
+
+  const clubNameMap = new Map<string, string>();
+  for (const c of clubs) clubNameMap.set(c.id, c.name);
+
+  // Compute club target strength
+  const power = new Map<string, number>();
+  const byCountry = new Map<string, Club[]>();
+  for (const c of clubs) byCountry.set(c.country, [...(byCountry.get(c.country) ?? []), c]);
+  for (const list of byCountry.values()) {
+    const sorted = [...list].sort((a, b) => a.baseBudget - b.baseBudget);
+    sorted.forEach((c, i) => power.set(c.id, i / (sorted.length - 1)));
+  }
+
+  const clubTargets = new Map<string, number>();
+  for (const c of clubs) {
+    clubTargets.set(c.id, targetStrength(c.division, power.get(c.id) ?? 0.3));
+  }
+
+  // Track retirement per club
+  const retirementsPerClub = new Map<string, { pos: Position; name: string; age: number }[]>();
+
+  for (const p of players) {
+    const nextAge = p.age + 1;
+    if (rollRetirement(rng, p.pos, nextAge)) {
+      retiredLastSeason.push({
+        name: p.name,
+        age: nextAge,
+        clubName: clubNameMap.get(p.clubId) || p.clubId
+      });
+      const list = retirementsPerClub.get(p.clubId) || [];
+      list.push({ pos: p.pos, name: p.name, age: nextAge });
+      retirementsPerClub.set(p.clubId, list);
+    } else {
+      activePlayers.push({
+        ...p,
+        age: nextAge,
+        gained: 0,
+        energy: 100
+      });
+    }
+  }
+
+  // Process replacement players
+  for (const c of clubs) {
+    const retired = retirementsPerClub.get(c.id) || [];
+    if (retired.length === 0) continue;
+
+    // Find max ID sufix for this club
+    const clubPlayers = activePlayers.filter(p => p.clubId === c.id);
+    let maxIdNum = 0;
+    for (const p of clubPlayers) {
+      const match = p.id.match(/_p(\d+)$/);
+      if (match) {
+        const val = parseInt(match[1], 10);
+        if (val > maxIdNum) maxIdNum = val;
+      }
+    }
+
+    for (const r of retired) {
+      const target = clubTargets.get(c.id) ?? 20;
+
+      if (c.id === userClubId) {
+        // User club: generate 4 candidate options
+        const options = generateYouthOptions(rng, c.id, c.country, r.pos, target, maxIdNum + 1);
+        pendingPromotions.push({
+          position: r.pos,
+          options
+        });
+        maxIdNum += 4;
+      } else {
+        // AI club: generate 4 options, pick the best one automatically
+        const options = generateYouthOptions(rng, c.id, c.country, r.pos, target, maxIdNum + 1);
+        options.sort((a, b) => b.strength - a.strength);
+        const best = options[0];
+        best.id = `${c.id}_p${maxIdNum + 1}`;
+        activePlayers.push(best);
+        maxIdNum += 1;
+      }
+    }
+
+    // Reassign shirt numbers for AI squads
+    if (c.id !== userClubId) {
+      const updatedSquad = activePlayers.filter(p => p.clubId === c.id);
+      assignShirtNumbers(updatedSquad);
+    }
+  }
+
+  return {
+    updatedPlayers: activePlayers,
+    pendingPromotions,
+    retiredLastSeason
   };
 }

@@ -607,7 +607,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
             isUser
             highlight
             onClick={() => {
-              if (!userMatch.finished) {
+              if (!userMatch.finished && !game.fired) {
                 openTactics();
               } else {
                 openDetail(userMatch);
@@ -640,7 +640,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
                     isUser={isUser}
                     highlight={liveIsCup && isUser}
                     onClick={() => {
-                      if (isUser && !m.finished) {
+                      if (isUser && !m.finished && !game.fired) {
                         openTactics();
                       } else {
                         openDetail(m);

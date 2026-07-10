@@ -170,6 +170,17 @@ export interface TransferOffer {
 
 import type { CupState } from "./game/cup";
 
+export interface PendingPromotion {
+  position: Position;
+  options: Player[];
+}
+
+export interface RetiredPlayerInfo {
+  name: string;
+  age: number;
+  clubName: string;
+}
+
 export interface GameState {
   seed: number;
   season: number;
@@ -190,5 +201,9 @@ export interface GameState {
   continental?: CupState; // copa continental (Libertadores/Champions, 16 clubes históricos)
   jobOffer?: string; // convite de clube maior após temporada de sucesso (clubId)
   pendingBicho?: number; // valor do bicho pago para a próxima partida (vira gasto no fechamento)
-  lastFinance?: { revenue: number; prize: number; bicho: number }; // caixa da última rodada encerrada
+  lastFinance?: { revenue: number; prize: number; bicho: number; wages?: number }; // caixa da última rodada encerrada
+  debtWeeks?: number; // rodadas consecutivas com o caixa negativo (rumo à falência)
+  fired?: boolean; // faliu: técnico demitido — só observa os jogos, sem comandar nada
+  pendingPromotions?: PendingPromotion[];
+  retiredLastSeason?: RetiredPlayerInfo[];
 }

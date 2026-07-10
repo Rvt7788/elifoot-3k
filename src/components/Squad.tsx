@@ -1,4 +1,5 @@
-import { useStore, MIN_SQUAD, MAX_SQUAD } from "../store";
+import { useStore, MIN_SQUAD, MAX_SQUAD, squadWageBill } from "../store";
+import { playerSalary } from "../game/seeder";
 import { appConfirm } from "./AppDialog";
 
 const TIER_BADGE: Record<string, string> = {
@@ -21,7 +22,8 @@ export default function Squad() {
         Elenco · Orçamento: €{(game.budget / 1e6).toFixed(1)}M
       </h2>
       <p className="mb-3 text-xs text-zinc-500">
-        {squad.length} jogadores (mínimo {MIN_SQUAD}, máximo {MAX_SQUAD})
+        {squad.length} jogadores (mínimo {MIN_SQUAD}, máximo {MAX_SQUAD}) · Folha
+        salarial: €{(squadWageBill(game) / 1e3).toFixed(0)}k por rodada
       </p>
       <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -35,6 +37,7 @@ export default function Squad() {
             <th className="text-center">Energia</th>
             <th className="hidden sm:table-cell">Características</th>
             <th className="text-right">Valor</th>
+            <th className="text-right">Salário</th>
             <th></th>
           </tr>
         </thead>
@@ -75,6 +78,7 @@ export default function Squad() {
               </td>
               <td className="hidden text-xs text-zinc-400 sm:table-cell">{p.traits.join(", ")}</td>
               <td className="text-right text-xs">€{(p.value / 1e6).toFixed(2)}M</td>
+              <td className="text-right text-xs text-zinc-400">€{(playerSalary(p) / 1e3).toFixed(1)}k</td>
               <td className="pl-2 text-right">
                 <button
                   disabled={squad.length <= MIN_SQUAD}

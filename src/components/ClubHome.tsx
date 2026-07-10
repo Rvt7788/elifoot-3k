@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useStore, nextPlayableWeek, clubAggression, isCupEliminated } from "../store";
+import { useStore, nextPlayableWeek, clubAggression, isCupEliminated, squadWageBill, BANKRUPTCY_WEEKS } from "../store";
 import { weekInfo, tiesForLeg, groupFixturesForMatchday, CUP_STAGE_NAMES, CONT_STAGE_NAMES } from "../game/cup";
 import { sortTable } from "../game/schedule";
 import { aiPregameTactics } from "../game/engine";
@@ -159,6 +159,17 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
   const skipMatchday = useStore((s) => s.skipMatchday);
   const [analyzing, setAnalyzing] = useState(false);
   const [viewClub, setViewClub] = useState<Club | null>(null);
+  // feedback do "Pular rodada": a simulação trava a UI por um instante — marca o
+  // clique na hora (botão desabilitado + rótulo) e roda a simulação no frame seguinte
+  const [skipping, setSkipping] = useState(false);
+  const handleSkip = () => {
+    if (skipping) return;
+    setSkipping(true);
+    setTimeout(() => {
+      skipMatchday();
+      setSkipping(false);
+    }, 50);
+  };
   if (!game) return null;
 
   const club = game.clubs.find((c) => c.id === game.userClubId)!;
@@ -215,9 +226,37 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
 
   const topScorers = [...squad].sort((a, b) => b.goals - a.goals).slice(0, 10);
   const squadValue = squad.reduce((s, p) => s + p.value, 0);
+  const wageBill = squadWageBill(game);
 
   return (
     <div className="mx-auto max-w-4xl px-4 pb-10 pt-6">
+      {/* Falência: técnico demitido só observa — nenhum comando sobre o clube */}
+      {game.fired && (
+        <div className="mb-4 rounded-lg border border-red-800 bg-red-950/60 px-4 py-3">
+          <p className="text-sm font-bold uppercase tracking-wide text-red-400">
+            💸 Falência — você foi demitido
+          </p>
+          <p className="mt-1 text-xs text-zinc-400">
+            O caixa ficou no vermelho por {BANKRUPTCY_WEEKS} rodadas seguidas e a
+            diretoria decretou falência. A IA assumiu o {club.name}: agora você só
+            observa os jogos acontecerem.
+          </p>
+        </div>
+      )}
+      {/* Alerta de dívida: contagem regressiva até a diretoria perder a paciência */}
+      {!game.fired && (game.debtWeeks ?? 0) > 0 && (
+        <div className="mb-4 rounded-lg border border-amber-700 bg-amber-950/50 px-4 py-3">
+          <p className="text-sm font-bold uppercase tracking-wide text-amber-400">
+            ⚠️ Caixa no vermelho
+          </p>
+          <p className="mt-1 text-xs text-zinc-400">
+            {game.debtWeeks} de {BANKRUPTCY_WEEKS} rodadas em dívida. Se o caixa não
+            voltar ao azul em {BANKRUPTCY_WEEKS - (game.debtWeeks ?? 0)} rodada
+            {BANKRUPTCY_WEEKS - (game.debtWeeks ?? 0) > 1 ? "s" : ""}, o clube fale e
+            você será demitido. Venda jogadores para aliviar a folha.
+          </p>
+        </div>
+      )}
       {/* Cabeçalho do clube: bandeira com as cores do time (nome, liga e técnico) à esquerda,
           posição e orçamento à direita */}
       <div className="mb-2 flex flex-col items-stretch gap-4 border-b border-[rgba(30,42,56,0.8)] pb-4 sm:flex-row sm:items-center sm:justify-between">
@@ -275,15 +314,17 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
             </div>
             <div>
               <p className="ui-label mb-1">Orçamento</p>
-              <p className="ui-stat">€{(game.budget / 1e6).toFixed(1)}M</p>
+              <p className={`ui-stat ${game.budget < 0 ? "text-red-400" : ""}`}>
+                €{(game.budget / 1e6).toFixed(1)}M
+              </p>
               <p className="text-xs text-zinc-500">
-                Elenco €{(squadValue / 1e6).toFixed(1)}M
+                Elenco €{(squadValue / 1e6).toFixed(1)}M · Folha €{(wageBill / 1e3).toFixed(0)}k/rodada
               </p>
             </div>
           </div>
 
           {onStartMatchday && week !== null && (
-            nextOpp && next ? (
+            nextOpp && next && !game.fired ? (
               <button
                 onClick={onStartMatchday}
                 className="btn-play flex shrink-0 items-center gap-2 px-5 py-3 text-base"
@@ -293,21 +334,31 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
               </button>
             ) : (
               // rodada sem o time do usuário (copa etc.): assiste ao vivo ou resolve na hora
-              <div className="flex shrink-0 flex-col items-stretch gap-1.5">
+              // mobile: os dois botões ocupam a faixa horizontal inteira
+              <div className="flex w-full flex-col items-stretch gap-1.5 sm:w-auto sm:shrink-0">
                 <button
                   onClick={onStartMatchday}
-                  className="flex items-center justify-center gap-2 rounded-lg bg-zinc-800 px-5 py-2 text-sm font-semibold text-zinc-300 hover:bg-zinc-700"
+                  disabled={skipping}
+                  className="flex items-center justify-center gap-2 rounded-lg bg-zinc-800 px-5 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-zinc-700 disabled:opacity-50"
                   title="Acompanha os jogos da rodada ao vivo"
                 >
                   <IconPlay className="h-4 w-4" />
                   Assistir
                 </button>
                 <button
-                  onClick={skipMatchday}
-                  className="flex items-center justify-center gap-2 rounded-lg bg-zinc-800 px-5 py-2 text-sm font-semibold text-zinc-300 hover:bg-zinc-700"
+                  onClick={handleSkip}
+                  disabled={skipping}
+                  className="flex items-center justify-center gap-2 rounded-lg bg-zinc-800 px-5 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-zinc-700 disabled:cursor-wait disabled:opacity-60"
                   title="Simula todos os jogos da rodada instantaneamente"
                 >
-                  Pular rodada »
+                  {skipping ? (
+                    <>
+                      <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-500 border-t-zinc-200" />
+                      Simulando…
+                    </>
+                  ) : (
+                    "Pular rodada »"
+                  )}
                 </button>
               </div>
             )
@@ -423,6 +474,10 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
                 <span className="ml-1 text-xs text-zinc-500">
                   {game.lastFinance.prize > 0 ? "bilheteria + prêmio" : "bilheteria"}
                 </span>
+              </p>
+              <p className={(game.lastFinance.wages ?? 0) > 0 ? "text-red-400" : "text-zinc-500"}>
+                − €{((game.lastFinance.wages ?? 0) / 1e6).toFixed(2)}M
+                <span className="ml-1 text-xs text-zinc-500">salários</span>
               </p>
               <p className={game.lastFinance.bicho > 0 ? "text-red-400" : "text-zinc-500"}>
                 − €{(game.lastFinance.bicho / 1e6).toFixed(2)}M

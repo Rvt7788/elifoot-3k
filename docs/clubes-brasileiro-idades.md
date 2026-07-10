@@ -1,0 +1,225 @@
+# Clubes do Brasileiro — checklist de idades (rosters.json)
+
+Marque o clube quando todas as idades estiverem conferidas em site especializado
+(Transfermarkt/oGol). Abaixo de cada clube da Série B estão os jogadores que ainda
+NÃO têm idade no rosters.json.
+
+⚠️ As idades já preenchidas na Série B (contagens abaixo) vieram da sessão de
+agente que alucinou — vale conferir também elas, não só as faltantes. As da
+Série A são confiáveis.
+
+## Série A
+
+- [x] **Flamengo** (FLA) — 21/21 com idade
+- [x] **Palmeiras** (PAL) — 20/20 com idade
+- [x] **Botafogo** (BOT) — 18/18 com idade
+- [x] **Atlético Mineiro** (CAM) — 16/16 com idade
+- [x] **São Paulo** (SAO) — 16/16 com idade
+- [x] **Corinthians** (COR) — 15/15 com idade
+- [x] **Bahia** (BAH) — 13/13 com idade
+- [x] **Fluminense** (FLU) — 16/16 com idade
+- [x] **Grêmio** (GRE) — 15/15 com idade
+- [x] **Internacional** (INT) — 14/14 com idade
+- [x] **Cruzeiro** (CRU) — 13/13 com idade
+- [x] **Vasco** (VAS) — 13/13 com idade
+- [x] **Athletico Paranaense** (CAP) — 10/10 com idade
+- [x] **Red Bull Bragantino** (RBB) — 13/13 com idade
+- [x] **Fortaleza** (FOR) — 12/12 com idade
+- [x] **Santos** (SAN) — 13/13 com idade
+- [x] **Cuiabá** (CUI) — 13/13 com idade
+- [x] **Vitória** (VIT) — 13/13 com idade
+- [x] **Criciúma** (CRI) — 13/13 com idade
+- [x] **Juventude** (JUV) — 13/13 com idade
+
+## Série B
+
+- [ ] **Coritiba** (CFC) — 1/12 com idade
+  - GOL Gabriel Pirani
+  - DEF Jonathan Bocão
+  - DEF Andrey Santos
+  - DEF Matheus Alexandre
+  - DEF Nathan Ribeiro
+  - MEI Bernanrdo
+  - MEI Josué
+  - MEI Willian Farias
+  - MEI Sabino
+  - ATA Robson
+  - ATA Bill
+- [ ] **Sport** (SPT) — 6/12 com idade
+  - GOL Caíque França
+  - DEF Igor Cariús
+  - DEF João Silva
+  - MEI Fabricio Domínguez
+  - MEI Chico
+  - ATA Zé Roberto
+- [ ] **Atlético Goianiense** (ACG) — 4/11 com idade
+  - GOL Fernando Miguel
+  - DEF Wanderson
+  - DEF Klaus
+  - DEF Marreta
+  - MEI Diego Torres
+  - MEI Zé Roberto
+  - MEI Airton
+- [ ] **Goiás** (GOI) — 2/12 com idade
+  - DEF Fábio Sanches
+  - DEF Reynaldo
+  - DEF Rafael Gava
+  - MEI Sander
+  - MEI Alex Santana
+  - MEI Rickson
+  - MEI Willian Oliveira
+  - ATA Diego Gonçalves
+  - ATA Guilherme Parede
+  - ATA Edu
+- [ ] **Ceará** (CEA) — 5/12 com idade
+  - DEF David Ricardo
+  - DEF Michel Macedo
+  - DEF Raí Ramos
+  - MEI Richardson
+  - MEI Lima
+  - MEI Lourenço
+  - ATA Erick
+- [ ] **América-MG** (AME) — 4/12 com idade
+  - DEF Marlon
+  - DEF Patrick
+  - MEI Juninho
+  - MEI Adyson
+  - MEI Willian Bigode
+  - MEI Renato Marques
+  - ATA Everton Sena
+  - ATA Rodrigo Varanda
+- [ ] **CRB** (CRB) — 3/11 com idade
+  - GOL Diogo Silva
+  - DEF Denner
+  - DEF Edilson
+  - DEF Léo Rafael
+  - MEI Erick
+  - MEI Lucas Gazal
+  - ATA Alesson
+  - ATA Rodrigo Sam
+- [ ] **Avaí** (AVA) — 4/12 com idade
+  - DEF Rodrigo Pinho
+  - DEF Betão
+  - DEF Diogo Mateus
+  - MEI Lourenço
+  - MEI Constantino
+  - MEI Zé Vitor
+  - MEI Guga
+  - ATA Alex Sandro
+- [ ] **Chapecoense** (CHA) — 6/11 com idade
+  - GOL Gustavo
+  - DEF Rafael Santos
+  - MEI Lucas Marques
+  - MEI Geuvazio
+  - ATA Denner
+- [ ] **Novorizontino** (NOV) — 1/10 com idade
+  - GOL João Vitor
+  - DEF Danilo Boza
+  - DEF Diego Ferreira
+  - DEF Wallace
+  - MEI Íago Dias
+  - MEI Lucas Cânhoto
+  - MEI Fabrício Daniel
+  - ATA Alesson
+  - ATA Nicolas
+- [ ] **Ponte Preta** (PON) — 3/11 com idade
+  - GOL Ivan
+  - DEF Yan Sasse
+  - DEF Matheus Bianqui
+  - DEF Cortez
+  - DEF Bruno Collaço
+  - MEI Elvis
+  - MEI Danielzinho
+  - MEI Nicolas Careca
+- [ ] **Paysandu** (PAY) — 0/12 com idade
+  - GOL Thonny Anderson
+  - DEF Nicolas
+  - DEF Rodrigo Andrade
+  - DEF Ronei
+  - DEF Diego Matos
+  - MEI Robinho
+  - MEI Ítalo
+  - MEI Marlon
+  - MEI Netinho
+  - ATA Jean Dias
+  - ATA Chapéu Goiano
+  - ATA Rafinha
+- [ ] **Vila Nova** (VIL) — 1/11 com idade
+  - GOL Rafael Martins
+  - DEF Alesson
+  - DEF Bruno Collaço
+  - DEF Fabrício Baiano
+  - DEF Índio
+  - MEI Rickson
+  - MEI Igor Henrique
+  - MEI Marcelo Hermes
+  - ATA Emerson Santos
+  - ATA Wellington Rato
+- [ ] **Remo** (REM) — 2/11 com idade
+  - GOL Vinícius Dinamite
+  - DEF Marcos Vinícius
+  - DEF Diegão
+  - MEI Erick Flores
+  - MEI Anderson Uchôa
+  - MEI Matheus Anjos
+  - ATA Renan Gorne
+  - ATA Marlon
+  - ATA Diego Matos
+- [ ] **Botafogo-SP** (BSP) — 1/10 com idade
+  - GOL Ronaldo
+  - DEF Pablo Thomaz
+  - DEF Wallace Read
+  - DEF Índio
+  - MEI Reginaldo
+  - MEI Igor Bahia
+  - MEI Bruno Alves
+  - ATA Rafael Silva
+  - ATA Zé Roberto
+- [ ] **Náutico** (NAU) — 3/11 com idade
+  - GOL Vagner
+  - DEF Ronaldo Alves
+  - DEF Cordeiro
+  - DEF Nicolas
+  - MEI Hyuri
+  - MEI Igor Bahia
+  - MEI Matheus Ribeiro
+  - ATA Robinho
+- [ ] **Operário-PR** (OPE) — 2/10 com idade
+  - GOL Gustavo Ludwig
+  - DEF Vinícius Kiss
+  - DEF Bruno Ferreira
+  - DEF Rhuan
+  - MEI Índio
+  - MEI Felipinho
+  - MEI Matheus Bianqui
+  - ATA Rafael Carvalheira
+- [ ] **ABC** (ABC) — 2/11 com idade
+  - GOL Rafael Santos
+  - DEF Igor Fernandes
+  - DEF Marlon Silva
+  - DEF Índio
+  - DEF Marcos Ytalo
+  - MEI Erick Varão
+  - MEI Anderson Lessa
+  - ATA Vico
+  - ATA Rafinha
+- [ ] **Guarani** (GUA) — 2/11 com idade
+  - GOL Ravanelli
+  - DEF Yan Sasse
+  - DEF Emerson Santos
+  - DEF Bruno Alves
+  - DEF Cássio
+  - MEI Reverson
+  - MEI Jenison
+  - ATA Bruno José
+  - ATA Fabinho
+- [ ] **CSA** (CSA) — 2/10 com idade
+  - GOL Diogo Silva
+  - DEF Betinho
+  - DEF Bruno Collaço
+  - DEF Naressi
+  - MEI Lucão
+  - MEI Ítalo
+  - ATA Rodrigo Sam
+  - ATA Emerson Santos
+

@@ -152,144 +152,144 @@ Este arquivo reúne todos os clubes (jogáveis e convidados das copas continenta
 ### Série B
 
 - [x] **ABC** (ABC)
-  - *Jogadores pesquisados (11):*
+  - *Jogadores pesquisados (11), idades parciais:*
     - **GOL:** Rafael Santos
     - **DEF:** Igor Fernandes, Marlon Silva, Índio, Marcos Ytalo
-    - **MEI:** Rafael Longuine, Erick Varão, Anderson Lessa
-    - **ATA:** Vinícius Leite, Vico, Rafinha
+    - **MEI:** Rafael Longuine:33, Erick Varão, Anderson Lessa
+    - **ATA:** Vinícius Leite:29, Vico, Rafinha
 
 - [x] **América-MG** (AME)
-  - *Jogadores pesquisados (12):*
-    - **GOL:** Matheus Cavichioli
-    - **DEF:** Iago Maidana, Danilo Avelar, Marlon, Patrick
+  - *Jogadores pesquisados (12), idades parciais:*
+    - **GOL:** Matheus Cavichioli:31
+    - **DEF:** Iago Maidana:27, Danilo Avelar:33, Marlon, Patrick
     - **MEI:** Juninho, Adyson, Willian Bigode, Renato Marques
-    - **ATA:** Aloísio, Everton Sena, Rodrigo Varanda
+    - **ATA:** Aloísio:30, Everton Sena, Rodrigo Varanda
 
 - [x] **Atlético Goianiense** (ACG)
-  - *Jogadores pesquisados (11):*
+  - *Jogadores pesquisados (11), idades parciais:*
     - **GOL:** Fernando Miguel
-    - **DEF:** Diego Ivo, Wanderson, Klaus, Marreta
+    - **DEF:** Diego Ivo:33, Wanderson, Klaus, Marreta
     - **MEI:** Diego Torres, Zé Roberto, Airton
-    - **ATA:** Rhaldney, Wellington Rato, Everaldo
+    - **ATA:** Rhaldney:31, Wellington Rato:31, Everaldo:33
 
 - [x] **Avaí** (AVA)
-  - *Jogadores pesquisados (12):*
-    - **GOL:** Gabriel
-    - **DEF:** Rodrigo Pinho, Betão, Zeca, Diogo Mateus
+  - *Jogadores pesquisados (12), idades parciais:*
+    - **GOL:** Gabriel:31
+    - **DEF:** Rodrigo Pinho, Betão, Zeca:33, Diogo Mateus
     - **MEI:** Lourenço, Constantino, Zé Vitor, Guga
-    - **ATA:** Alex Sandro, Vagner Love, William Pottker
+    - **ATA:** Alex Sandro, Vagner Love:40, William Pottker:33
 
 - [x] **Botafogo-SP** (BSP)
-  - *Jogadores pesquisados (10):*
+  - *Jogadores pesquisados (10), idades parciais:*
     - **GOL:** Ronaldo
     - **DEF:** Pablo Thomaz, Wallace Read, Índio
     - **MEI:** Reginaldo, Igor Bahia, Bruno Alves
-    - **ATA:** Rafael Silva, Waguininho, Zé Roberto
+    - **ATA:** Rafael Silva, Waguininho:33, Zé Roberto
 
 - [x] **Ceará** (CEA)
-  - *Jogadores pesquisados (13):*
-    - **GOL:** Richard
-    - **DEF:** Kuscevic, David Ricardo, Michel Macedo, Raí Ramos
-    - **MEI:** Richardson, Lima, Lourenço, Guilherme Castilho
-    - **ATA:** Erick, Aylon, Facundo Barceló
+  - *Jogadores pesquisados (13), idades parciais:*
+    - **GOL:** Richard:35
+    - **DEF:** Kuscevic:33, David Ricardo, Michel Macedo, Raí Ramos
+    - **MEI:** Richardson, Lima, Lourenço, Guilherme Castilho:33
+    - **ATA:** Erick, Aylon:30, Facundo Barceló:30
 
 - [x] **Chapecoense** (CHA)
-  - *Jogadores pesquisados (11):*
+  - *Jogadores pesquisados (11), idades parciais:*
     - **GOL:** Gustavo
-    - **DEF:** Kanu, Léo Duarte, Reinaldo, Rafael Santos
-    - **MEI:** Lucas Marques, Perotti, Geuvazio
-    - **ATA:** Anselmo Ramon, Bruno Nazário, Denner
+    - **DEF:** Kanu:31, Léo Duarte:32, Reinaldo:37, Rafael Santos
+    - **MEI:** Lucas Marques, Perotti:34, Geuvazio
+    - **ATA:** Anselmo Ramon:33, Bruno Nazário:29, Denner
 
 - [x] **Coritiba** (CFC)
-  - *Jogadores pesquisados (13):*
+  - *Jogadores pesquisados (13), idades parciais:*
     - **GOL:** Gabriel Pirani
     - **DEF:** Jonathan Bocão, Andrey Santos, Matheus Alexandre, Nathan Ribeiro
     - **MEI:** Bernanrdo, Josué, Willian Farias, Sabino
-    - **ATA:** Robson, Kayke, Bill
+    - **ATA:** Robson, Kayke:32, Bill
 
 - [x] **CRB** (CRB)
-  - *Jogadores pesquisados (11):*
+  - *Jogadores pesquisados (11), idades parciais:*
     - **GOL:** Diogo Silva
-    - **DEF:** Marllon, Denner, Edilson, Léo Rafael
-    - **MEI:** Erick, Lucas Gazal, Rafael Longuine
-    - **ATA:** Anselmo Ramon, Alesson, Rodrigo Sam
+    - **DEF:** Marllon:26, Denner, Edilson, Léo Rafael
+    - **MEI:** Erick, Lucas Gazal, Rafael Longuine:33
+    - **ATA:** Anselmo Ramon:33, Alesson, Rodrigo Sam
 
 - [x] **CSA** (CSA)
-  - *Jogadores pesquisados (10):*
+  - *Jogadores pesquisados (10), idades parciais:*
     - **GOL:** Diogo Silva
     - **DEF:** Betinho, Bruno Collaço, Naressi
-    - **MEI:** Rafael Longuine, Lucão, Ítalo
-    - **ATA:** Rodrigo Sam, Emerson Santos, Vinícius Leite
+    - **MEI:** Rafael Longuine:33, Lucão, Ítalo
+    - **ATA:** Rodrigo Sam, Emerson Santos, Vinícius Leite:29
 
 - [x] **Goiás** (GOI)
-  - *Jogadores pesquisados (12):*
-    - **GOL:** Tadeu
-    - **DEF:** Sidnei, Fábio Sanches, Reynaldo, Rafael Gava
+  - *Jogadores pesquisados (12), idades parciais:*
+    - **GOL:** Tadeu:38
+    - **DEF:** Sidnei:34, Fábio Sanches, Reynaldo, Rafael Gava
     - **MEI:** Sander, Alex Santana, Rickson, Willian Oliveira
     - **ATA:** Diego Gonçalves, Guilherme Parede, Edu
 
 - [x] **Guarani** (GUA)
-  - *Jogadores pesquisados (11):*
+  - *Jogadores pesquisados (11), idades parciais:*
     - **GOL:** Ravanelli
     - **DEF:** Yan Sasse, Emerson Santos, Bruno Alves, Cássio
-    - **MEI:** Reverson, Jenison, Giovanni Augusto
-    - **ATA:** Bruno José, Fabinho, Isidro Pitta
+    - **MEI:** Reverson, Jenison, Giovanni Augusto:34
+    - **ATA:** Bruno José, Fabinho, Isidro Pitta:29
 
 - [x] **Náutico** (NAU)
-  - *Jogadores pesquisados (11):*
+  - *Jogadores pesquisados (11), idades parciais:*
     - **GOL:** Vagner
-    - **DEF:** Gum, Ronaldo Alves, Cordeiro, Nicolas
+    - **DEF:** Gum:38, Ronaldo Alves, Cordeiro, Nicolas
     - **MEI:** Hyuri, Igor Bahia, Matheus Ribeiro
-    - **ATA:** Kayke, Vinicius Leite, Robinho
+    - **ATA:** Kayke:32, Vinicius Leite:29, Robinho
 
 - [x] **Novorizontino** (NOV)
-  - *Jogadores pesquisados (10):*
+  - *Jogadores pesquisados (10), idades parciais:*
     - **GOL:** João Vitor
     - **DEF:** Danilo Boza, Diego Ferreira, Wallace
     - **MEI:** Íago Dias, Lucas Cânhoto, Fabrício Daniel
-    - **ATA:** Waguininho, Alesson, Nicolas
+    - **ATA:** Waguininho:33, Alesson, Nicolas
 
 - [x] **Operário-PR** (OPE)
-  - *Jogadores pesquisados (10):*
+  - *Jogadores pesquisados (10), idades parciais:*
     - **GOL:** Gustavo Ludwig
     - **DEF:** Vinícius Kiss, Bruno Ferreira, Rhuan
     - **MEI:** Índio, Felipinho, Matheus Bianqui
-    - **ATA:** Léo Jabá, Rafael Carvalheira, Vinícius Leite
+    - **ATA:** Léo Jabá:31, Rafael Carvalheira, Vinícius Leite:29
 
 - [x] **Paysandu** (PAY)
-  - *Jogadores pesquisados (12):*
+  - *Jogadores pesquisados (12), idades parciais:*
     - **GOL:** Thonny Anderson
     - **DEF:** Nicolas, Rodrigo Andrade, Ronei, Diego Matos
     - **MEI:** Robinho, Ítalo, Marlon, Netinho
     - **ATA:** Jean Dias, Chapéu Goiano, Rafinha
 
 - [x] **Ponte Preta** (PON)
-  - *Jogadores pesquisados (11):*
+  - *Jogadores pesquisados (11), idades parciais:*
     - **GOL:** Ivan
     - **DEF:** Yan Sasse, Matheus Bianqui, Cortez, Bruno Collaço
     - **MEI:** Elvis, Danielzinho, Nicolas Careca
-    - **ATA:** Rafael Longuine, Nino Paraíba, Renato Cajá
+    - **ATA:** Rafael Longuine:33, Nino Paraíba:37, Renato Cajá:33
 
 - [x] **Remo** (REM)
-  - *Jogadores pesquisados (11):*
+  - *Jogadores pesquisados (11), idades parciais:*
     - **GOL:** Vinícius Dinamite
-    - **DEF:** Marcos Vinícius, Yago Pikachu, Diegão, Ranarison Andriamahitsinoro
+    - **DEF:** Marcos Vinícius, Yago Pikachu:32, Diegão, Ranarison Andriamahitsinoro:35
     - **MEI:** Erick Flores, Anderson Uchôa, Matheus Anjos
     - **ATA:** Renan Gorne, Marlon, Diego Matos
 
 - [x] **Sport** (SPT)
-  - *Jogadores pesquisados (13):*
+  - *Jogadores pesquisados (13), idades parciais:*
     - **GOL:** Caíque França
-    - **DEF:** Sabino, Rafael Thyere, Igor Cariús, João Silva
-    - **MEI:** Lucas Lima, Fabricio Domínguez, Alan Ruiz, Chico
-    - **ATA:** Wanderson, Zé Roberto, Vagner Love
+    - **DEF:** Sabino:32, Rafael Thyere:41, Igor Cariús, João Silva
+    - **MEI:** Lucas Lima:35, Fabricio Domínguez, Alan Ruiz:36, Chico
+    - **ATA:** Wanderson:33, Zé Roberto, Vagner Love:40
 
 - [x] **Vila Nova** (VIL)
-  - *Jogadores pesquisados (11):*
+  - *Jogadores pesquisados (11), idades parciais:*
     - **GOL:** Rafael Martins
     - **DEF:** Alesson, Bruno Collaço, Fabrício Baiano, Índio
     - **MEI:** Rickson, Igor Henrique, Marcelo Hermes
-    - **ATA:** Emerson Santos, Renato Cajá, Wellington Rato
+    - **ATA:** Emerson Santos, Renato Cajá:33, Wellington Rato
 
 
 ## Alemanha 🇩🇪
@@ -2673,3 +2673,6 @@ Estes clubes estrangeiros não possuem liga nacional própria no jogo, mas são 
     - **MEI:** Darius Olaru, Florin Tănase, Alexandru Musi
     - **ATA:** Daniel Bîrligea, Juri Cisotti
 
+
+Coloque o nome do time no cabeçalho do .json
+Monte o elenco CSA em 10/07/2026. Use apenas jogadores ativos no elenco profissional. Valide pela fonte oficial do clube, confira em uma fonte atual de elenco e remova qualquer atleta vendido, emprestado ou fora do clube. Se houver conflito, use a informação mais recente e confirme por notícia. Retorne só JSON válido com name, position e age. 
