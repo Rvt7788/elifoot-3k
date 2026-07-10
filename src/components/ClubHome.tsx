@@ -221,10 +221,10 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
       {/* Cabeçalho do clube: bandeira com as cores do time (nome, liga e técnico) à esquerda,
           posição e orçamento à direita */}
       <div className="mb-2 flex flex-col items-stretch gap-4 border-b border-[rgba(30,42,56,0.8)] pb-4 sm:flex-row sm:items-center sm:justify-between">
-        {/* Bandeira do clube + botão Jogar alinhado à direita da linha */}
-        <div className="flex flex-1 items-center justify-between gap-4">
+        {/* Bandeira do clube - preenche toda a linha no mobile */}
+        <div className="w-full sm:flex-1">
           <div
-            className="relative flex-1 overflow-hidden rounded-md border border-black/40 shadow-inner"
+            className="relative overflow-hidden rounded-md border border-black/40 shadow-inner"
             style={{ background: club.primaryColor }}
           >
             {/* faixa vertical na cor secundária, como o mastro de uma bandeira */}
@@ -261,6 +261,27 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
               )}
             </div>
           </div>
+        </div>
+
+        {/* Estatísticas (Posição, Orçamento) + Botão Jogar ao lado */}
+        <div className="flex flex-row flex-wrap items-center justify-between gap-6 text-left sm:justify-end sm:gap-8">
+          <div className="flex gap-6 sm:gap-8">
+            <div>
+              <p className="ui-label mb-1">Posição</p>
+              <p className="ui-stat">{pos}º</p>
+              <p className="text-xs text-zinc-500">
+                {row ? `${row.pts} pts · ${row.p} jogos` : ""}
+              </p>
+            </div>
+            <div>
+              <p className="ui-label mb-1">Orçamento</p>
+              <p className="ui-stat">€{(game.budget / 1e6).toFixed(1)}M</p>
+              <p className="text-xs text-zinc-500">
+                Elenco €{(squadValue / 1e6).toFixed(1)}M
+              </p>
+            </div>
+          </div>
+
           {onStartMatchday && week !== null && (
             nextOpp && next ? (
               <button
@@ -292,22 +313,6 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
             )
           )}
         </div>
-        <div className="flex justify-start gap-8 text-left sm:justify-center sm:text-center">
-          <div>
-            <p className="ui-label mb-1">Posição</p>
-            <p className="ui-stat">{pos}º</p>
-            <p className="text-xs text-zinc-500">
-              {row ? `${row.pts} pts · ${row.p} jogos` : ""}
-            </p>
-          </div>
-          <div>
-            <p className="ui-label mb-1">Orçamento</p>
-            <p className="ui-stat">€{(game.budget / 1e6).toFixed(1)}M</p>
-            <p className="text-xs text-zinc-500">
-              Elenco €{(squadValue / 1e6).toFixed(1)}M
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* Próximo jogo · Iniciar jogo · Últimos resultados · Artilheiros —
@@ -334,12 +339,18 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
                     {dot(nextOpp)}
                     <span
                       onClick={() => setViewClub(nextOpp)}
-                      className="cursor-pointer text-emerald-400 hover:underline"
+                      className="cursor-pointer hover:underline text-zinc-50"
                     >
                       {nextOpp.name}
                     </span></>
                 ) : (
-                  <>{dot(nextOpp)}<span className="text-zinc-300">{nextOpp.name}</span>{" "}
+                  <>{dot(nextOpp)}
+                    <span
+                      onClick={() => setViewClub(nextOpp)}
+                      className="cursor-pointer hover:underline text-zinc-50"
+                    >
+                      {nextOpp.name}
+                    </span>{" "}
                     <span className="text-zinc-600">vs</span><br className="sm:hidden" />{" "}{dot(club)}{club.name}</>
                 );
               })()}
@@ -371,7 +382,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
             )}
             <button
               onClick={() => setAnalyzing(true)}
-              className="country-tab active mt-3 !text-[10px]"
+              className="country-tab active mt-1.5 !text-[10px]"
             >
               Analisar
             </button>
@@ -422,45 +433,48 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
         )}
         </div>
 
-        {/* Coluna 3: Últimos resultados — some por completo quando não há jogos */}
-        <div className={lastResults.length === 0 ? "hidden" : "md:flex-1"}>
-          <SectionLabel>Últimos resultados</SectionLabel>
-          {lastResults.map((f, i) => {
-            const home = game.clubs.find((c) => c.id === f.homeId)!;
-            const away = game.clubs.find((c) => c.id === f.awayId)!;
-            const isHome = f.homeId === club.id;
-            const gf = isHome ? f.homeScore! : f.awayScore!;
-            const ga = isHome ? f.awayScore! : f.homeScore!;
-            const badge = gf > ga ? "bg-emerald-500" : gf < ga ? "bg-red-500" : "bg-zinc-500";
-            return (
-              <div key={i} className="flex items-center gap-2 border-b border-[rgba(30,42,56,0.6)] py-1.5 text-sm text-zinc-200">
-                <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${badge}`} />
-                <span className="text-xs text-zinc-600">R{f.round}</span>
-                <span className="truncate">
-                  {home.shortName}{" "}
-                  <span className="font-display font-semibold text-zinc-50">
-                    {f.homeScore}-{f.awayScore}
-                  </span>{" "}
-                  {away.shortName}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Coluna 4: Artilheiros — some por completo quando não há gols */}
-        <div className={topScorers.every((p) => p.goals === 0) ? "hidden" : "md:flex-1"}>
-          <SectionLabel>Artilheiros</SectionLabel>
-          {topScorers.every((p) => p.goals === 0) ? null : (
-            topScorers
-              .filter((p) => p.goals > 0)
-              .map((p) => (
-                <div key={p.id} className="flex items-center gap-2 border-b border-[rgba(30,42,56,0.6)] py-1.5 text-sm text-zinc-200">
-                  <span className="truncate">{p.name}</span>
-                  <span className="font-display font-semibold text-amber-400">{p.goals}</span>
+        {/* Seção inferior de Resultados e Artilheiros: lado a lado no mobile */}
+        <div className="flex flex-row gap-6 md:contents md:flex-1">
+          {/* Coluna 3: Últimos resultados — some por completo quando não há jogos */}
+          <div className={`flex-1 min-w-0 ${lastResults.length === 0 ? "hidden" : ""}`}>
+            <SectionLabel>Últimos resultados</SectionLabel>
+            {lastResults.map((f, i) => {
+              const home = game.clubs.find((c) => c.id === f.homeId)!;
+              const away = game.clubs.find((c) => c.id === f.awayId)!;
+              const isHome = f.homeId === club.id;
+              const gf = isHome ? f.homeScore! : f.awayScore!;
+              const ga = isHome ? f.awayScore! : f.homeScore!;
+              const badge = gf > ga ? "bg-emerald-500" : gf < ga ? "bg-red-500" : "bg-zinc-500";
+              return (
+                <div key={i} className="flex items-center gap-1.5 border-b border-[rgba(30,42,56,0.6)] py-1 md:py-1.5 text-xs md:text-sm text-zinc-200">
+                  <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${badge}`} />
+                  <span className="text-[10px] md:text-xs text-zinc-600">R{f.round}</span>
+                  <span className="truncate">
+                    {home.shortName}{" "}
+                    <span className="font-display font-semibold text-zinc-50">
+                      {f.homeScore}-{f.awayScore}
+                    </span>{" "}
+                    {away.shortName}
+                  </span>
                 </div>
-              ))
-          )}
+              );
+            })}
+          </div>
+
+          {/* Coluna 4: Artilheiros — some por completo quando não há gols */}
+          <div className={`flex-1 min-w-0 ${topScorers.every((p) => p.goals === 0) ? "hidden" : ""}`}>
+            <SectionLabel>Artilheiros</SectionLabel>
+            {topScorers.every((p) => p.goals === 0) ? null : (
+              topScorers
+                .filter((p) => p.goals > 0)
+                .map((p) => (
+                  <div key={p.id} className="flex items-center justify-between gap-2 border-b border-[rgba(30,42,56,0.6)] py-1 md:py-1.5 text-xs md:text-sm text-zinc-200">
+                    <span className="truncate">{p.name}</span>
+                    <span className="font-display font-semibold text-amber-400 shrink-0">{p.goals}</span>
+                  </div>
+                ))
+            )}
+          </div>
         </div>
 
       </div>
