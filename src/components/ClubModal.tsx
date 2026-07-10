@@ -60,11 +60,11 @@ export default function ClubModal({ game, club, onClose }: { game: GameState; cl
         <div className="mb-4 grid grid-cols-2 gap-3 text-center">
           <div className="rounded bg-zinc-900 py-2">
             <p className="ui-label mb-1">Orçamento</p>
-            <p className="font-display text-lg font-semibold text-zinc-100">€{(budget / 1e6).toFixed(1)}M</p>
+            <p className="font-display text-lg font-semibold text-zinc-100">${(budget / 1e6).toFixed(1)}M</p>
           </div>
           <div className="rounded bg-zinc-900 py-2">
             <p className="ui-label mb-1">Valor do elenco</p>
-            <p className="font-display text-lg font-semibold text-zinc-100">€{(squadValue / 1e6).toFixed(1)}M</p>
+            <p className="font-display text-lg font-semibold text-zinc-100">${(squadValue / 1e6).toFixed(1)}M</p>
           </div>
         </div>
 

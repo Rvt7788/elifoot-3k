@@ -34,7 +34,7 @@ function JobOfferModal() {
         </p>
         <p className="mb-2 text-pretty text-sm leading-relaxed text-zinc-300">
           Aqui você terá liberdade total: monte o elenco, escolha o estilo, conduza
-          o clube do seu jeito. Orçamento de €{(club.baseBudget / 1e6).toFixed(1)}M
+          o clube do seu jeito. Orçamento de ${(club.baseBudget / 1e6).toFixed(1)}M
           à sua disposição. Queremos o seu futebol, não um manual.
         </p>
         <p className="mb-4 text-right text-xs italic text-zinc-500">
@@ -81,10 +81,10 @@ function IncomingOfferModal() {
           força {player.strength}{isStarter ? ", titular" : ""}).
         </p>
         <p className="mb-4 text-center font-display text-2xl font-black text-emerald-400">
-          €{(offer.amount / 1e6).toFixed(2)}M
+          ${(offer.amount / 1e6).toFixed(2)}M
         </p>
         <p className="mb-4 text-xs text-zinc-500">
-          Valor de mercado: €{(player.value / 1e6).toFixed(2)}M · Contrato: {player.contract ?? 1}{" "}
+          Valor de mercado: ${(player.value / 1e6).toFixed(2)}M · Contrato: {player.contract ?? 1}{" "}
           temporada{(player.contract ?? 1) > 1 ? "s" : ""}. Se não responder, a proposta expira na
           próxima rodada.
         </p>
@@ -146,7 +146,7 @@ function ContractWarningModal() {
                 }}
                 className="shrink-0 rounded bg-emerald-800 px-2 py-0.5 text-[11px] font-semibold text-emerald-100 hover:bg-emerald-700"
               >
-                Renovar +2 (€{(renewalCost(p) / 1e3).toFixed(0)}k)
+                Renovar +2 (${(renewalCost(p) / 1e3).toFixed(0)}k)
               </button>
             </div>
           ))}

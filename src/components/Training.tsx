@@ -105,17 +105,13 @@ export default function Training() {
             const pct = atCap ? 100 : Math.min(100, Math.round(((p.xp ?? 0) / need) * 100));
             const training = p.training ?? "normal";
             const weekly = weeklyXp(p, playedLast.has(p.id), training);
+            const played = playedLast.has(p.id);
             return (
-              <tr key={p.id} className="border-b border-zinc-800">
+              <tr key={p.id} className={`border-b border-zinc-800 ${played ? "bg-emerald-950/45 hover:bg-emerald-900/35" : "hover:bg-zinc-900/40"}`}>
                 <td className="py-1.5 pr-2 text-center tabular-nums text-zinc-500">{p.number}</td>
                 <td className="pr-3 text-zinc-400">{p.pos}</td>
                 <td>
                   {p.name} <span className="text-amber-400">{TIER_BADGE[p.tier]}</span>
-                  {playedLast.has(p.id) && (
-                    <span className="ml-1 text-[10px] text-emerald-500" title="Jogou a última rodada: ganhou XP extra de partida">
-                      ⚽
-                    </span>
-                  )}
                 </td>
                 <td className="hidden text-center sm:table-cell">{p.age}</td>
                 <td className="text-center font-bold">{p.strength}</td>

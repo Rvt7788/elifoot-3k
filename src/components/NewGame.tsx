@@ -163,7 +163,7 @@ export default function NewGame() {
             <span className="text-base font-semibold text-zinc-100">{club.name}</span>
             <span className="ui-label">{club.division}</span>
             <span className="font-mono text-xs text-zinc-500">
-              €{(club.baseBudget / 1e6).toFixed(1)}M
+              ${(club.baseBudget / 1e6).toFixed(1)}M
             </span>
           </div>
           <button

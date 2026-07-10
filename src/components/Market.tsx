@@ -94,7 +94,7 @@ export default function Market() {
 
   const clubName = (id: string) => game.clubs.find((c) => c.id === id)?.name ?? "?";
 
-  // oferta digitada em €M (vazio = valor pedido)
+  // oferta digitada em $M (vazio = valor pedido)
   const offerValue = (p: Player) => {
     const raw = offers[p.id];
     return raw ? Number(raw) * 1e6 : askingPrice(game, p);
@@ -106,12 +106,12 @@ export default function Market() {
   };
 
   const doSell = async (p: Player) => {
-    if (!(await appConfirm(`Vender ${p.name} por €${(askingPrice(game, p) / 1e6).toFixed(2)}M?`))) return;
+    if (!(await appConfirm(`Vender ${p.name} por $${(askingPrice(game, p) / 1e6).toFixed(2)}M?`))) return;
     const res = sellPlayer(p.id);
     setResult({
       ok: res.ok,
       message: res.ok
-        ? `${p.name} vendido por €${((res.amount ?? 0) / 1e6).toFixed(2)}M.`
+        ? `${p.name} vendido por $${((res.amount ?? 0) / 1e6).toFixed(2)}M.`
         : "Não foi possível vender.",
     });
   };
@@ -121,7 +121,7 @@ export default function Market() {
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-bold">Mercado de Transferências</h2>
         <p className="text-sm text-zinc-400">
-          Orçamento: <b className="text-emerald-400">€{(game.budget / 1e6).toFixed(1)}M</b>
+          Orçamento: <b className="text-emerald-400">${(game.budget / 1e6).toFixed(1)}M</b>
         </p>
       </div>
 
@@ -183,7 +183,7 @@ export default function Market() {
               </div>
             </label>
             <label className="text-xs text-zinc-400">
-              Valor mín–máx (€M)
+              Valor mín–máx ($M)
               <div className="mt-0.5 flex gap-1">
                 <input
                   type="number" min={0} step={0.1}
@@ -286,7 +286,7 @@ export default function Market() {
                   <span className="w-10 shrink-0 text-center text-xs text-zinc-400">{p.age}a</span>
                   <span className="w-40 shrink-0 truncate text-xs text-zinc-400">{p.traits.join(", ") || "—"}</span>
                   <span className="w-24 shrink-0 text-right text-xs text-zinc-400">
-                    pede €{(price / 1e6).toFixed(2)}M
+                    pede ${(price / 1e6).toFixed(2)}M
                   </span>
                   <ChanceBar chance={aiAcceptChance(game, p, offerValue(p), () => 0.5)} />
                   <input
@@ -295,7 +295,7 @@ export default function Market() {
                     value={offers[p.id] ?? ""}
                     onChange={(e) => setOffers({ ...offers, [p.id]: e.target.value })}
                     className="w-20 shrink-0 rounded bg-zinc-800 px-1 py-1 text-xs"
-                    title="Sua oferta em €M (vazio = valor pedido)"
+                    title="Sua oferta em $M (vazio = valor pedido)"
                   />
                   <button
                     onClick={() => doBuy(p)}
@@ -336,7 +336,7 @@ export default function Market() {
                   </span>
                   <span className="w-10 shrink-0 text-center text-xs text-zinc-400">{p.age}a</span>
                   <span className="w-28 shrink-0 text-right text-xs text-emerald-400">
-                    €{(askingPrice(game, p) / 1e6).toFixed(2)}M
+                    ${(askingPrice(game, p) / 1e6).toFixed(2)}M
                   </span>
                   <button
                     disabled={squad.length <= MIN_SQUAD}

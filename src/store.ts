@@ -337,7 +337,7 @@ export const useStore = create<Store>()(
         set({ game: { ...g, players, budget: g.budget - cost } });
         return {
           ok: true,
-          message: `${player.name} renovou por +2 temporadas (luvas de €${(cost / 1e3).toFixed(0)}k).`,
+          message: `${player.name} renovou por +2 temporadas (luvas de $${(cost / 1e3).toFixed(0)}k).`,
         };
       },
 

@@ -291,7 +291,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
         {/* Bandeira do clube - preenche toda a linha no mobile */}
         <div className="w-full sm:flex-1">
           <div
-            className="relative overflow-hidden rounded-md border border-black/40 shadow-inner"
+            className="relative overflow-hidden rounded-md border border-black/40 shadow-inner sm:h-24"
             style={{ background: club.primaryColor }}
           >
             {/* faixa vertical na cor secundária, como o mastro de uma bandeira */}
@@ -299,7 +299,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
               className="absolute inset-y-0 left-0 w-2"
               style={{ background: club.secondaryColor }}
             />
-            <div className="relative px-4 py-2.5 pl-6">
+            <div className="relative px-4 py-2.5 pl-6 sm:h-full sm:flex sm:flex-col sm:justify-center">
               <h1
                 className="ui-title leading-tight drop-shadow"
                 // nome cresce com a tela, mas com teto no desktop
@@ -332,24 +332,24 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
 
         {/* Estatísticas (Posição, Orçamento) + Botão Jogar ao lado */}
         <div className="flex flex-row flex-wrap items-center justify-between gap-6 text-left sm:justify-end sm:gap-8">
-          <div className="flex gap-6 sm:gap-8">
+          <div className="flex w-full justify-start gap-10 rounded-lg border-2 border-amber-500 bg-[#382002] px-6 py-4 shadow-lg shadow-amber-950/50 items-start sm:mx-0 sm:w-auto sm:max-w-none sm:justify-start sm:gap-10 sm:h-24 sm:px-8 sm:py-3.5 sm:items-start">
             <div>
               <p className="ui-label mb-1">Posição</p>
               <p className="ui-stat">{pos}º</p>
-              <p className="text-xs text-zinc-500">
+              <p className="text-[10px] leading-snug text-zinc-500">
                 {row ? `${row.pts} pts · ${row.p} jogos` : ""}
               </p>
             </div>
             <div>
               <p className="ui-label mb-1">Orçamento</p>
               <p className={`ui-stat ${game.budget < 0 ? "text-red-400" : ""}`}>
-                €{(game.budget / 1e6).toFixed(1)}M
+                ${(game.budget / 1e6).toFixed(1)}M
               </p>
-              <p className="text-xs text-zinc-500">
-                Elenco €{(squadValue / 1e6).toFixed(1)}M
+              <p className="text-[10px] leading-snug text-zinc-500">
+                Elenco ${(squadValue / 1e6).toFixed(1)}M
               </p>
-              <p className="text-xs text-zinc-500">
-                Folha €{(wageBill / 1e3).toFixed(0)}k/rodada
+              <p className="text-[10px] leading-snug text-zinc-500">
+                Folha ${(wageBill / 1e3).toFixed(0)}k/rodada
               </p>
             </div>
           </div>
@@ -501,17 +501,17 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
             <SectionLabel>Caixa</SectionLabel>
             <div className="flex flex-col gap-0.5 text-sm">
               <p className="text-emerald-400">
-                + €{((game.lastFinance.revenue + game.lastFinance.prize) / 1e6).toFixed(2)}M
+                + ${((game.lastFinance.revenue + game.lastFinance.prize) / 1e6).toFixed(2)}M
                 <span className="ml-1 text-xs text-zinc-500">
                   {game.lastFinance.prize > 0 ? "bilheteria + prêmio" : "bilheteria"}
                 </span>
               </p>
               <p className={(game.lastFinance.wages ?? 0) > 0 ? "text-red-400" : "text-zinc-500"}>
-                − €{((game.lastFinance.wages ?? 0) / 1e6).toFixed(2)}M
+                − ${((game.lastFinance.wages ?? 0) / 1e6).toFixed(2)}M
                 <span className="ml-1 text-xs text-zinc-500">salários</span>
               </p>
               <p className={game.lastFinance.bicho > 0 ? "text-red-400" : "text-zinc-500"}>
-                − €{(game.lastFinance.bicho / 1e6).toFixed(2)}M
+                − ${(game.lastFinance.bicho / 1e6).toFixed(2)}M
                 <span className="ml-1 text-xs text-zinc-500">bicho</span>
               </p>
             </div>
@@ -532,7 +532,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
               const ga = isHome ? f.awayScore! : f.homeScore!;
               const badge = gf > ga ? "bg-emerald-500" : gf < ga ? "bg-red-500" : "bg-zinc-500";
               return (
-                <div key={i} className="flex items-center gap-1.5 border-b border-[rgba(30,42,56,0.6)] py-1 md:py-1.5 text-xs md:text-sm text-zinc-200">
+                <div key={i} className="flex w-fit max-w-full items-center gap-1.5 py-1 md:py-1.5 pr-6 text-xs md:text-sm text-zinc-200">
                   <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${badge}`} />
                   <span className="truncate">
                     {home.name}{" "}
@@ -553,7 +553,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
               topScorers
                 .filter((p) => p.goals > 0)
                 .map((p) => (
-                  <div key={p.id} className="flex items-center justify-between gap-2 border-b border-[rgba(30,42,56,0.6)] py-1 md:py-1.5 text-xs md:text-sm text-zinc-200">
+                  <div key={p.id} className="flex items-center justify-between gap-2 py-1 md:py-1.5 text-xs md:text-sm text-zinc-200">
                     <span className="truncate">{p.name}</span>
                     <span className="font-display font-semibold text-amber-400 shrink-0">{p.goals}</span>
                   </div>

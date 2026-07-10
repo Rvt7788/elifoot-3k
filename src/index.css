@@ -38,11 +38,13 @@
 
 html {
   scrollbar-gutter: stable;
+  overscroll-behavior-y: contain;
 }
 
 body {
   @apply bg-zinc-950 text-zinc-100;
   font-family: var(--font-body);
+  overscroll-behavior-y: contain;
 }
 
 h1, h2, h3, .font-display {

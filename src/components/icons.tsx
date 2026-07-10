@@ -30,8 +30,7 @@ export function IconBall({ className }: IconProps) {
 export function IconTable({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className}>
-      <rect x="3.5" y="4.5" width="17" height="15" rx="1.2" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M3.5 9.5h17M8.5 4.5v15" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M4 6h3M9 6h11M4 12h3M9 12h11M4 18h3M9 18h11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   );
 }
@@ -50,22 +49,17 @@ export function IconSquad({ className }: IconProps) {
 export function IconMarket({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className}>
-      <path d="M4 8h16l-1.5 10.5a1.5 1.5 0 0 1-1.5 1.3H7a1.5 1.5 0 0 1-1.5-1.3L4 8Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-      <path d="M8 8V6a4 4 0 0 1 8 0v2" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M12 3v18M17 6h-7.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
 export function IconTraining({ className }: IconProps) {
-  // apito de treinador
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className}>
-      <path
-        d="M13.5 9.5h5.5a1 1 0 0 1 1 1v1.2a5.7 5.7 0 1 1-8.4-5.1l1.9 3.9Z"
-        stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"
-      />
-      <circle cx="11.4" cy="14.2" r="1.3" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M4 6.5l4.8 2.6M6.5 3.5l3.4 3.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <path d="M6 12h12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+      <rect x="4" y="8" width="2" height="8" rx="0.5" stroke="currentColor" strokeWidth="1.6" fill="currentColor" />
+      <rect x="18" y="8" width="2" height="8" rx="0.5" stroke="currentColor" strokeWidth="1.6" fill="currentColor" />
     </svg>
   );
 }

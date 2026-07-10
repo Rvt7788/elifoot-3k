@@ -534,6 +534,49 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
     setDetailMatch(m);
   };
 
+  const openTactics = () => {
+    setPaused(true);
+    setModalOpen(true);
+    setHalftimeNotice(false);
+  };
+
+  const currentOpponentId = (() => {
+    if (!game) return null;
+    if (live) {
+      const um = live.find((m) => m.homeId === game.userClubId || m.awayId === game.userClubId);
+      if (um) return um.homeId === game.userClubId ? um.awayId : um.homeId;
+    } else {
+      const uf = game.fixtures.find(
+        (f) => f.week === game.week && (f.homeId === game.userClubId || f.awayId === game.userClubId)
+      );
+      if (uf) return uf.homeId === game.userClubId ? uf.awayId : uf.homeId;
+    }
+    return null;
+  })();
+
+  const handleSelectClub = (club: Club) => {
+    if (!game) return;
+    const isOpponent = club.id === currentOpponentId;
+    if (isOpponent) {
+      if (live) {
+        const um = live.find((m) => m.homeId === game.userClubId || m.awayId === game.userClubId);
+        if (um && !um.finished && !game.fired) {
+          openTactics();
+          return;
+        } else if (um) {
+          openDetail(um);
+          return;
+        }
+      } else {
+        if (!game.fired) {
+          openTactics();
+          return;
+        }
+      }
+    }
+    setSelectedClub(club);
+  };
+
   // ── navegação pelas rodadas: setas ao lado do título percorrem o calendário ──
   const weekNav = (w: number) => {
     const { title, subtitle } = weekLabelHeader(w, game.season, userCountry);
@@ -578,7 +621,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
       <div className={`flex items-center gap-2 py-1 ${isUser ? "text-emerald-400" : ""}`}>
         <div className="flex flex-1 items-center justify-end gap-2 overflow-hidden">
           <span
-            onClick={() => setSelectedClub(home)}
+            onClick={() => handleSelectClub(home)}
             className="cursor-pointer truncate text-sm font-semibold hover:underline"
           >
             {getClubDisplayName(home.name)}
@@ -595,7 +638,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
         <div className="flex flex-1 items-center gap-2 overflow-hidden">
           <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border border-white/30" style={{ background: ac }} />
           <span
-            onClick={() => setSelectedClub(away)}
+            onClick={() => handleSelectClub(away)}
             className="cursor-pointer truncate text-sm font-semibold hover:underline"
           >
             {getClubDisplayName(away.name)}
@@ -718,7 +761,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
                     <div className="flex flex-col">
                       {matches.map((f, i) => (
                         <FixtureRow
-                          onSelectClub={setSelectedClub}
+                          onSelectClub={handleSelectClub}
                           key={i}
                           f={f as Fixture}
                           home={clubById(f.homeId)}
@@ -755,7 +798,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
         {userMatch && (
           <div className="mb-4">
             <MatchRow
-              onSelectClub={setSelectedClub}
+              onSelectClub={handleSelectClub}
               m={userMatch}
               home={clubById(userMatch.homeId)}
               away={clubById(userMatch.awayId)}
@@ -768,7 +811,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
 
         {(lastIsCup ? [null] : ["Série A", "Série B"]).map((div) => {
           const matches = div === null
-            ? lastResults
+            ? lastResults.filter((m) => m.homeId !== game.userClubId && m.awayId !== game.userClubId)
             : lastResults.filter((m) => clubById(m.homeId).division === div);
           if (matches.length === 0) return null;
           return (
@@ -777,7 +820,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
               <div className="flex flex-col gap-1">
                 {matches.map((m, i) => (
                   <MatchRow
-              onSelectClub={setSelectedClub}
+                    onSelectClub={handleSelectClub}
                     key={i}
                     m={m}
                     home={clubById(m.homeId)}
@@ -813,11 +856,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
 
   const liveIsCup = weekInfo(game.week).type !== "league";
 
-  const openTactics = () => {
-    setPaused(true);
-    setModalOpen(true);
-    setHalftimeNotice(false);
-  };
+
 
   return (
     <div className="mx-auto max-w-4xl p-4">
@@ -860,7 +899,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
       {userMatch && (
         <div className="mb-4">
           <MatchRow
-              onSelectClub={setSelectedClub}
+              onSelectClub={handleSelectClub}
             m={userMatch}
             home={clubById(userMatch.homeId)}
             away={clubById(userMatch.awayId)}
@@ -879,7 +918,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
 
       {(liveIsCup ? [null] : ["Série A", "Série B"]).map((div) => {
         const matches = div === null
-          ? live
+          ? live.filter((m) => m.homeId !== game.userClubId && m.awayId !== game.userClubId)
           : live.filter((m) => clubById(m.homeId).division === div);
         if (matches.length === 0) return null;
         return (
@@ -893,7 +932,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
                   m.homeId === game.userClubId || m.awayId === game.userClubId;
                 return (
                   <MatchRow
-              onSelectClub={setSelectedClub}
+                    onSelectClub={handleSelectClub}
                     key={i}
                     m={m}
                     home={home}

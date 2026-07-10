@@ -36,7 +36,7 @@ function PlayerDetails({ p }: { p: Player }) {
       <span className="col-span-2">
         Características: {p.traits.length ? p.traits.join(", ") : "—"}
       </span>
-      <span className="col-span-2">Valor: €{(p.value / 1e6).toFixed(2)}M</span>
+      <span className="col-span-2">Valor: ${(p.value / 1e6).toFixed(2)}M</span>
     </div>
   );
 }
@@ -503,18 +503,23 @@ export default function TacticsBoard() {
                 </button>
               ))}
             </div>
-            <div className="mt-1">
+            
+            <p className="ui-label mb-1 mt-3">Extras</p>
+            <div className="flex flex-col gap-1">
               <ToggleBtn
                 checked={tactics.truculencia}
                 onClick={() => setDefaultTactics({ truculencia: !tactics.truculencia })}
                 label="Agressividade"
               />
-            </div>
-            <div className="mt-1">
               <ToggleBtn
                 checked={tactics.cera}
                 onClick={() => setDefaultTactics({ cera: !tactics.cera })}
                 label="Catimba"
+              />
+              <ToggleBtn
+                checked={tactics.autoSub ?? false}
+                onClick={() => setDefaultTactics({ autoSub: !tactics.autoSub })}
+                label="Sub. automática"
               />
             </div>
           </div>
@@ -535,13 +540,7 @@ export default function TacticsBoard() {
               ))}
             </div>
 
-            <p className="ui-label mb-1 mt-3">Extras</p>
-            <ToggleBtn
-              checked={tactics.autoSub ?? false}
-              onClick={() => setDefaultTactics({ autoSub: !tactics.autoSub })}
-              label="Sub. automática"
-            />
-            <p className="ui-label mb-1 mt-2">Bicho</p>
+            <p className="ui-label mb-1 mt-3">Bicho</p>
             <div className="flex flex-col gap-1">
               {BICHO_LEVELS.map((lvl) => {
                 const cost = Math.round(bichoCost(userClub.baseBudget) * lvl.costMult);
@@ -561,7 +560,7 @@ export default function TacticsBoard() {
                   >
                     <span className="truncate">{lvl.label} <span className={paidThis ? "opacity-80" : "text-zinc-400"}>+{lvl.pct}%</span></span>
                     <span className={`shrink-0 ${paidThis ? "opacity-80" : "text-zinc-400"}`}>
-                      €{(cost / 1e6).toFixed(2)}M
+                      ${(cost / 1e6).toFixed(2)}M
                     </span>
                   </button>
                 );
