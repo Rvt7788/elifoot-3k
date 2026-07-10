@@ -31,15 +31,19 @@ const MENTALITY_DEF: Record<Mentality, number> = {
 
 // Marcação: mais apertada rende mais desarmes (bônus no volume) mas cansa mais rápido;
 // leve poupa energia porém cede mais espaço ao adversário.
+// "extrema" é a marcação de retranca total: segura resultado como nenhuma outra,
+// mas o time se esgota muito mais rápido — insustentável por 90 minutos.
 const MARKING_DRAIN: Record<Marking, number> = {
   leve: 0.8,
   frouxa: 1.0,
   apertada: 1.3,
+  extrema: 1.9,
 };
 const MARKING_POWER: Record<Marking, number> = {
   leve: -3,
   frouxa: 0,
   apertada: 5,
+  extrema: 9,
 };
 
 // Força efetiva em campo, por energia: curva gradual, não mais um corte abrupto.
@@ -78,9 +82,19 @@ export function bestXI(
       .filter((p) => p.pos === pos)
       .sort((a, b) => rank(b) - rank(a) || b.strength - a.strength)
       .slice(0, count);
-  return [
+  const picked = [
     ...byPos("GOL", 1), ...byPos("DEF", shape.DEF), ...byPos("MEI", shape.MEI), ...byPos("ATA", shape.ATA),
-  ].map((p) => p.id);
+  ];
+  // Nunca escala com menos de 11: se alguma posição não tem gente suficiente
+  // (suspensões, vendas), completa com os melhores restantes fora de posição.
+  if (picked.length < 11) {
+    const chosen = new Set(picked.map((p) => p.id));
+    const rest = available
+      .filter((p) => !chosen.has(p.id))
+      .sort((a, b) => rank(b) - rank(a) || b.strength - a.strength);
+    picked.push(...rest.slice(0, 11 - picked.length));
+  }
+  return picked.map((p) => p.id);
 }
 
 // Ordena uma linha (DEF/MEI/ATA) esquerda→direita encaixando cada jogador no seu
@@ -217,6 +231,10 @@ export function createLiveMatch(
     homeAggression, awayAggression,
     homeSlotOrder: homeSlotOrder ? [...homeSlotOrder] : undefined,
     awaySlotOrder: awaySlotOrder ? [...awaySlotOrder] : undefined,
+    stats: {
+      home: { shots: 0, onTarget: 0, saves: 0, tackles: 0, interceptions: 0, poss: 0 },
+      away: { shots: 0, onTarget: 0, saves: 0, tackles: 0, interceptions: 0, poss: 0 },
+    },
   };
 }
 
@@ -284,7 +302,9 @@ function attackPower(lineup: LivePlayer[], idx: PlayersIndex, t: Tactics, slotOr
   const att = sectorPower(lineup, idx, "ATA", slotOrder);
   let power = mid.total * (mid.energyAvg / 100) + att.total * MENTALITY_ATT[t.mentality];
   if (t.truculencia) power += 8; // bônus pesado de desarme no volume
-  if (t.bicho) power *= 1.1; // time motivado pelo prêmio joga mais
+  // Bicho: motivação proporcional ao nível pago, com teto saudável de +10% —
+  // acima disso o prêmio viraria botão de vitória. Saves antigos (sem pct) mantêm 10.
+  if (t.bicho) power *= 1 + Math.min(10, Math.max(0, t.bichoPct ?? 10)) / 100;
   return power;
 }
 
@@ -375,6 +395,9 @@ function tryShot(
   const keeper = bestOnField(defLineup, idx, "GOL");
   const bestDef = bestOnField(defLineup, idx, "DEF");
   if (!striker) return;
+  const atkStats = m.stats?.[side];
+  const defStats = m.stats?.[side === "home" ? "away" : "home"];
+  if (atkStats) atkStats.shots++;
   // "tudo ou nada" mexe na CONVERSÃO, não só no volume: quem ataca com tudo
   // finaliza melhor (todo mundo no ataque), e quem defende nessa mentalidade
   // está com a linha lá na frente — o goleiro fica exposto ao 1×1.
@@ -385,6 +408,7 @@ function tryShot(
   if (defTactics.mentality === "tudo_ou_nada") gk *= 0.7;
   const pGoal = Math.min(0.65, Math.max(0.08, (atk / (atk + gk)) * 0.55));
   if (chance(rng, pGoal)) {
+    if (atkStats) atkStats.onTarget++; // gol conta como chute no alvo
     if (side === "home") m.homeScore++;
     else m.awayScore++;
     striker.goals++;
@@ -404,6 +428,10 @@ function tryShot(
     const conceded = side === "home" ? "away" : "home";
     m.swingSide = conceded;
     m.swingUntil = m.minute + randInt(rng, 4, 8);
+  } else if (chance(rng, 0.55)) {
+    // não foi gol mas foi na direção do gol: defesa do goleiro
+    if (atkStats) atkStats.onTarget++;
+    if (defStats) defStats.saves++;
   }
 }
 
@@ -424,6 +452,7 @@ function tryCards(rng: Rng, m: LiveMatch, idx: PlayersIndex, side: "home" | "awa
   if (t.truculencia) pCard *= 3;
   if (t.cera) pCard *= 1.5;
   if (t.marking === "apertada") pCard *= 1.4;
+  else if (t.marking === "extrema") pCard *= 1.9; // retranca no limite da falta
   else if (t.marking === "leve") pCard *= 0.7;
   if (!chance(rng, pCard)) return;
   const player = randomOnField(rng, lineup, idx);
@@ -474,6 +503,7 @@ export function makeSub(
   out.onField = false;
   out.subbedOut = true;
   inn.onField = true;
+  inn.subbedIn = true;
   // quem entra herda o lugar (lado do campo) de quem saiu no bônus de pé
   const order = side === "home" ? m.homeSlotOrder : m.awaySlotOrder;
   if (order) {
@@ -629,6 +659,30 @@ export function simulateMinute(
     m.swingSide = null;
   }
   m.momentum = Math.max(-100, Math.min(100, m.momentum + delta));
+
+  // posse de bola real: acumula a fração do minuto conforme o momentum, com teto —
+  // nem o maior domínio passa de ~78% num minuto; a % final é a média do jogo todo,
+  // não a foto do momentum no apito final.
+  if (m.stats) {
+    const share = Math.max(0.22, Math.min(0.78, 0.5 + m.momentum / 280));
+    m.stats.home.poss += share;
+    m.stats.away.poss += 1 - share;
+
+    // desarmes e interceptações: quem está sendo pressionado defende mais; marcação
+    // mais dura desarma mais (é para isso que ela existe), mentalidade defensiva
+    // fecha linhas de passe e intercepta mais.
+    const defendLoad = (sideMom: number) => Math.max(0, sideMom) / 100; // 0..1 pressão sofrida
+    ([["home", -m.momentum, m.homeTactics], ["away", m.momentum, m.awayTactics]] as const).forEach(
+      ([s, pressure, t]) => {
+        const st = m.stats![s];
+        const markFactor =
+          t.marking === "extrema" ? 1.7 : t.marking === "apertada" ? 1.35 : t.marking === "leve" ? 0.75 : 1;
+        if (chance(rng, (0.10 + 0.16 * defendLoad(pressure)) * markFactor)) st.tackles++;
+        const mentFactor = t.mentality === "defensivo" ? 1.35 : t.mentality === "tudo_ou_nada" ? 0.7 : 1;
+        if (chance(rng, (0.08 + 0.12 * defendLoad(pressure)) * mentFactor)) st.interceptions++;
+      },
+    );
+  }
 
   // zona de perigo
   if (Math.abs(m.momentum) >= 70) {

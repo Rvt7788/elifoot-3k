@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { useStore } from "../store";
+import { appAlert, appConfirm } from "./AppDialog";
 import type { GameState } from "../types";
 
 const SPEEDS = [
@@ -32,7 +33,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         loadGame(g);
         onClose();
       } catch {
-        alert("Arquivo de save inválido.");
+        appAlert("Arquivo de save inválido.");
       }
     });
   };
@@ -98,13 +99,13 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
           <button
             onClick={saveToFile}
             disabled={!game}
-            className="rounded bg-zinc-800 px-3 py-2 text-sm hover:bg-zinc-700 disabled:opacity-40"
+            className="rounded bg-zinc-800 px-3 py-2 text-left text-sm hover:bg-zinc-700 disabled:opacity-40"
           >
             💾 Salvar jogo (baixar arquivo)
           </button>
           <button
             onClick={() => fileRef.current?.click()}
-            className="rounded bg-zinc-800 px-3 py-2 text-sm hover:bg-zinc-700"
+            className="rounded bg-zinc-800 px-3 py-2 text-left text-sm hover:bg-zinc-700"
           >
             📂 Carregar jogo
           </button>
@@ -120,13 +121,13 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
             }}
           />
           <button
-            onClick={() => {
-              if (confirm("Apagar o save atual e começar um novo jogo?")) {
+            onClick={async () => {
+              if (await appConfirm("Apagar o save atual e começar um novo jogo?")) {
                 resetGame();
                 onClose();
               }
             }}
-            className="rounded bg-red-900/60 px-3 py-2 text-sm text-red-300 hover:bg-red-900"
+            className="rounded bg-red-900/60 px-3 py-2 text-left text-sm text-red-300 hover:bg-red-900"
           >
             🗑 Novo jogo
           </button>

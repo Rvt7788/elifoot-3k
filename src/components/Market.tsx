@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useStore, MIN_SQUAD, MAX_SQUAD } from "../store";
 import { aiAcceptChance, askingPrice, filterMarket, type MarketFilters } from "../game/market";
+import { appConfirm } from "./AppDialog";
 import type { Player, Position, Trait } from "../types";
 
 const POSITIONS: (Position | "ALL")[] = ["ALL", "GOL", "DEF", "MEI", "ATA"];
@@ -104,8 +105,8 @@ export default function Market() {
     setResult({ ok: res.ok, message: res.message });
   };
 
-  const doSell = (p: Player) => {
-    if (!confirm(`Vender ${p.name} por €${(askingPrice(game, p) / 1e6).toFixed(2)}M?`)) return;
+  const doSell = async (p: Player) => {
+    if (!(await appConfirm(`Vender ${p.name} por €${(askingPrice(game, p) / 1e6).toFixed(2)}M?`))) return;
     const res = sellPlayer(p.id);
     setResult({
       ok: res.ok,

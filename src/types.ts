@@ -3,7 +3,7 @@ export type Foot = "destro" | "canhoto";
 export type Tier = "bagre" | "bom" | "craque" | "extra";
 export type Trait = "Goleador" | "Paredão" | "Veloz" | "Criativo" | "Raçudo";
 export type Mentality = "defensivo" | "equilibrado" | "ofensivo" | "tudo_ou_nada";
-export type Marking = "leve" | "frouxa" | "apertada";
+export type Marking = "leve" | "frouxa" | "apertada" | "extrema";
 
 export interface Club {
   id: string;
@@ -81,6 +81,7 @@ export interface Tactics {
   truculencia: boolean;
   cera: boolean;
   bicho: boolean; // prêmio em dinheiro pago durante a partida: motiva o time até o fim do jogo
+  bichoPct?: number; // bônus de motivação do nível de bicho pago (%), teto saudável de 10
   autoSub: boolean; // substituição automática por cansaço no segundo tempo
 }
 
@@ -97,7 +98,19 @@ export interface LivePlayer {
   yellowsMatch: number; // amarelos só nesta partida (2º vira vermelho automático)
   sentOff: boolean;
   subbedOut: boolean;
+  subbedIn?: boolean; // entrou durante o jogo (para o ícone 🔄 nas listas)
   onField: boolean;
+}
+
+// Estatísticas de volume de jogo de um lado da partida. "poss" acumula a fração
+// de posse minuto a minuto (posse % = poss / minutos jogados).
+export interface SideMatchStats {
+  shots: number; // finalizações totais
+  onTarget: number; // chutes no gol (inclui os que viraram gol)
+  saves: number; // defesas do goleiro deste lado
+  tackles: number; // desarmes
+  interceptions: number; // interceptações
+  poss: number; // soma das frações de posse por minuto
 }
 
 export interface LiveMatch {
@@ -125,6 +138,8 @@ export interface LiveMatch {
   awayAggression: number;
   homeSlotOrder?: string[]; // ordem esquerda→direita dos titulares por linha (para o bônus de pé)
   awaySlotOrder?: string[];
+  attendance?: number; // público no estádio do mandante (define a renda da partida)
+  stats?: { home: SideMatchStats; away: SideMatchStats }; // volume de jogo acumulado
 }
 
 export interface Fixture {
@@ -173,4 +188,7 @@ export interface GameState {
   tables: Record<string, TableRow[]>; // por divisão
   cup: CupState; // copa nacional (mata-mata de ida e volta com os 40 clubes do país)
   continental?: CupState; // copa continental (Libertadores/Champions, 16 clubes históricos)
+  jobOffer?: string; // convite de clube maior após temporada de sucesso (clubId)
+  pendingBicho?: number; // valor do bicho pago para a próxima partida (vira gasto no fechamento)
+  lastFinance?: { revenue: number; prize: number; bicho: number }; // caixa da última rodada encerrada
 }

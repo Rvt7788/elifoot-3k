@@ -1,4 +1,5 @@
 import { useStore, MIN_SQUAD, MAX_SQUAD } from "../store";
+import { appConfirm } from "./AppDialog";
 
 const TIER_BADGE: Record<string, string> = {
   bagre: "", bom: "★", craque: "★★", extra: "💎",
@@ -77,8 +78,8 @@ export default function Squad() {
               <td className="pl-2 text-right">
                 <button
                   disabled={squad.length <= MIN_SQUAD}
-                  onClick={() => {
-                    if (confirm(`Dispensar ${p.name}? O jogador sai de graça.`))
+                  onClick={async () => {
+                    if (await appConfirm(`Dispensar ${p.name}? O jogador sai de graça.`))
                       releasePlayer(p.id);
                   }}
                   className="rounded bg-zinc-800 px-2 py-0.5 text-xs text-red-400 hover:bg-red-950 disabled:opacity-30"

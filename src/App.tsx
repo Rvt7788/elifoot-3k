@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useStore, needsUserShootout } from "./store";
 import PenaltyShootout from "./components/PenaltyShootout";
 import SettingsModal from "./components/SettingsModal";
+import { AppDialogHost } from "./components/AppDialog";
 import NewGame from "./components/NewGame";
 import ClubHome from "./components/ClubHome";
 import MatchDay from "./components/MatchDay";
@@ -13,6 +14,51 @@ import { IconClub, IconBall, IconTable, IconSquad, IconMarket, IconTraining, Ico
 
 type Tab = "clube" | "rodada" | "tabela" | "elenco" | "treino" | "mercado";
 
+// Convite de clube maior após temporada de sucesso: aceitar assume o novo time.
+function JobOfferModal() {
+  const game = useStore((s) => s.game);
+  const acceptJobOffer = useStore((s) => s.acceptJobOffer);
+  const declineJobOffer = useStore((s) => s.declineJobOffer);
+  if (!game?.jobOffer) return null;
+  const club = game.clubs.find((c) => c.id === game.jobOffer);
+  if (!club) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="w-full max-w-md rounded-xl border border-amber-600/60 bg-zinc-900 p-5">
+        <h2 className="mb-2 font-display text-lg font-bold text-amber-400">📞 Convite recebido</h2>
+        <p className="mb-2 text-pretty text-sm leading-relaxed text-zinc-300">
+          Técnico, o futebol inteiro viu o que você construiu nesta temporada — com
+          elenco limitado, contra prognósticos, jogo após jogo. Feitos assim não
+          passam despercebidos. O <b className="text-zinc-100">{club.name}</b> quer
+          essa mentalidade no comando do projeto.
+        </p>
+        <p className="mb-2 text-pretty text-sm leading-relaxed text-zinc-300">
+          Aqui você terá liberdade total: monte o elenco, escolha o estilo, conduza
+          o clube do seu jeito. Orçamento de €{(club.baseBudget / 1e6).toFixed(1)}M
+          à sua disposição. Queremos o seu futebol, não um manual.
+        </p>
+        <p className="mb-4 text-right text-xs italic text-zinc-500">
+          Presidente do {club.name}
+        </p>
+        <p className="mb-4 text-xs text-zinc-500">
+          Aceitar troca de clube imediatamente — a decisão é definitiva.
+        </p>
+        <div className="flex gap-2">
+          <button onClick={acceptJobOffer} className="btn-cta flex-1 py-2">
+            Aceitar convite
+          </button>
+          <button
+            onClick={declineJobOffer}
+            className="flex-1 rounded bg-zinc-800 py-2 text-sm text-zinc-300 hover:bg-zinc-700"
+          >
+            Ficar onde estou
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const { game, live, startMatchday, finishMatchday } = useStore();
   const [tab, setTab] = useState<Tab>("clube");
@@ -22,7 +68,10 @@ export default function App() {
   if (!game)
     return (
       <>
-        <div className="flex justify-end p-2">
+        <AppDialogHost />
+        <NewGame />
+        {/* engrenagem discreta no rodapé da tela inicial */}
+        <div className="flex justify-center pb-6">
           <button
             onClick={() => setSettingsOpen(true)}
             className="rounded px-2 py-1 text-zinc-500 hover:bg-zinc-800"
@@ -31,7 +80,6 @@ export default function App() {
             <IconGear className="h-5 w-5" />
           </button>
         </div>
-        <NewGame />
         {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
       </>
     );
@@ -47,8 +95,8 @@ export default function App() {
     { key: "mercado", label: "Mercado", Icon: IconMarket },
   ];
 
-  let headerBtnLabel = "Iniciar jogo";
-  let headerBtnClass = "btn-text-green";
+  let headerBtnLabel = "Jogar";
+  let headerBtnClass = "btn-play";
   let headerBtnIcon = <IconPlay className="h-4 w-4" />;
   let headerBtnOnClick = () => {
     startMatchday();
@@ -133,7 +181,9 @@ export default function App() {
         </div>
       </header>
 
+      <AppDialogHost />
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+      {!liveRunning && <JobOfferModal />}
       {shootoutOpen && (
         <PenaltyShootout
           onDone={(winnerId) => {

@@ -4,14 +4,14 @@ import type { Club, CustomFormation, Fixture, Formation, GameState, LiveMatch, P
 import { shapeOf } from "./types";
 import { applyWeeklyGain, RECOVERY } from "./game/training";
 import {
-  applyCupResults, CONT_STAGES, drawContinental, drawCup, leagueWeek,
-  nextContWeek, nextCupWeek, tiesForLeg, weekInfo,
+  applyContGroupResults, applyCupResults, CONT_STAGES, drawContinental, drawCup,
+  groupFixturesForMatchday, leagueWeek, nextContWeek, nextCupWeek, tiesForLeg, weekInfo,
 } from "./game/cup";
 import continentalData from "./data/continental.json";
 import { newGame, assignShirtNumbers } from "./game/seeder";
-import { createLiveMatch, simulateMinute } from "./game/engine";
+import { bestXI, createLiveMatch, simulateMinute } from "./game/engine";
 import { applyResult, buildLeagueFixtures, initTable, sortTable } from "./game/schedule";
-import { mulberry32 } from "./game/rng";
+import { mulberry32, pick } from "./game/rng";
 import { aiAcceptChance, askingPrice } from "./game/market";
 
 export interface Settings {
@@ -24,14 +24,61 @@ export const MIN_SQUAD = 18;
 export const MAX_SQUAD = 25;
 
 // Receita de bilheteria por jogo em casa: proporcional ao porte do clube (baseBudget).
+// Usada como unidade de referência de prêmios (copa, bicho); a renda real de cada
+// partida agora vem do público no estádio (stadiumAttendance × ticketPrice).
 export function matchdayRevenue(baseBudget: number): number {
   return Math.round(baseBudget * 0.015);
+}
+
+// Preço médio do ingresso por divisão: multiplica o público para dar a renda do mandante.
+export function ticketPrice(division: string): number {
+  return division === "Série A" ? 10 : 5;
+}
+
+// hash simples e estável de string, para variar o público por clube dentro da mesma semana
+function strHash(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+// Público no estádio do mandante: Série A entre ~30 e 50 mil (clubes maiores lotam
+// mais), Série B entre ~5 e 20 mil. Mata-mata (copa/continental) infla o público
+// conforme a fase avança, com teto absoluto de 70 mil nos jogos decisivos.
+export function stadiumAttendance(g: GameState, homeId: string, week: number): number {
+  const home = g.clubs.find((c) => c.id === homeId);
+  if (!home) return 20000;
+  const peers = g.clubs
+    .filter((c) => c.country === home.country && c.division === home.division)
+    .sort((a, b) => a.baseBudget - b.baseBudget);
+  const power = peers.length > 1 ? peers.findIndex((c) => c.id === homeId) / (peers.length - 1) : 0.5;
+  const isA = home.division === "Série A";
+  const base = isA ? 30000 + power * 20000 : 5000 + power * 15000;
+  const info = weekInfo(week);
+  // jogo eliminatório é evento: cada fase adiante enche mais o estádio;
+  // fase de grupos da continental é um degrau acima da liga
+  const importance =
+    info.type === "league" ? 1
+    : info.type === "contgroup" ? 1.1
+    : 1.15 + info.stage * 0.1;
+  const rng = mulberry32((g.seed ^ (week * 2654435761) ^ strHash(homeId)) >>> 0);
+  const variation = 0.85 + rng() * 0.3; // ±15% de jogo para jogo
+  return Math.min(70000, Math.round(base * importance * variation));
 }
 
 // Custo do bicho (prêmio de motivação pago durante a partida): uma bilheteria de jogo em casa.
 export function bichoCost(baseBudget: number): number {
   return matchdayRevenue(baseBudget);
 }
+
+// Níveis de bicho: quanto maior o prêmio, maior a motivação — mas com retorno
+// decrescente e teto de +10% no ataque, para o dinheiro não comprar vitória.
+export interface BichoLevel { key: string; label: string; costMult: number; pct: number }
+export const BICHO_LEVELS: BichoLevel[] = [
+  { key: "meio", label: "Meio", costMult: 0.5, pct: 3 },
+  { key: "inteiro", label: "Inteiro", costMult: 1, pct: 6 },
+  { key: "dobrado", label: "Dobrado", costMult: 2, pct: 10 },
+];
 
 // Aporte financeiro de início de temporada: também proporcional ao porte do clube.
 export function seasonRevenue(baseBudget: number): number {
@@ -76,10 +123,13 @@ interface Store {
   setDefaultTactics: (t: Partial<Tactics>) => void;
   setPlayerTraining: (id: string, i: TrainingIntensity) => void;
   setPlayerNumber: (id: string, number: number) => void;
-  payBicho: () => boolean;
+  payBicho: (level: BichoLevel) => boolean;
   sellPlayer: (id: string) => { ok: boolean; amount?: number };
   buyPlayer: (id: string, offer: number) => { ok: boolean; message: string };
   finishMatchday: (userTieWinnerId?: string) => void;
+  skipMatchday: () => void;
+  acceptJobOffer: () => void;
+  declineJobOffer: () => void;
   updateLive: (fn: (matches: LiveMatch[]) => void) => void;
   touchPlayers: (fn: (players: Player[]) => void) => void;
 }
@@ -98,7 +148,7 @@ export const nextLeagueWeek = (g: GameState): number | null => {
 export function needsUserShootout(g: GameState, live: LiveMatch[] | null): boolean {
   if (!live) return false;
   const info = weekInfo(g.week);
-  if (info.type === "league" || info.leg !== 2) return false;
+  if (info.type === "league" || info.type === "contgroup" || info.leg !== 2) return false;
   const knockout = info.type === "cup" ? g.cup : g.continental;
   if (!knockout) return false;
   const m = live.find((x) => x.homeId === g.userClubId || x.awayId === g.userClubId);
@@ -237,8 +287,31 @@ export const useStore = create<Store>()(
             : c,
           );
           const countryClubs = clubs.filter((c) => c.country === userClub.country);
+          // Convite de clube maior: só campanha muito boa credencia o técnico, e
+          // mesmo assim depende de sorte — quanto melhor a campanha, maior a chance,
+          // mas nunca é garantido. O destino é sorteado entre clubes da Série A com
+          // orçamento pelo menos 25% maior que o atual.
+          const posA = finalA.findIndex((r) => r.clubId === userClub.id) + 1;
+          const posB = finalB.findIndex((r) => r.clubId === userClub.id) + 1;
+          const offerChance =
+            posA === 1 ? 0.6 // campeão da Série A: cobiçado, mas mercado é mercado
+            : posA >= 2 && posA <= 4 ? 0.3 // G4 da A chama atenção
+            : posB === 1 ? 0.45 // campeão da B: acesso com moral
+            : posB === 2 ? 0.25 // vice da B: subiu, mas com menos brilho
+            : 0; // campanha comum não gera convite
+          const suitors =
+            offerChance > 0 && seasonRng() < offerChance
+              ? countryClubs.filter(
+                  (c) =>
+                    c.division === "Série A" &&
+                    c.id !== userClub.id &&
+                    c.baseBudget > userClub.baseBudget * 1.25,
+                )
+              : [];
+          const jobOffer = suitors.length > 0 ? pick(seasonRng, suitors).id : undefined;
           g = {
             ...g,
+            jobOffer,
             clubs,
             season: g.season + 1,
             week: 1,
@@ -271,13 +344,16 @@ export const useStore = create<Store>()(
         if (g.week !== week) set({ game: { ...g, week } });
         const userClub = g.clubs.find((c) => c.id === g!.userClubId)!;
         const info = weekInfo(week);
-        // semana de copa/continental: confrontos da perna atual; liga: jogos da rodada
+        // semana de copa/continental: confrontos da perna atual; grupos da
+        // continental: jogos da rodada de grupos; liga: jogos da rodada
         const pairs: { homeId: string; awayId: string }[] =
           info.type === "cup" && g.cup
             ? tiesForLeg(g.cup, info.stage, info.leg)
-            : info.type === "continental" && g.continental
-              ? tiesForLeg(g.continental, info.stage, info.leg)
-              : weekFixtures(g, week);
+            : info.type === "contgroup" && g.continental
+              ? groupFixturesForMatchday(g.continental, info.matchday)
+              : info.type === "continental" && g.continental
+                ? tiesForLeg(g.continental, info.stage, info.leg)
+                : weekFixtures(g, week);
         // o jogo do usuário primeiro; depois os da divisão dele
         const divOrder = (f: { homeId: string; awayId: string }) => {
           if (f.homeId === g!.userClubId || f.awayId === g!.userClubId) return -1;
@@ -307,6 +383,8 @@ export const useStore = create<Store>()(
             f.awayId === g.userClubId ? g.customFormation : undefined,
           ),
         );
+        // público de cada estádio definido na abertura da rodada (e exibido nela)
+        for (const m of live) m.attendance = stadiumAttendance(g, m.homeId, week);
         set({ live, lastResults: null, liveDivision: null, paused: false });
       },
 
@@ -346,17 +424,55 @@ export const useStore = create<Store>()(
 
       // paga o bicho na prancheta pré-jogo: desconta do orçamento na hora e o time entra
       // motivado na próxima partida. Irreversível — reseta ao encerrar a rodada.
-      payBicho: () => {
+      // Pular a rodada: simula todos os jogos de uma vez, sem acompanhar ao vivo.
+      // Pensado para rodadas sem o time do usuário (fases de copa, por exemplo).
+      skipMatchday: () => {
+        get().startMatchday();
+        if (!get().live) return;
+        // avança minuto a minuto até todos os jogos terminarem (com trava de segurança)
+        let guard = 0;
+        while (get().live?.some((m) => !m.finished) && guard++ < 200) get().tick();
+        get().finishMatchday();
+      },
+
+      // Aceitar o convite troca de clube: o técnico assume o novo time com o caixa
+      // do novo clube (base + aporte de temporada) e escalação inicial do novo elenco.
+      acceptJobOffer: () => {
+        const g = get().game;
+        if (!g?.jobOffer) return;
+        const club = g.clubs.find((c) => c.id === g.jobOffer);
+        if (!club) { set({ game: { ...g, jobOffer: undefined } }); return; }
+        const squad = g.players.filter((p) => p.clubId === club.id);
+        set({
+          game: {
+            ...g,
+            userClubId: club.id,
+            budget: club.baseBudget + seasonRevenue(club.baseBudget),
+            starters: bestXI(squad, "4-4-2"),
+            slotOrder: undefined,
+            formation: "4-4-2",
+            jobOffer: undefined,
+          },
+        });
+      },
+      declineJobOffer: () => {
+        const g = get().game;
+        if (!g) return;
+        set({ game: { ...g, jobOffer: undefined } });
+      },
+
+      payBicho: (level) => {
         const g = get().game;
         if (!g || g.defaultTactics.bicho) return false; // já pago para a próxima partida
         const userClub = g.clubs.find((c) => c.id === g.userClubId)!;
-        const cost = bichoCost(userClub.baseBudget);
+        const cost = Math.round(bichoCost(userClub.baseBudget) * level.costMult);
         if (g.budget < cost) return false;
         set({
           game: {
             ...g,
             budget: g.budget - cost,
-            defaultTactics: { ...g.defaultTactics, bicho: true },
+            pendingBicho: cost,
+            defaultTactics: { ...g.defaultTactics, bicho: true, bichoPct: level.pct },
           },
         });
         return true;
@@ -464,13 +580,37 @@ export const useStore = create<Store>()(
         if (!game || !live) return;
         const info = weekInfo(game.week);
         const isContinental = info.type === "continental" && !!game.continental;
-        const isCup = (info.type === "cup" && !!game.cup) || isContinental;
+        const isContGroup = info.type === "contgroup" && !!game.continental;
+        const isCup = (info.type === "cup" && !!game.cup) || isContinental || isContGroup;
         let fixtures = game.fixtures;
         let tables = game.tables;
         let cup = game.cup;
         let continental = game.continental;
         let cupPrize = 0;
-        if (isCup && info.type !== "league" as string) {
+        if (isContGroup && info.type === "contgroup") {
+          // fase de grupos da continental: grava os placares; a última rodada
+          // fecha os grupos e sorteia as oitavas automaticamente
+          const cont = JSON.parse(JSON.stringify(game.continental)) as NonNullable<typeof game.continental>;
+          continental = cont;
+          applyContGroupResults(
+            cont,
+            info.matchday,
+            live.map((m) => ({
+              homeId: m.homeId, awayId: m.awayId,
+              homeScore: m.homeScore, awayScore: m.awayScore,
+            })),
+          );
+          // vitória em jogo de grupo rende um prêmio de uma bilheteria de referência
+          const userClubG = game.clubs.find((c) => c.id === game.userClubId)!;
+          const userMatchG = live.find(
+            (m) => m.homeId === game.userClubId || m.awayId === game.userClubId,
+          );
+          if (userMatchG) {
+            const my = userMatchG.homeId === game.userClubId ? userMatchG.homeScore : userMatchG.awayScore;
+            const opp = userMatchG.homeId === game.userClubId ? userMatchG.awayScore : userMatchG.homeScore;
+            if (my > opp) cupPrize += matchdayRevenue(userClubG.baseBudget);
+          }
+        } else if (isCup && (info.type === "cup" || info.type === "continental")) {
           // grava os placares no mata-mata (copa ou continental); ao fechar a volta
           // define classificados (pênaltis em agregado empatado) e sorteia a fase seguinte
           const knockout = JSON.parse(
@@ -582,17 +722,24 @@ export const useStore = create<Store>()(
           applyWeeklyGain(next, enteredField.has(p.id), intensity);
           return next;
         });
-        // receita de bilheteria: só quando o clube do usuário jogou em casa nessa rodada
+        // receita de bilheteria: só quando o clube do usuário jogou em casa nessa
+        // rodada — a renda é o público real do estádio × preço do ingresso da divisão
         const userClub = game.clubs.find((c) => c.id === game.userClubId)!;
-        const playedHome = live.some((m) => m.homeId === game.userClubId);
-        const revenue = playedHome ? matchdayRevenue(userClub.baseBudget) : 0;
+        const userHomeMatch = live.find((m) => m.homeId === game.userClubId);
+        const revenue = userHomeMatch
+          ? (userHomeMatch.attendance ?? stadiumAttendance(game, game.userClubId, game.week)) *
+            ticketPrice(userClub.division)
+          : 0;
         set({
           game: {
             ...game, fixtures, tables, players, cup, continental,
             week: game.week + 1,
             budget: game.budget + revenue + cupPrize,
+            // balanço da rodada para a tela do clube: bilheteria, prêmios e o bicho pago
+            lastFinance: { revenue, prize: cupPrize, bicho: game.pendingBicho ?? 0 },
+            pendingBicho: undefined,
             // bicho vale só para a partida da rodada: pago, consumido, resetado
-            defaultTactics: { ...game.defaultTactics, bicho: false },
+            defaultTactics: { ...game.defaultTactics, bicho: false, bichoPct: undefined },
           },
           live: null,
           lastResults: live,

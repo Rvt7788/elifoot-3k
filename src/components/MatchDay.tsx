@@ -4,13 +4,15 @@ import type { Club, Fixture, LiveMatch, MatchEvent } from "../types";
 import TacticsModal from "./TacticsModal";
 import { playGoal, playGoalConceded, playRed } from "../game/sound";
 import { distinctPair } from "../game/color";
-import { weekInfo, tiesForLeg, CUP_STAGE_NAMES, CONT_STAGE_NAMES } from "../game/cup";
+import { weekInfo, tiesForLeg, groupFixturesForMatchday, CUP_STAGE_NAMES, CONT_STAGE_NAMES } from "../game/cup";
 
 // Título da semana: rodada da liga, fase da copa ou da continental (ida/volta)
 function weekLabel(week: number): string {
   const info = weekInfo(week);
   if (info.type === "cup")
     return `🏆 Copa Nacional — ${CUP_STAGE_NAMES[info.stage]} · ${info.leg === 1 ? "ida" : "volta"}`;
+  if (info.type === "contgroup")
+    return `🌎 Continental — Fase de grupos · Rodada ${info.matchday + 1}`;
   if (info.type === "continental")
     return `🌎 Continental — ${CONT_STAGE_NAMES[info.stage]} · ${info.leg === 1 ? "ida" : "volta"}`;
   return `Rodada ${info.round}`;
@@ -92,6 +94,13 @@ function MatchRow({
       } ${m.aiFlash ? "ai-flash" : ""} ${highlight ? "shadow-lg shadow-emerald-900/40" : ""}`}
     >
       <div className="flex items-center gap-3">
+        {/* público no estádio, alinhado à esquerda do confronto */}
+        <span
+          className="w-16 shrink-0 text-left font-mono text-sm tabular-nums text-zinc-500"
+          title="Público no estádio"
+        >
+          {m.attendance ? m.attendance.toLocaleString("pt-BR") : ""}
+        </span>
         <div className="flex w-64 shrink-0 items-center gap-2">
           <div className="flex flex-1 items-center justify-end gap-1.5 overflow-hidden">
             <span className="truncate text-sm font-semibold">{getClubDisplayName(home.name)}</span>
@@ -210,7 +219,10 @@ function MatchDetailModal({
     </div>
   );
 
-  const homeMom = 50 + m.momentum / 2;
+  // posse real acumulada minuto a minuto; jogos antigos (sem stats) caem no momentum
+  const st = m.stats;
+  const possTotal = st ? st.home.poss + st.away.poss : 0;
+  const homeMom = st && possTotal > 0 ? (100 * st.home.poss) / possTotal : 50 + m.momentum / 2;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
@@ -267,6 +279,11 @@ function MatchDetailModal({
         <div className="mb-3 rounded-lg bg-zinc-800/60 px-3 py-2">
           <p className="mb-1 text-xs font-bold text-zinc-500 text-center">ESTATÍSTICAS</p>
           {statRow("Posse (%)", `${Math.round(homeMom)}`, `${Math.round(100 - homeMom)}`)}
+          {st && statRow("Finalizações", st.home.shots, st.away.shots)}
+          {st && statRow("Chutes no gol", st.home.onTarget, st.away.onTarget)}
+          {st && statRow("Defesas", st.home.saves, st.away.saves)}
+          {st && statRow("Desarmes", st.home.tackles, st.away.tackles)}
+          {st && statRow("Interceptações", st.home.interceptions, st.away.interceptions)}
           {statRow("Gols", m.homeScore, m.awayScore)}
           {statRow("Amarelos", yellows.filter((e) => e.side === "home").length, yellows.filter((e) => e.side === "away").length)}
           {statRow("Vermelhos", reds.filter((e) => e.side === "home").length, reds.filter((e) => e.side === "away").length)}
@@ -426,10 +443,12 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
     if (!lastResults) {
       const week = nextPlayableWeek(game);
       const info = week !== null ? weekInfo(week) : null;
-      const isCup = info?.type === "cup" || info?.type === "continental";
+      const isCup = info?.type === "cup" || info?.type === "continental" || info?.type === "contgroup";
       const knockout = info?.type === "cup" ? game.cup : info?.type === "continental" ? game.continental : undefined;
       const upcoming: { homeId: string; awayId: string }[] =
         week === null ? []
+        : info?.type === "contgroup" && game.continental
+          ? groupFixturesForMatchday(game.continental, info.matchday)
         : isCup && knockout ? tiesForLeg(knockout, (info as any).stage, (info as any).leg)
         : weekFixtures(game, week);
       return (

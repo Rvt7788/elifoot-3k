@@ -141,19 +141,21 @@ h1, h2, h3, .font-display {
   box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
 }
 
-/* Iniciar jogo: só o texto, verde esfumaçado (glow), sem fundo/borda e sem
-   variação no hover — precisa chamar atenção o tempo todo, do mesmo jeito */
-.btn-text-green {
-  color: #34d399; /* emerald-400 */
-  background: none;
+/* Jogar: o botão de ação mais importante do app. Sólido, verde pleno, sem neon —
+   o destaque vem do peso visual (bloco cheio), não de brilho. */
+.btn-play {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  background: #059669; /* emerald-600 */
   border: none;
-  text-shadow: 0 0 10px rgba(52, 211, 153, 0.65);
+  border-radius: 8px;
+  transition: background-color 0.15s, transform 0.1s;
 }
-.btn-text-green:hover,
-.btn-text-green:active {
-  color: #34d399;
-  text-shadow: 0 0 10px rgba(52, 211, 153, 0.65);
-}
+.btn-play:hover { background: #10b981; } /* emerald-500 */
+.btn-play:active { transform: scale(0.97); }
 
 /* Vermelho retro: Ao vivo */
 .btn-metal-red {
@@ -262,7 +264,7 @@ h1, h2, h3, .font-display {
   background: linear-gradient(90deg, var(--accent-dim), transparent);
 }
 
-/* Aba de país: texto puro, sublinhado cyan quando ativa */
+/* Aba de país: texto puro — só a cor verde marca hover e seleção, sem sublinhado */
 .country-tab {
   font-family: var(--font-body);
   font-size: var(--fs-label);
@@ -271,14 +273,19 @@ h1, h2, h3, .font-display {
   text-transform: uppercase;
   padding: 0.5rem 0.125rem;
   color: var(--metal-500);
-  border-bottom: 2px solid transparent;
-  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap; /* nome do país nunca quebra em duas linhas na grade */
+  transition: color 0.15s;
 }
-.country-tab:hover { color: var(--metal-300); }
+.country-tab:hover { color: #34d399; }
 .country-tab.active {
   color: #34d399; /* emerald-400: cor de ação/positivo */
-  border-bottom-color: #34d399;
-  text-shadow: 0 0 10px rgba(52, 211, 153, 0.45);
+}
+/* mobile estreito: compacta a grade de países para as 3 colunas caberem sem quebrar */
+@media (max-width: 420px) {
+  .country-tab {
+    font-size: 0.625rem;
+    letter-spacing: 0.05em;
+  }
 }
 
 /* Linha de clube: sem caixa — hairline entre linhas, marcador cyan na seleção */
@@ -320,10 +327,13 @@ h1, h2, h3, .font-display {
 .btn-cta:not(:disabled):hover {
   color: #fff;
   border-color: #34d399;
-  box-shadow: 0 0 18px rgba(52, 211, 153, 0.35), inset 0 0 12px rgba(52, 211, 153, 0.12);
-  text-shadow: 0 0 8px rgba(52, 211, 153, 0.6);
 }
 .btn-cta:disabled { opacity: 0.35; }
+/* variante sem chanfro: cantos arredondados, para botões compactos do tamanho do texto */
+.btn-cta--plain {
+  clip-path: none;
+  border-radius: 6px;
+}
 
 @keyframes flash {
   0%, 100% { opacity: 1; }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useStore, bichoCost, nextPlayableWeek } from "../store";
+import { useStore, bichoCost, BICHO_LEVELS, nextPlayableWeek } from "../store";
 import { bestXI, bestXIByPosition, DEFAULT_TACTICS } from "../game/engine";
 import { weekInfo } from "../game/cup";
 import type { Formation, Marking, Mentality, Player, Position } from "../types";
@@ -7,6 +7,7 @@ import { FORMATIONS } from "../types";
 import { pitchLayout, PlayerPin, EmptySlot, PitchBackground } from "./PitchField";
 import { readableOn } from "../game/color";
 import EnergyBar from "./EnergyBar";
+import { appAlert } from "./AppDialog";
 import FormationEditorModal from "./FormationEditorModal";
 
 const TIER_BADGE: Record<string, string> = {
@@ -59,12 +60,6 @@ function PlayerRow({
           <span className={`w-4 shrink-0 text-right tabular-nums ${selected ? "opacity-70" : "text-zinc-500"}`}>{p.number}</span>
           <b className={`shrink-0 ${selected ? "opacity-70" : "text-zinc-400"}`}>{p.pos}</b>
           <span className={`truncate ${suspendedNext ? "text-zinc-500 line-through" : ""}`}>{p.name}</span>
-          <span
-            className={`shrink-0 font-bold ${p.foot === "canhoto" ? "text-red-500" : "text-sky-400"}`}
-            title={p.foot === "canhoto" ? "Canhoto" : "Destro"}
-          >
-            {p.foot === "canhoto" ? "◀" : "▶"}
-          </span>
           <span className="shrink-0 text-amber-400">{TIER_BADGE[p.tier]}</span>
           {suspendedNext && <span className="shrink-0 text-[9px] font-bold text-red-400">SUSP</span>}
         </span>
@@ -112,6 +107,7 @@ const MARK: { key: Marking; label: string }[] = [
   { key: "leve", label: "Leve" },
   { key: "frouxa", label: "Frouxa" },
   { key: "apertada", label: "Apertada" },
+  { key: "extrema", label: "Extrema" },
 ];
 
 export default function TacticsBoard() {
@@ -205,6 +201,14 @@ export default function TacticsBoard() {
       slots.push({ pos: posKey, slotIdx: i, ...coord, player: posPlayers[posKey][i] });
     });
   });
+  // Titular sem slot da própria posição (escalado fora de posição por falta de
+  // opção) ocupa uma vaga vazia de outra linha — o campo nunca esconde titular.
+  const placedIds = new Set(slots.filter((s) => s.player).map((s) => s.player!.id));
+  const unplaced = titulares.filter((p) => !placedIds.has(p.id));
+  for (const s of slots) {
+    if (s.player || unplaced.length === 0) continue;
+    s.player = unplaced.shift();
+  }
 
   // ordem completa dos slots (GOL→DEF→MEI→ATA), base de qualquer troca
   const flatOrder = (pp: Record<Position, Player[]>) =>
@@ -277,6 +281,17 @@ export default function TacticsBoard() {
       nextPosPlayers[posKey] = [...nextPosPlayers[posKey], ...bench];
       addedIds.push(...bench.map((p) => p.id));
     });
+    // Ainda faltam vagas (posição sem reserva disponível): completa com os
+    // melhores reservas de qualquer posição, para nunca ficar com menos de 11.
+    const missing = slots.length - starters.length - addedIds.length;
+    if (missing > 0) {
+      const extras = squad
+        .filter((p) => !starters.includes(p.id) && !addedIds.includes(p.id))
+        .sort((a, b) => b.strength - a.strength)
+        .slice(0, missing);
+      addedIds.push(...extras.map((p) => p.id));
+      extras.forEach((p) => nextPosPlayers[p.pos] = [...nextPosPlayers[p.pos], p]);
+    }
     if (addedIds.length === 0) return;
     setStarters([...starters, ...addedIds]);
     setSlotOrder(flatOrder(nextPosPlayers));
@@ -320,7 +335,7 @@ export default function TacticsBoard() {
             <button
               key={f}
               onClick={() => setFormation(f)}
-              className={`rounded px-2 py-1 text-[11px] ${
+              className={`whitespace-nowrap rounded px-1 py-1 text-[11px] ${
                 formation === f ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
               }`}
             >
@@ -329,7 +344,7 @@ export default function TacticsBoard() {
           ))}
           <button
             onClick={() => setEditorOpen(true)}
-            className={`rounded px-2 py-1 text-[11px] ${
+            className={`whitespace-nowrap rounded px-1 py-1 text-[11px] ${
               formation === "custom" ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
             }`}
             title="Criar ou editar sua própria formação"
@@ -359,7 +374,7 @@ export default function TacticsBoard() {
                 setStarters(bestXI(squad, formation, false, "league", custom));
                 setManualMode(false);
               }}
-              className={`flex-1 rounded px-2 py-1 text-[11px] ${
+              className={`flex-1 whitespace-nowrap rounded px-1 py-1 text-[11px] ${
                 scaleBy === "forca" && isBestActive ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
               }`}
             >
@@ -373,7 +388,7 @@ export default function TacticsBoard() {
                 setSlotOrder(slotOrder);
                 setManualMode(false);
               }}
-              className={`flex-1 rounded px-2 py-1 text-[11px] ${
+              className={`flex-1 whitespace-nowrap rounded px-1 py-1 text-[11px] ${
                 scaleBy === "posicao" && isBestActive ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
               }`}
             >
@@ -385,7 +400,7 @@ export default function TacticsBoard() {
                 setStarters(bestXI(squad, formation, true, "league", custom));
                 setManualMode(false);
               }}
-              className={`flex-1 rounded px-2 py-1 text-[11px] ${
+              className={`flex-1 whitespace-nowrap rounded px-1 py-1 text-[11px] ${
                 scaleBy === "energia" && isBestActive ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
               }`}
             >
@@ -442,7 +457,7 @@ export default function TacticsBoard() {
         </div>
 
         <div className="grid grid-cols-2 gap-x-3 gap-y-3">
-          <div>
+          <div className="min-w-0">
             <p className="ui-label mb-1">Mentalidade</p>
             <div className="flex flex-col gap-1">
               {MENT.map((m) => (
@@ -473,7 +488,7 @@ export default function TacticsBoard() {
             </div>
           </div>
 
-          <div>
+          <div className="min-w-0">
             <p className="ui-label mb-1">Marcação</p>
             <div className="flex flex-col gap-1">
               {MARK.map((m) => (
@@ -495,23 +510,31 @@ export default function TacticsBoard() {
               onClick={() => setDefaultTactics({ autoSub: !tactics.autoSub })}
               label="Sub. automática"
             />
-            <div className="mt-1">
-              <ToggleBtn
-                checked={tactics.bicho ?? false}
-                onClick={() => {
-                  if (tactics.bicho) return; // dinheiro pago não volta
-                  if (!payBicho()) alert("Orçamento insuficiente para pagar o bicho.");
-                }}
-                disabled={!tactics.bicho && game.budget < bichoCost(userClub.baseBudget)}
-                label={
-                  <>
-                    Bicho{" "}
-                    <span className="text-[11px] text-zinc-400">
-                      €{(bichoCost(userClub.baseBudget) / 1e6).toFixed(2)}M
+            <p className="ui-label mb-1 mt-2">Bicho</p>
+            <div className="flex flex-col gap-1">
+              {BICHO_LEVELS.map((lvl) => {
+                const cost = Math.round(bichoCost(userClub.baseBudget) * lvl.costMult);
+                const paidThis = tactics.bicho && (tactics.bichoPct ?? 10) === lvl.pct;
+                return (
+                  <button
+                    key={lvl.key}
+                    onClick={() => {
+                      if (tactics.bicho) return; // dinheiro pago não volta
+                      if (!payBicho(lvl)) appAlert("Orçamento insuficiente para pagar o bicho.");
+                    }}
+                    disabled={tactics.bicho ? !paidThis : game.budget < cost}
+                    className={`flex w-full min-w-0 items-center justify-between gap-1 rounded px-2 py-1 text-left text-[11px] disabled:cursor-not-allowed disabled:opacity-40 ${
+                      paidThis ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
+                    }`}
+                    title={`+${lvl.pct}% de motivação no ataque nesta partida`}
+                  >
+                    <span className="truncate">{lvl.label} <span className={paidThis ? "opacity-80" : "text-zinc-400"}>+{lvl.pct}%</span></span>
+                    <span className={`shrink-0 ${paidThis ? "opacity-80" : "text-zinc-400"}`}>
+                      €{(cost / 1e6).toFixed(2)}M
                     </span>
-                  </>
-                }
-              />
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

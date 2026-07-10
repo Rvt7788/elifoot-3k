@@ -3,7 +3,7 @@ import { useStore } from "../store";
 import { sortTable } from "../game/schedule";
 import {
   CONT_STAGES, CONT_STAGE_NAMES, contStageWeeks, CUP_STAGE_NAMES, CUP_STAGES,
-  cupChampion, cupStageWeeks, type CupState, type CupTie,
+  cupChampion, cupStageWeeks, groupStandings, type CupState, type CupTie,
 } from "../game/cup";
 import type { Club, TableRow } from "../types";
 import ClubModal from "./ClubModal";
@@ -190,15 +190,51 @@ export default function Standings() {
           <p className="text-center text-sm text-zinc-500">A copa começa após a 5ª rodada.</p>
         )
       ) : game.continental ? (
-        <CupBracket
-          cup={game.continental}
-          clubs={game.clubs}
-          userClubId={game.userClubId}
-          stageNames={CONT_STAGE_NAMES}
-          stageWeeks={contStageWeeks}
-          totalStages={CONT_STAGES}
-          championLabel={`Campeão da ${contName}`}
-        />
+        <>
+          {/* fase de grupos: 8 grupos de 4, os 2 primeiros avançam às oitavas */}
+          {game.continental.groups && (
+            <div className="mb-6">
+              <h4 className="mb-2 text-sm font-bold text-amber-400">Fase de grupos</h4>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {game.continental.groups.map((_, g) => (
+                  <div key={g} className="rounded-lg bg-zinc-900/60 px-3 py-2">
+                    <p className="mb-1 text-xs font-bold text-zinc-500">GRUPO {String.fromCharCode(65 + g)}</p>
+                    {groupStandings(game.continental!, g).map((r, i) => {
+                      const c = game.clubs.find((x) => x.id === r.clubId);
+                      const isUser = r.clubId === game.userClubId;
+                      return (
+                        <div
+                          key={r.clubId}
+                          className={`flex items-center justify-between border-b border-zinc-800 py-0.5 text-xs last:border-0 ${
+                            isUser ? "text-emerald-400 font-semibold" : i < 2 ? "text-zinc-200" : "text-zinc-500"
+                          }`}
+                        >
+                          <span className="truncate">
+                            <span className="mr-1 inline-block w-3 text-zinc-600">{i + 1}</span>
+                            {c?.name ?? "?"}
+                          </span>
+                          <span className="ml-2 shrink-0 font-mono">
+                            {r.pts} <span className="text-zinc-600">pts</span>{" "}
+                            <span className="text-zinc-600">({r.p}j {r.gf - r.ga >= 0 ? "+" : ""}{r.gf - r.ga})</span>
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <CupBracket
+            cup={game.continental}
+            clubs={game.clubs}
+            userClubId={game.userClubId}
+            stageNames={CONT_STAGE_NAMES}
+            stageWeeks={contStageWeeks}
+            totalStages={CONT_STAGES}
+            championLabel={`Campeão da ${contName}`}
+          />
+        </>
       ) : (
         <p className="text-center text-sm text-zinc-500">
           A continental será sorteada na próxima temporada.

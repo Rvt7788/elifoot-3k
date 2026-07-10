@@ -15,9 +15,22 @@ export interface CupTie {
   pens?: boolean; // decidido nos pênaltis
 }
 
+// Jogo de fase de grupos da continental (partida seca, sem ida/volta por confronto).
+export interface GroupFixture {
+  matchday: number; // 0..5
+  group: number; // 0..7
+  homeId: string;
+  awayId: string;
+  homeScore?: number;
+  awayScore?: number;
+  played: boolean;
+}
+
 export interface CupState {
   byes: string[]; // isentos da preliminar, entram na fase de 32
   rounds: CupTie[][]; // fases sorteadas até agora: [prelim, 32, 16, QF, SF, F]
+  groups?: string[][]; // continental: 8 grupos de 4 clubes
+  groupFixtures?: GroupFixture[]; // continental: 6 rodadas de grupos (turno e returno)
 }
 
 export const CUP_STAGES = 6;
@@ -26,21 +39,25 @@ export const CUP_STAGE_NAMES = [
 ];
 
 // ========================== COPA CONTINENTAL ==============================
-// Mata-mata de ida e volta com 16 clubes históricos do continente (Libertadores
-// para BR/AR, Champions para a Europa) — oitavas → quartas → semi → final.
+// 32 clubes (Libertadores para BR/AR, Champions para a Europa): fase de grupos
+// com 8 grupos de 4 (6 jogos por time, turno e returno) e depois o mata-mata de
+// ida e volta — oitavas → quartas → semi → final. Os 2 primeiros de cada grupo
+// avançam às oitavas.
 export const CONT_STAGES = 4;
 export const CONT_STAGE_NAMES = ["Oitavas", "Quartas", "Semifinal", "Final"];
+export const CONT_GROUP_MDS = 6; // rodadas da fase de grupos
 
 // A copa nacional e a continental correm intercaladas com a liga (38 rodadas): a
 // ida de uma fase entra após uma rodada, a liga segue, e a volta entra algumas
 // rodadas depois — ida e volta nunca em semanas coladas. Cada número abaixo é a
-// rodada da liga após a qual entra UMA semana daquela competição; os pares
-// (2s, 2s+1) são ida e volta da fase s. Nenhuma rodada recebe duas inserções.
-// Total: 38 liga + 12 copa + 8 continental = 58 semanas.
+// rodada da liga após a qual entra UMA semana daquela competição. Na continental,
+// os 6 primeiros valores são as rodadas de grupos; os 8 seguintes, os pares
+// (ida, volta) do mata-mata. Nenhuma rodada recebe duas inserções.
+// Total: 38 liga + 12 copa + 14 continental = 64 semanas.
 export const CUP_INSERTS = [5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 36, 38];
-export const CONT_INSERTS = [4, 7, 13, 16, 22, 25, 31, 34];
+export const CONT_INSERTS = [2, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34, 35, 37];
 const ALL_INSERTS = [...CUP_INSERTS, ...CONT_INSERTS].sort((a, b) => a - b);
-export const TOTAL_WEEKS = 38 + CUP_STAGES * 2 + CONT_STAGES * 2;
+export const TOTAL_WEEKS = 38 + CUP_STAGES * 2 + CONT_GROUP_MDS + CONT_STAGES * 2;
 
 // Semana da liga considerando as semanas de copa/continental já inseridas antes dela.
 export function leagueWeek(round: number): number {
@@ -55,14 +72,23 @@ export function cupStageWeeks(stage: number): [number, number] {
   return [insertWeek(CUP_INSERTS[stage * 2]), insertWeek(CUP_INSERTS[stage * 2 + 1])];
 }
 
-// Semanas (ida, volta) da fase `stage` da copa continental.
+// Semana da rodada `md` (0..5) da fase de grupos da continental.
+export function contGroupWeek(md: number): number {
+  return insertWeek(CONT_INSERTS[md]);
+}
+
+// Semanas (ida, volta) da fase `stage` do mata-mata da continental.
 export function contStageWeeks(stage: number): [number, number] {
-  return [insertWeek(CONT_INSERTS[stage * 2]), insertWeek(CONT_INSERTS[stage * 2 + 1])];
+  return [
+    insertWeek(CONT_INSERTS[CONT_GROUP_MDS + stage * 2]),
+    insertWeek(CONT_INSERTS[CONT_GROUP_MDS + stage * 2 + 1]),
+  ];
 }
 
 export type WeekInfo =
   | { type: "league"; round: number }
   | { type: "cup"; stage: number; leg: 1 | 2 }
+  | { type: "contgroup"; matchday: number }
   | { type: "continental"; stage: number; leg: 1 | 2 };
 
 // Que evento acontece numa dada semana do calendário.
@@ -72,6 +98,8 @@ export function weekInfo(week: number): WeekInfo {
     if (week === ida) return { type: "cup", stage: s, leg: 1 };
     if (week === volta) return { type: "cup", stage: s, leg: 2 };
   }
+  for (let md = 0; md < CONT_GROUP_MDS; md++)
+    if (week === contGroupWeek(md)) return { type: "contgroup", matchday: md };
   for (let s = 0; s < CONT_STAGES; s++) {
     const [ida, volta] = contStageWeeks(s);
     if (week === ida) return { type: "continental", stage: s, leg: 1 };
@@ -106,18 +134,44 @@ export function drawCup(rng: Rng, serieAIds: string[], serieBIds: string[]): Cup
   return { byes, rounds: [pairUp(prelim)] };
 }
 
+// Turno e returno dentro de um grupo de 4: 6 rodadas, 2 jogos por rodada.
+// Padrão fixo de round-robin; as rodadas 4-6 invertem o mando das 1-3.
+const GROUP_RR: [number, number][][] = [
+  [[0, 1], [2, 3]],
+  [[0, 2], [3, 1]],
+  [[0, 3], [1, 2]],
+];
+
+function buildGroupFixtures(groups: string[][]): GroupFixture[] {
+  const fixtures: GroupFixture[] = [];
+  groups.forEach((teams, g) => {
+    GROUP_RR.forEach((pairs, md) => {
+      for (const [h, a] of pairs) {
+        fixtures.push({ matchday: md, group: g, homeId: teams[h], awayId: teams[a], played: false });
+        fixtures.push({ matchday: md + 3, group: g, homeId: teams[a], awayId: teams[h], played: false });
+      }
+    });
+  });
+  return fixtures;
+}
+
 // Sorteio da continental: os 4 primeiros da Série A do país do usuário se
-// classificam; as outras 12 vagas vão para clubes estrangeiros com histórico
-// continental (continental.json), da confederação do país do usuário.
+// classificam; as outras 28 vagas vão para clubes estrangeiros da confederação —
+// primeiro os históricos (continental.json), completando com os maiores
+// orçamentos dos países da confederação. 32 clubes em 8 grupos de 4; o
+// mata-mata (rounds) só é sorteado quando os grupos terminam.
 export function drawContinental(
   rng: Rng,
-  clubs: { id: string; name: string; country: string }[],
+  clubs: { id: string; name: string; country: string; baseBudget?: number }[],
   userClubId: string,
   contData: Record<string, Record<string, string[]>>,
   serieATop4: string[],
 ): CupState {
   const user = clubs.find((c) => c.id === userClubId)!;
   const confed = ["BR", "AR"].includes(user.country) ? "libertadores" : "champions";
+  const confedCountries = ["BR", "AR"].includes(user.country)
+    ? ["BR", "AR"]
+    : ["EN", "ES", "DE", "FR", "IT", "PT"];
   const lists = contData[confed] ?? {};
   const foreign: string[] = [];
   for (const [country, names] of Object.entries(lists)) {
@@ -127,8 +181,78 @@ export function drawContinental(
       if (club) foreign.push(club.id);
     }
   }
-  const picked = [...serieATop4.slice(0, 4), ...shuffle(rng, foreign)].slice(0, 16);
-  return { byes: [], rounds: [pairUp(shuffle(rng, picked))] };
+  // completa até 28 estrangeiros com os maiores clubes restantes da confederação
+  const fillers = clubs
+    .filter(
+      (c) =>
+        confedCountries.includes(c.country) &&
+        c.country !== user.country &&
+        !foreign.includes(c.id),
+    )
+    .sort((a, b) => (b.baseBudget ?? 0) - (a.baseBudget ?? 0))
+    .map((c) => c.id);
+  const picked = [...serieATop4.slice(0, 4), ...shuffle(rng, foreign), ...fillers].slice(0, 32);
+  const order = shuffle(rng, picked);
+  const groups = Array.from({ length: 8 }, (_, g) => order.slice(g * 4, g * 4 + 4));
+  return { byes: [], rounds: [], groups, groupFixtures: buildGroupFixtures(groups) };
+}
+
+// Classificação de um grupo a partir dos jogos disputados.
+export function groupStandings(
+  cont: CupState, group: number,
+): { clubId: string; pts: number; p: number; gf: number; ga: number }[] {
+  const teams = cont.groups?.[group] ?? [];
+  const rows = new Map(teams.map((id) => [id, { clubId: id, pts: 0, p: 0, gf: 0, ga: 0 }]));
+  for (const f of cont.groupFixtures ?? []) {
+    if (f.group !== group || !f.played) continue;
+    const h = rows.get(f.homeId)!;
+    const a = rows.get(f.awayId)!;
+    h.p++; a.p++;
+    h.gf += f.homeScore!; h.ga += f.awayScore!;
+    a.gf += f.awayScore!; a.ga += f.homeScore!;
+    if (f.homeScore! > f.awayScore!) h.pts += 3;
+    else if (f.homeScore! < f.awayScore!) a.pts += 3;
+    else { h.pts++; a.pts++; }
+  }
+  return [...rows.values()].sort(
+    (x, y) => y.pts - x.pts || (y.gf - y.ga) - (x.gf - x.ga) || y.gf - x.gf,
+  );
+}
+
+// Jogos de uma rodada da fase de grupos.
+export function groupFixturesForMatchday(cont: CupState, md: number): GroupFixture[] {
+  return (cont.groupFixtures ?? []).filter((f) => f.matchday === md);
+}
+
+// Grava os placares de uma rodada de grupos; quando a última rodada fecha,
+// sorteia as oitavas: 1º de cada grupo cruza com o 2º do grupo seguinte.
+export function applyContGroupResults(
+  cont: CupState,
+  md: number,
+  results: { homeId: string; awayId: string; homeScore: number; awayScore: number }[],
+): void {
+  for (const r of results) {
+    const f = (cont.groupFixtures ?? []).find(
+      (x) => x.matchday === md && x.homeId === r.homeId && x.awayId === r.awayId,
+    );
+    if (f) { f.homeScore = r.homeScore; f.awayScore = r.awayScore; f.played = true; }
+  }
+  const allPlayed = (cont.groupFixtures ?? []).every((f) => f.played);
+  if (allPlayed && cont.rounds.length === 0 && cont.groups) {
+    const firsts = cont.groups.map((_, g) => groupStandings(cont, g)[0].clubId);
+    const seconds = cont.groups.map((_, g) => groupStandings(cont, g)[1].clubId);
+    const ties: CupTie[] = [];
+    for (let g = 0; g < 8; g += 2) {
+      ties.push({ homeId: firsts[g], awayId: seconds[g + 1] });
+      ties.push({ homeId: firsts[g + 1], awayId: seconds[g] });
+    }
+    cont.rounds.push(ties);
+  }
+}
+
+// A fase de grupos da continental já terminou? (sem grupos = formato antigo, conta como terminada)
+export function contGroupsDone(cont: CupState): boolean {
+  return !cont.groupFixtures || cont.groupFixtures.every((f) => f.played);
 }
 
 export function currentStage(cup: CupState): number {
@@ -165,6 +289,11 @@ export function nextCupWeek(cup: CupState): number | null {
 
 // Próxima semana da continental ainda não disputada (null se acabou).
 export function nextContWeek(cont: CupState): number | null {
+  // fase de grupos primeiro: primeira rodada com jogo pendente
+  if (cont.groupFixtures) {
+    for (let md = 0; md < CONT_GROUP_MDS; md++)
+      if (groupFixturesForMatchday(cont, md).some((f) => !f.played)) return contGroupWeek(md);
+  }
   for (let s = 0; s < CONT_STAGES; s++) {
     const [ida, volta] = contStageWeeks(s);
     if (!stageLegPlayed(cont, s, 1)) return ida;
