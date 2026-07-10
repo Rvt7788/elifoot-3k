@@ -287,7 +287,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
       )}
       {/* Cabeçalho do clube: bandeira com as cores do time (nome, liga e técnico) à esquerda,
           posição e orçamento à direita */}
-      <div className="mb-2 flex flex-col items-stretch gap-4 border-b border-[rgba(30,42,56,0.8)] pb-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-2 flex flex-col items-stretch gap-4 border-b border-[rgba(30,42,56,0.8)] pb-4 sm:flex-row sm:items-stretch sm:justify-start sm:gap-6">
         {/* Bandeira do clube - preenche toda a linha no mobile */}
         <div className="w-full sm:flex-1">
           <div
@@ -331,7 +331,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
         </div>
 
         {/* Estatísticas (Posição, Orçamento) + Botão Jogar ao lado */}
-        <div className="flex flex-row items-stretch justify-between gap-3 text-left w-full sm:w-auto sm:justify-end sm:gap-8">
+        <div className="flex flex-row items-stretch justify-between gap-3 text-left w-full sm:w-auto sm:justify-start sm:gap-6">
           <div className="flex-1 rounded-lg border-2 border-[#cfa717] bg-[#e5be30] px-4 py-3 shadow-lg shadow-yellow-950/15 items-start gap-4 flex justify-start sm:mx-0 sm:flex-initial sm:w-auto sm:max-w-none sm:justify-start sm:gap-12 sm:h-28 sm:px-10 sm:py-5 sm:items-start">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1 sm:mb-2">Posição</p>
