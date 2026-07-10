@@ -291,7 +291,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
         {/* Bandeira do clube - preenche toda a linha no mobile */}
         <div className="w-full sm:flex-1">
           <div
-            className="relative overflow-hidden rounded-md border border-black/40 shadow-inner sm:h-24"
+            className="relative overflow-hidden rounded-md border border-black/40 shadow-inner sm:h-28"
             style={{ background: club.primaryColor }}
           >
             {/* faixa vertical na cor secundária, como o mastro de uma bandeira */}
@@ -299,7 +299,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
               className="absolute inset-y-0 left-0 w-2"
               style={{ background: club.secondaryColor }}
             />
-            <div className="relative px-4 py-2.5 pl-6 sm:h-full sm:flex sm:flex-col sm:justify-center">
+            <div className="relative px-4 py-2.5 pl-6 sm:h-full sm:flex sm:flex-col sm:justify-center sm:pl-10 sm:py-4 sm:gap-1.5">
               <h1
                 className="ui-title leading-tight drop-shadow"
                 // nome cresce com a tela, mas com teto no desktop
@@ -331,24 +331,24 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
         </div>
 
         {/* Estatísticas (Posição, Orçamento) + Botão Jogar ao lado */}
-        <div className="flex flex-row flex-wrap items-center justify-between gap-6 text-left sm:justify-end sm:gap-8">
-          <div className="flex w-full justify-start gap-10 rounded-lg border-2 border-amber-500 bg-[#382002] px-6 py-4 shadow-lg shadow-amber-950/50 items-start sm:mx-0 sm:w-auto sm:max-w-none sm:justify-start sm:gap-10 sm:h-24 sm:px-8 sm:py-3.5 sm:items-start">
+        <div className="flex flex-row items-stretch justify-between gap-3 text-left w-full sm:w-auto sm:justify-end sm:gap-8">
+          <div className="flex-1 rounded-lg border-2 border-[#cfa717] bg-[#e5be30] px-4 py-3 shadow-lg shadow-yellow-950/15 items-start gap-4 flex justify-start sm:mx-0 sm:flex-initial sm:w-auto sm:max-w-none sm:justify-start sm:gap-12 sm:h-28 sm:px-10 sm:py-5 sm:items-start">
             <div>
-              <p className="ui-label mb-1">Posição</p>
-              <p className="ui-stat">{pos}º</p>
-              <p className="text-[10px] leading-snug text-zinc-500">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1 sm:mb-2">Posição</p>
+              <p className="text-2xl font-black leading-none text-black sm:mb-0.5">{pos}º</p>
+              <p className="text-[10px] font-semibold leading-snug text-[#3c320d]">
                 {row ? `${row.pts} pts · ${row.p} jogos` : ""}
               </p>
             </div>
             <div>
-              <p className="ui-label mb-1">Orçamento</p>
-              <p className={`ui-stat ${game.budget < 0 ? "text-red-400" : ""}`}>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1 sm:mb-2">Orçamento</p>
+              <p className={`text-2xl font-black leading-none text-black sm:mb-0.5 ${game.budget < 0 ? "text-red-950" : ""}`}>
                 ${(game.budget / 1e6).toFixed(1)}M
               </p>
-              <p className="text-[10px] leading-snug text-zinc-500">
+              <p className="text-[10px] font-semibold leading-snug text-[#3c320d]">
                 Elenco ${(squadValue / 1e6).toFixed(1)}M
               </p>
-              <p className="text-[10px] leading-snug text-zinc-500">
+              <p className="text-[10px] font-semibold leading-snug text-[#3c320d]">
                 Folha ${(wageBill / 1e3).toFixed(0)}k/rodada
               </p>
             </div>
@@ -358,38 +358,31 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
             nextOpp && next && !game.fired ? (
               <button
                 onClick={onStartMatchday}
-                className="btn-play flex w-full sm:w-auto justify-center shrink-0 items-center gap-2 px-5 py-3 text-base"
+                className="btn-play flex flex-col justify-center items-center gap-1 px-4 py-2 sm:px-5 sm:py-2.5 text-sm sm:text-xs self-stretch w-24 sm:w-28 shrink-0"
               >
-                <IconPlay className="h-5 w-5" />
-                Jogar
+                <IconPlay className="h-6 w-6 sm:h-8 sm:w-8" />
+                <span>Jogar</span>
               </button>
             ) : (
               // rodada sem o time do usuário (copa etc.): assiste ao vivo ou resolve na hora
               // mobile: os dois botões ocupam a faixa horizontal inteira
-              <div className="flex w-full flex-col items-stretch gap-1.5 sm:w-auto sm:shrink-0">
+              <div className="flex flex-col gap-1.5 w-24 sm:w-auto sm:shrink-0 self-stretch justify-center">
                 <button
                   onClick={onStartMatchday}
                   disabled={skipping}
-                  className="flex items-center justify-center gap-2 rounded-lg bg-zinc-800 px-5 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-zinc-700 disabled:opacity-50"
+                  className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-zinc-800 border-2 border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-700 disabled:opacity-50"
                   title="Acompanha os jogos da rodada ao vivo"
                 >
-                  <IconPlay className="h-4 w-4" />
+                  <IconPlay className="h-5 w-5" />
                   Assistir
                 </button>
                 <button
                   onClick={handleSkip}
                   disabled={skipping}
-                  className="flex items-center justify-center gap-2 rounded-lg bg-zinc-800 px-5 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-zinc-700 disabled:cursor-wait disabled:opacity-60"
+                  className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-zinc-800 border-2 border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-700 disabled:cursor-wait disabled:opacity-60"
                   title="Simula todos os jogos da rodada instantaneamente"
                 >
-                  {skipping ? (
-                    <>
-                      <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-500 border-t-zinc-200" />
-                      Simulando…
-                    </>
-                  ) : (
-                    "Pular rodada »"
-                  )}
+                  {skipping ? "Simulando…" : "Pular »"}
                 </button>
               </div>
             )

@@ -179,6 +179,8 @@ export function HallOfFame() {
   const game = useStore((s) => s.game)!;
   const [clubLimit, setClubLimit] = useState<number>(RANK_LIMITS[0]);
   const [playerLimit, setPlayerLimit] = useState<number>(RANK_LIMITS[0]);
+  const [scorerLimit, setScorerLimit] = useState<number>(RANK_LIMITS[0]);
+  const [assisterLimit, setAssisterLimit] = useState<number>(RANK_LIMITS[0]);
   const [managerLimit, setManagerLimit] = useState<number>(RANK_LIMITS[0]);
   const [selected, setSelected] = useState<Club | null>(null);
   const selectClub = (id: string | null) => {
@@ -201,6 +203,12 @@ export function HallOfFame() {
   const players = game.players
     .filter((p) => countryClubIds.has(p.clubId) && (p.titles ?? 0) > 0)
     .sort((a, b) => (b.titles ?? 0) - (a.titles ?? 0) || b.strength - a.strength);
+  const scorers = game.players
+    .filter((p) => countryClubIds.has(p.clubId) && p.goals > 0)
+    .sort((a, b) => b.goals - a.goals || b.strength - a.strength);
+  const assisters = game.players
+    .filter((p) => countryClubIds.has(p.clubId) && p.assists > 0)
+    .sort((a, b) => b.assists - a.assists || b.strength - a.strength);
   const managers = (game.managers ?? [])
     // desempregados (clubId null) só existem no carrossel do país do usuário
     .filter((m) => m.clubId === null || countryClubIds.has(m.clubId))
@@ -283,6 +291,84 @@ export function HallOfFame() {
                 </td>
                 <td className="text-center text-zinc-400">{p.pos}</td>
                 <td className="text-center font-mono tabular-nums">{p.titles ?? 0}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </RankSection>
+
+      <RankSection
+        title="🥅 Maiores artilheiros da temporada"
+        emptyText="Nenhum gol marcado nesta temporada ainda."
+        count={scorers.length}
+        limit={scorerLimit}
+        setLimit={setScorerLimit}
+      >
+        <table className="w-full text-xs sm:text-sm">
+          <thead>
+            <tr className={thCls}>
+              <th className="py-1 pl-2 pr-1 w-6 text-center">#</th>
+              <th>Jogador</th>
+              <th>Clube</th>
+              <th className="w-10 text-center">Pos</th>
+              <th className="w-14 text-center">Gols</th>
+            </tr>
+          </thead>
+          <tbody>
+            {scorers.slice(0, scorerLimit).map((p, i) => (
+              <tr
+                key={p.id}
+                className={`border-b border-zinc-800 ${p.clubId === game.userClubId ? "font-bold text-emerald-400" : "text-zinc-200"}`}
+              >
+                <td className="py-1 text-center font-mono tabular-nums opacity-70">{i + 1}</td>
+                <td className="truncate max-w-[120px] sm:max-w-none">{p.name}</td>
+                <td
+                  onClick={() => selectClub(p.clubId)}
+                  className="cursor-pointer truncate max-w-[100px] text-zinc-400 hover:underline sm:max-w-none"
+                >
+                  {clubName(p.clubId)}
+                </td>
+                <td className="text-center text-zinc-400">{p.pos}</td>
+                <td className="text-center font-mono tabular-nums text-amber-400 font-semibold">{p.goals}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </RankSection>
+
+      <RankSection
+        title="🎯 Maiores assistências da temporada"
+        emptyText="Nenhuma assistência registrada nesta temporada ainda."
+        count={assisters.length}
+        limit={assisterLimit}
+        setLimit={setAssisterLimit}
+      >
+        <table className="w-full text-xs sm:text-sm">
+          <thead>
+            <tr className={thCls}>
+              <th className="py-1 pl-2 pr-1 w-6 text-center">#</th>
+              <th>Jogador</th>
+              <th>Clube</th>
+              <th className="w-10 text-center">Pos</th>
+              <th className="w-14 text-center">Assist.</th>
+            </tr>
+          </thead>
+          <tbody>
+            {assisters.slice(0, assisterLimit).map((p, i) => (
+              <tr
+                key={p.id}
+                className={`border-b border-zinc-800 ${p.clubId === game.userClubId ? "font-bold text-emerald-400" : "text-zinc-200"}`}
+              >
+                <td className="py-1 text-center font-mono tabular-nums opacity-70">{i + 1}</td>
+                <td className="truncate max-w-[120px] sm:max-w-none">{p.name}</td>
+                <td
+                  onClick={() => selectClub(p.clubId)}
+                  className="cursor-pointer truncate max-w-[100px] text-zinc-400 hover:underline sm:max-w-none"
+                >
+                  {clubName(p.clubId)}
+                </td>
+                <td className="text-center text-zinc-400">{p.pos}</td>
+                <td className="text-center font-mono tabular-nums text-emerald-400 font-semibold">{p.assists}</td>
               </tr>
             ))}
           </tbody>

@@ -78,6 +78,8 @@ export interface MarketFilters {
   maxValue: number | null;
   minAge: number | null;
   maxAge: number | null;
+  minGoals: number | null;
+  minAssists: number | null;
   query: string;
 }
 
@@ -98,6 +100,8 @@ export function filterMarket(
     if (filters.maxValue !== null && price > filters.maxValue) return false;
     if (filters.minAge !== null && p.age < filters.minAge) return false;
     if (filters.maxAge !== null && p.age > filters.maxAge) return false;
+    if (filters.minGoals !== null && p.goals < filters.minGoals) return false;
+    if (filters.minAssists !== null && p.assists < filters.minAssists) return false;
     if (filters.query && !p.name.toLowerCase().includes(filters.query.toLowerCase())) return false;
     return true;
   });

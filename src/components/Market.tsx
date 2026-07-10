@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useStore, MIN_SQUAD, MAX_SQUAD } from "../store";
 import { aiAcceptChance, askingPrice, filterMarket, type MarketFilters } from "../game/market";
 import { appConfirm } from "./AppDialog";
@@ -9,9 +9,26 @@ const TRAITS: (Trait | "ALL")[] = ["ALL", "Goleador", "Paredão", "Veloz", "Cria
 const TIER_BADGE: Record<string, string> = {
   bagre: "", bom: "★", craque: "★★", extra: "💎",
 };
+const TIER_NAME: Record<string, string> = {
+  bagre: "Mediano", bom: "Bom ★", craque: "Craque ★★", extra: "Gênio 💎",
+};
 
-type SortKey = "strength" | "age" | "value";
-const SORT_LABELS: Record<SortKey, string> = { strength: "Força", age: "Idade", value: "Valor" };
+function playerBirthDate(playerId: string, age: number, currentSeason: number): string {
+  let hash = 0;
+  for (let i = 0; i < playerId.length; i++) {
+    hash = playerId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  hash = Math.abs(hash);
+  const month = (hash % 12) + 1;
+  const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  const day = (hash % daysInMonth[month - 1]) + 1;
+  const birthYear = (2025 + currentSeason) - age;
+  const dStr = day.toString().padStart(2, "0");
+  const mStr = month.toString().padStart(2, "0");
+  return `${dStr}/${mStr}/${birthYear}`;
+}
+
+type SortKey = "strength" | "age" | "value" | "goals" | "assists" | "name";
 
 // Chance de contratação em 5 barrinhas: verde (quase certa) → vermelho (quase impossível)
 function ChanceBar({ chance }: { chance: number }) {
@@ -70,7 +87,17 @@ export default function Market() {
   const { game, buyPlayer, sellPlayer } = useStore();
   const [tab, setTab] = useState<"buy" | "sell">("buy");
   const emptyFilters: MarketFilters = {
-    position: "ALL", minStrength: 1, maxStrength: 50, trait: "ALL", minValue: null, maxValue: null, minAge: null, maxAge: null, query: "",
+    position: "ALL",
+    minStrength: 1,
+    maxStrength: 50,
+    trait: "ALL",
+    minValue: null,
+    maxValue: null,
+    minAge: null,
+    maxAge: null,
+    minGoals: null,
+    minAssists: null,
+    query: "",
   };
   const [filters, setFilters] = useState<MarketFilters>(emptyFilters);
   const [appliedFilters, setAppliedFilters] = useState<MarketFilters | null>(null);
@@ -78,18 +105,43 @@ export default function Market() {
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("strength");
   const [sortAsc, setSortAsc] = useState(false);
+  const [expandedSell, setExpandedSell] = useState<string | null>(null);
 
   if (!game) return null;
   const squad = game.players.filter((p) => p.clubId === game.userClubId);
 
   const updateFilters = (patch: Partial<MarketFilters>) => setFilters({ ...filters, ...patch });
 
+  const handleSortClick = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortKey(key);
+      setSortAsc(key === "age" || key === "name");
+    }
+  };
+
+  const renderSortIcon = (key: SortKey) => {
+    if (sortKey !== key) return "";
+    return sortAsc ? " ↑" : " ↓";
+  };
+
   const results = useMemo(() => {
     if (tab !== "buy" || !appliedFilters) return [];
     const list = filterMarket(game, appliedFilters);
-    const key = (p: Player) =>
-      sortKey === "value" ? askingPrice(game, p) : p[sortKey];
-    return list.sort((a, b) => (sortAsc ? key(a) - key(b) : key(b) - key(a)));
+    const key = (p: Player) => {
+      if (sortKey === "value") return askingPrice(game, p);
+      if (sortKey === "name") return p.name;
+      return p[sortKey as Exclude<SortKey, "value" | "name">];
+    };
+    return list.sort((a, b) => {
+      const valA = key(a);
+      const valB = key(b);
+      if (typeof valA === "string" && typeof valB === "string") {
+        return sortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      }
+      return sortAsc ? (valA as number) - (valB as number) : (valB as number) - (valA as number);
+    });
   }, [game.players, game.userClubId, appliedFilters, tab, sortKey, sortAsc]);
 
   const clubName = (id: string) => game.clubs.find((c) => c.id === id)?.name ?? "?";
@@ -150,7 +202,7 @@ export default function Market() {
               <select
                 value={filters.position}
                 onChange={(e) => updateFilters({ position: e.target.value })}
-                className="mt-0.5 w-full rounded bg-zinc-800 px-2 py-1 text-sm"
+                className="mt-0.5 w-full rounded bg-zinc-800 px-2 py-1 text-sm font-semibold text-zinc-100"
               >
                 {POSITIONS.map((p) => <option key={p} value={p}>{p === "ALL" ? "Todas" : p}</option>)}
               </select>
@@ -160,7 +212,7 @@ export default function Market() {
               <select
                 value={filters.trait}
                 onChange={(e) => updateFilters({ trait: e.target.value })}
-                className="mt-0.5 w-full rounded bg-zinc-800 px-2 py-1 text-sm"
+                className="mt-0.5 w-full rounded bg-zinc-800 px-2 py-1 text-sm font-semibold text-zinc-100"
               >
                 {TRAITS.map((t) => <option key={t} value={t}>{t === "ALL" ? "Todas" : t}</option>)}
               </select>
@@ -172,13 +224,13 @@ export default function Market() {
                   type="number" min={1} max={50}
                   value={Number.isNaN(filters.minStrength) ? "" : filters.minStrength}
                   onChange={(e) => updateFilters({ minStrength: e.target.valueAsNumber })}
-                  className="w-1/2 rounded bg-zinc-800 px-2 py-1 text-sm"
+                  className="w-1/2 rounded bg-zinc-800 px-2 py-1 text-sm text-zinc-100"
                 />
                 <input
                   type="number" min={1} max={50}
                   value={Number.isNaN(filters.maxStrength) ? "" : filters.maxStrength}
                   onChange={(e) => updateFilters({ maxStrength: e.target.valueAsNumber })}
-                  className="w-1/2 rounded bg-zinc-800 px-2 py-1 text-sm"
+                  className="w-1/2 rounded bg-zinc-800 px-2 py-1 text-sm text-zinc-100"
                 />
               </div>
             </label>
@@ -190,14 +242,14 @@ export default function Market() {
                   placeholder="mín"
                   value={filters.minValue !== null ? filters.minValue / 1e6 : ""}
                   onChange={(e) => updateFilters({ minValue: e.target.value === "" ? null : e.target.valueAsNumber * 1e6 })}
-                  className="w-1/2 rounded bg-zinc-800 px-2 py-1 text-sm"
+                  className="w-1/2 rounded bg-zinc-800 px-2 py-1 text-sm text-zinc-100"
                 />
                 <input
                   type="number" min={0} step={0.1}
                   placeholder="máx"
                   value={filters.maxValue !== null ? filters.maxValue / 1e6 : ""}
                   onChange={(e) => updateFilters({ maxValue: e.target.value === "" ? null : e.target.valueAsNumber * 1e6 })}
-                  className="w-1/2 rounded bg-zinc-800 px-2 py-1 text-sm"
+                  className="w-1/2 rounded bg-zinc-800 px-2 py-1 text-sm text-zinc-100"
                 />
               </div>
             </label>
@@ -209,14 +261,14 @@ export default function Market() {
                   placeholder="mín"
                   value={filters.minAge ?? ""}
                   onChange={(e) => updateFilters({ minAge: e.target.value === "" ? null : e.target.valueAsNumber })}
-                  className="w-1/2 rounded bg-zinc-800 px-2 py-1 text-sm"
+                  className="w-1/2 rounded bg-zinc-800 px-2 py-1 text-sm text-zinc-100"
                 />
                 <input
                   type="number" min={15} max={42}
                   placeholder="máx"
                   value={filters.maxAge ?? ""}
                   onChange={(e) => updateFilters({ maxAge: e.target.value === "" ? null : e.target.valueAsNumber })}
-                  className="w-1/2 rounded bg-zinc-800 px-2 py-1 text-sm"
+                  className="w-1/2 rounded bg-zinc-800 px-2 py-1 text-sm text-zinc-100"
                 />
               </div>
             </label>
@@ -226,7 +278,7 @@ export default function Market() {
                 type="text" value={filters.query} placeholder="buscar por nome..."
                 onChange={(e) => updateFilters({ query: e.target.value })}
                 onKeyDown={(e) => e.key === "Enter" && setAppliedFilters(filters)}
-                className="mt-0.5 w-full rounded bg-zinc-800 px-2 py-1 text-sm"
+                className="mt-0.5 w-full rounded bg-zinc-800 px-2 py-1 text-sm text-zinc-100"
               />
             </label>
           </div>
@@ -244,39 +296,98 @@ export default function Market() {
                 ? `${results.length} jogadores disponíveis (clubes de divisão compatível)`
                 : "Preencha os filtros acima e clique em Buscar para ver os jogadores disponíveis."}
             </p>
+
+            {/* Seletor de ordenação visível APENAS no mobile */}
             {appliedFilters && results.length > 0 && (
-              <div className="flex items-center gap-1 text-xs text-zinc-400">
-                Ordenar:
-                <select
-                  value={sortKey}
-                  onChange={(e) => setSortKey(e.target.value as SortKey)}
-                  className="rounded bg-zinc-800 px-1.5 py-1"
-                >
-                  {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
-                    <option key={k} value={k}>{SORT_LABELS[k]}</option>
-                  ))}
-                </select>
-                <button
-                  onClick={() => setSortAsc(!sortAsc)}
-                  className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
-                  title={sortAsc ? "Crescente" : "Decrescente"}
-                >
-                  {sortAsc ? "↑" : "↓"}
-                </button>
+              <div className="flex sm:hidden items-center gap-1.5 text-xs text-zinc-400 bg-zinc-900/60 p-2 rounded-lg border border-zinc-800 w-full justify-between mt-2">
+                <span>Ordenar por:</span>
+                <div className="flex items-center gap-1">
+                  <select
+                    value={sortKey}
+                    onChange={(e) => handleSortClick(e.target.value as SortKey)}
+                    className="rounded bg-zinc-800 px-1.5 py-1 text-zinc-200 font-semibold text-xs border border-zinc-700"
+                  >
+                    <option value="strength">Força</option>
+                    <option value="age">Idade</option>
+                    <option value="value">Preço</option>
+                    <option value="goals">Gols</option>
+                    <option value="assists">Assistências</option>
+                    <option value="name">Nome</option>
+                  </select>
+                  <button
+                    onClick={() => setSortAsc(!sortAsc)}
+                    className="rounded bg-zinc-800 px-2.5 py-1 text-zinc-300 hover:text-zinc-100 border border-zinc-700 font-bold"
+                    title={sortAsc ? "Crescente" : "Decrescente"}
+                  >
+                    {sortAsc ? "↑" : "↓"}
+                  </button>
+                </div>
               </div>
             )}
           </div>
+
+          {appliedFilters && results.length > 0 && (
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-500 border-b border-zinc-800/80 mb-2">
+              <span className="w-6 shrink-0 text-right">#</span>
+              <span className="w-8 shrink-0">Pos</span>
+              <button
+                onClick={() => handleSortClick("name")}
+                className={`min-w-[120px] flex-1 text-left hover:text-zinc-300 transition-colors ${sortKey === "name" ? "text-amber-400" : ""}`}
+              >
+                Nome{renderSortIcon("name")}
+              </button>
+              <span className="w-24 shrink-0 text-left">Clube</span>
+              <button
+                onClick={() => handleSortClick("strength")}
+                className={`w-10 shrink-0 text-center hover:text-zinc-300 transition-colors ${sortKey === "strength" ? "text-amber-400" : ""}`}
+              >
+                For{renderSortIcon("strength")}
+              </button>
+              <button
+                onClick={() => handleSortClick("age")}
+                className={`w-10 shrink-0 text-center hover:text-zinc-300 transition-colors ${sortKey === "age" ? "text-amber-400" : ""}`}
+              >
+                Ida{renderSortIcon("age")}
+              </button>
+              <div className="w-16 shrink-0 flex items-center justify-center gap-2">
+                <button
+                  onClick={() => handleSortClick("goals")}
+                  className={`hover:text-zinc-300 transition-colors ${sortKey === "goals" ? "text-amber-400" : ""}`}
+                  title="Ordenar por Gols"
+                >
+                  ⚽{renderSortIcon("goals")}
+                </button>
+                <button
+                  onClick={() => handleSortClick("assists")}
+                  className={`hover:text-zinc-300 transition-colors ${sortKey === "assists" ? "text-amber-400" : ""}`}
+                  title="Ordenar por Assistências"
+                >
+                  🎯{renderSortIcon("assists")}
+                </button>
+              </div>
+              <span className="w-24 shrink-0 text-left">Caract.</span>
+              <button
+                onClick={() => handleSortClick("value")}
+                className={`w-20 shrink-0 text-right hover:text-zinc-300 transition-colors ${sortKey === "value" ? "text-amber-400" : ""}`}
+              >
+                Preço{renderSortIcon("value")}
+              </button>
+              <span className="w-[110px] shrink-0 text-center">Negociação</span>
+            </div>
+          )}
           <div className="flex flex-col gap-1.5">
             {results.slice(0, 60).map((p) => {
               const price = askingPrice(game, p);
               return (
-                <div key={p.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm">
+                <div key={p.id} className="flex flex-wrap sm:flex-nowrap items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm">
                   <span className="w-6 shrink-0 text-right tabular-nums text-zinc-500">{p.number}</span>
                   <span className="w-8 shrink-0 text-zinc-400">{p.pos}</span>
-                  <span className="min-w-[120px] flex-1 truncate">
-                    {p.name} <span className="text-amber-400">{TIER_BADGE[p.tier]}</span>
+                  <span className="min-w-[120px] flex-1 truncate flex items-center gap-1.5">
+                    <span className="truncate">{p.name}</span>
+                    <span className="text-amber-400 shrink-0">{TIER_BADGE[p.tier]}</span>
+                    <ChanceBar chance={aiAcceptChance(game, p, offerValue(p), () => 0.5)} />
                   </span>
-                  <span className="w-32 shrink-0 truncate text-xs text-zinc-500">{clubName(p.clubId)}</span>
+                  <span className="w-24 shrink-0 truncate text-xs text-zinc-500">{clubName(p.clubId)}</span>
                   <span className="w-10 shrink-0 text-center font-bold">
                     {p.strength}
                     {p.strength < p.cap && (
@@ -284,25 +395,29 @@ export default function Market() {
                     )}
                   </span>
                   <span className="w-10 shrink-0 text-center text-xs text-zinc-400">{p.age}a</span>
-                  <span className="w-40 shrink-0 truncate text-xs text-zinc-400">{p.traits.join(", ") || "—"}</span>
-                  <span className="w-24 shrink-0 text-right text-xs text-zinc-400">
-                    pede ${(price / 1e6).toFixed(2)}M
+                  <span className="w-16 shrink-0 text-center text-xs text-zinc-500 font-mono" title="Gols / Assistências nesta temporada">
+                    {p.goals}/{p.assists}
                   </span>
-                  <ChanceBar chance={aiAcceptChance(game, p, offerValue(p), () => 0.5)} />
-                  <input
-                    type="number"
-                    placeholder={`${(price / 1e6).toFixed(1)}`}
-                    value={offers[p.id] ?? ""}
-                    onChange={(e) => setOffers({ ...offers, [p.id]: e.target.value })}
-                    className="w-20 shrink-0 rounded bg-zinc-800 px-1 py-1 text-xs"
-                    title="Sua oferta em $M (vazio = valor pedido)"
-                  />
-                  <button
-                    onClick={() => doBuy(p)}
-                    className="shrink-0 rounded bg-emerald-700 px-2 py-1 text-xs hover:bg-emerald-600"
-                  >
-                    Propor
-                  </button>
+                  <span className="w-24 shrink-0 truncate text-xs text-zinc-400">{p.traits.join(", ") || "—"}</span>
+                  <span className="w-20 shrink-0 text-right text-xs text-zinc-400 font-mono">
+                    ${(price / 1e6).toFixed(2)}M
+                  </span>
+                  <div className="w-[110px] shrink-0 flex items-center justify-end gap-1.5">
+                    <input
+                      type="number"
+                      placeholder={`${(price / 1e6).toFixed(1)}`}
+                      value={offers[p.id] ?? ""}
+                      onChange={(e) => setOffers({ ...offers, [p.id]: e.target.value })}
+                      className="w-12 shrink-0 rounded bg-zinc-800 px-1 py-0.5 text-xs text-zinc-100 text-center"
+                      title="Sua oferta em $M (vazio = valor pedido)"
+                    />
+                    <button
+                      onClick={() => doBuy(p)}
+                      className="shrink-0 rounded bg-emerald-700 px-1.5 py-0.5 text-xs hover:bg-emerald-600 text-white font-semibold"
+                    >
+                      Propor
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -322,30 +437,65 @@ export default function Market() {
             {squad
               .sort((a, b) => b.value - a.value)
               .map((p) => (
-                <div key={p.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm">
-                  <span className="w-6 shrink-0 text-right tabular-nums text-zinc-500">{p.number}</span>
-                  <span className="w-8 shrink-0 text-zinc-400">{p.pos}</span>
-                  <span className="min-w-[120px] flex-1 truncate">
-                    {p.name} <span className="text-amber-400">{TIER_BADGE[p.tier]}</span>
-                  </span>
-                  <span className="w-10 shrink-0 text-center font-bold">
-                    {p.strength}
-                    {p.strength < p.cap && (
-                      <span className="ml-0.5 text-emerald-400" title={`Potencial até ${p.cap}`}>▲</span>
-                    )}
-                  </span>
-                  <span className="w-10 shrink-0 text-center text-xs text-zinc-400">{p.age}a</span>
-                  <span className="w-28 shrink-0 text-right text-xs text-emerald-400">
-                    ${(askingPrice(game, p) / 1e6).toFixed(2)}M
-                  </span>
-                  <button
-                    disabled={squad.length <= MIN_SQUAD}
-                    onClick={() => doSell(p)}
-                    className="shrink-0 rounded bg-red-800 px-2 py-1 text-xs hover:bg-red-700 disabled:opacity-30"
+                <Fragment key={p.id}>
+                  <div
+                    onClick={() => setExpandedSell(expandedSell === p.id ? null : p.id)}
+                    className="flex flex-wrap sm:flex-nowrap items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm cursor-pointer hover:bg-zinc-800/20"
                   >
-                    Vender
-                  </button>
-                </div>
+                    <span className="w-6 shrink-0 text-right tabular-nums text-zinc-500">{p.number}</span>
+                    <span className="w-8 shrink-0 text-zinc-400">{p.pos}</span>
+                    <span className="min-w-[120px] flex-1 truncate">
+                      {p.name} <span className="text-amber-400">{TIER_BADGE[p.tier]}</span>
+                    </span>
+                    <span className="w-10 shrink-0 text-center font-bold">
+                      {p.strength}
+                      {p.strength < p.cap && (
+                        <span className="ml-0.5 text-emerald-400" title={`Potencial até ${p.cap}`}>▲</span>
+                      )}
+                    </span>
+                    <span className="w-10 shrink-0 text-center text-xs text-zinc-400">{p.age}a</span>
+                    <span className="w-28 shrink-0 text-right text-xs text-emerald-400 font-mono">
+                      ${(askingPrice(game, p) / 1e6).toFixed(2)}M
+                    </span>
+                    <button
+                      disabled={squad.length <= MIN_SQUAD}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        doSell(p);
+                      }}
+                      className="shrink-0 rounded bg-red-800 px-2 py-1 text-xs hover:bg-red-700 disabled:opacity-30"
+                    >
+                      Vender
+                    </button>
+                  </div>
+                  {expandedSell === p.id && (
+                    <div className="bg-[#0c131d] px-4 py-3 border-x border-b border-zinc-800 rounded-b-lg -mt-2 mb-1.5 shadow-inner">
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-zinc-400 sm:grid-cols-4">
+                        <p>Nível: <span className="text-zinc-200">{TIER_NAME[p.tier] || p.tier}</span></p>
+                        <p>Pé: <span className="text-zinc-200 capitalize">{p.foot}</span></p>
+                        <p className="col-span-2">Nascimento: <span className="text-zinc-200">{playerBirthDate(p.id, p.age, game.season)}</span></p>
+                        <p>Gols: <span className="text-zinc-200">{p.goals}</span></p>
+                        <p>Assistências: <span className="text-zinc-200">{p.assists}</span></p>
+                        <p>Cartões: <span className="text-zinc-200">🟨 {p.yellows} · 🟥 {p.reds}</span></p>
+                        <p>Evolução no ano: <span className={p.gained > 0 ? "text-emerald-400" : "text-zinc-200"}>{p.gained > 0 ? `+${p.gained}` : p.gained}</span></p>
+                        <p>Treino: <span className="text-zinc-200 capitalize">{p.training}</span></p>
+                        <p>Títulos: <span className="text-amber-400">{p.titles ?? 0} 🏆</span></p>
+                        <p className="col-span-2">
+                          Contrato:{" "}
+                          <span className={(p.contract ?? 1) <= 1 ? "font-bold text-amber-400" : "text-zinc-200"}>
+                            {p.contract ?? 1} temporada{(p.contract ?? 1) > 1 ? "s" : ""}
+                          </span>
+                        </p>
+                        <p className="col-span-2 sm:col-span-4">
+                          Características:{" "}
+                          <span className="text-amber-400">
+                            {p.traits.length ? p.traits.join(", ") : "nenhuma"}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </Fragment>
               ))}
           </div>
         </>

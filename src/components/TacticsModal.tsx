@@ -353,6 +353,20 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
       }
     }
 
+    // Ordena as sugestões para sempre priorizar o reserva com maior força
+    pairs.sort((a, b) => {
+      const strengthA = pById[a.in].strength;
+      const strengthB = pById[b.in].strength;
+      if (strengthB !== strengthA) {
+        return strengthB - strengthA; // maior força primeiro
+      }
+      const outA = onField.find((l) => l.playerId === a.out);
+      const outB = onField.find((l) => l.playerId === b.out);
+      const energyA = outA ? outA.energy : 100;
+      const energyB = outB ? outB.energy : 100;
+      return energyA - energyB; // menor energia (mais cansado) primeiro
+    });
+
     // Filtra as sugestões que já foram descartadas anteriormente
     let allowed = pairs.filter((p) => !currentRejected.includes(`${p.out}-${p.in}`));
     if (allowed.length === 0 && pairs.length > 0) {

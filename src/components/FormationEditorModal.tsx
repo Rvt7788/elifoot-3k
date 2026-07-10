@@ -82,10 +82,6 @@ export default function FormationEditorModal({
           <h3 className="text-sm font-bold text-zinc-200">Editor de formação</h3>
           <button onClick={onClose} className="rounded px-2 text-zinc-400 hover:bg-zinc-800">✕</button>
         </div>
-        <p className="mb-2 text-[11px] text-zinc-500">
-          Arraste os pontos para posicionar. Toque num ponto para trocar a posição
-          (DEF → MEI → ATA). Precisa ter exatamente 10 jogadores de linha.
-        </p>
 
         <div ref={fieldRef} onPointerMove={onPointerMove} onPointerUp={() => setDragIdx(null)}>
           <PitchBackground className="relative w-full max-w-[16rem] mx-auto overflow-visible rounded-lg touch-none">
@@ -146,9 +142,9 @@ export default function FormationEditorModal({
         <button
           onClick={() => valid && onSave({ name: "custom", slots })}
           disabled={!valid}
-          className="btn-cta mt-3 w-full py-2 disabled:opacity-40"
+          className="mx-auto block mt-3 rounded-lg bg-emerald-600 px-6 py-1.5 text-xs font-bold text-white hover:bg-emerald-500 disabled:opacity-40"
         >
-          Salvar formação
+          Criar
         </button>
       </div>
     </div>
