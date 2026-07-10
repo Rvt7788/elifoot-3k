@@ -72,7 +72,7 @@ export function shapeOf(
     for (const slot of custom?.slots ?? []) s[slot.pos as "DEF" | "MEI" | "ATA"]++;
     return s;
   }
-  return FORMATIONS[formation];
+  return FORMATIONS[formation] ?? FORMATIONS["4-4-2"];
 }
 
 export interface Tactics {

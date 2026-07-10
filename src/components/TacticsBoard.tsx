@@ -538,29 +538,26 @@ export default function TacticsBoard() {
             </div>
           </div>
         </div>
-      </div>
-      
-      {/* Reservas: Ocupa toda a largura, começando embaixo de Força por setor e terminando embaixo de Marcação */}
-      <div className="mt-6 border-t border-[rgba(30,42,56,0.6)] pt-4 w-full">
-        <p className="mb-2 text-xs font-bold text-zinc-300 uppercase tracking-wide">
-          RESERVAS ({reservas.length})
-        </p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-          {reservas.map((p) => (
-            <PlayerRow
-              key={p.id}
-              p={p}
-              selected={sel === p.id}
-              selColor="#3f3f46"
-              onClick={() => clickPlayer(p.id)}
-              expanded={expanded === p.id}
-              onToggleExpand={() => toggleExpand(p.id)}
-              suspendedNext={isSuspendedNext(p)}
-            />
-          ))}
-          {reservas.length === 0 && (
-            <p className="col-span-2 text-xs text-zinc-500">Nenhum reserva selecionado.</p>
-          )}
+
+        {/* Reservas: logo abaixo de mentalidade e marcação */}
+        <div className="mt-4">
+          <p className="mb-1 text-xs font-bold text-zinc-500">
+            RESERVAS ({reservas.length})
+          </p>
+          <div>
+            {reservas.map((p) => (
+              <PlayerRow
+                key={p.id}
+                p={p}
+                selected={sel === p.id}
+                selColor="#3f3f46"
+                onClick={() => clickPlayer(p.id)}
+                expanded={expanded === p.id}
+                onToggleExpand={() => toggleExpand(p.id)}
+                suspendedNext={isSuspendedNext(p)}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>
