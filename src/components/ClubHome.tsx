@@ -315,7 +315,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
       <div className="mt-8 flex flex-col gap-8 md:flex-row md:items-stretch">
         {/* No mobile, Próximo jogo + Iniciar jogo ficam lado a lado nesta linha;
             no md+ o wrapper some (contents) e cada um vira coluna do flex normal. */}
-        <div className="flex flex-row items-center justify-between gap-4 md:contents">
+        <div className="flex flex-row items-start justify-between gap-4 md:contents">
         {/* Coluna 1: Próximo jogo — largura do conteúdo, para o Iniciar jogo ficar colado ao lado */}
         <div className="md:shrink-0">
         <SectionLabel>Próximo jogo</SectionLabel>
@@ -330,7 +330,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
                   />
                 );
                 return next.homeId === club.id ? (
-                  <>{dot(club)}{club.name} <span className="text-zinc-600">vs</span>{" "}
+                  <>{dot(club)}{club.name} <span className="text-zinc-600">vs</span><br className="sm:hidden" />{" "}
                     {dot(nextOpp)}
                     <span
                       onClick={() => setViewClub(nextOpp)}
@@ -340,7 +340,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
                     </span></>
                 ) : (
                   <>{dot(nextOpp)}<span className="text-zinc-300">{nextOpp.name}</span>{" "}
-                    <span className="text-zinc-600">vs</span> {dot(club)}{club.name}</>
+                    <span className="text-zinc-600">vs</span><br className="sm:hidden" />{" "}{dot(club)}{club.name}</>
                 );
               })()}
             </p>

@@ -16,6 +16,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
   const [slotOrder, setSlotOrder] = useState<string[] | null>(null);
   // sugestão da sub. rápida: par sai/entra aguardando confirmação do usuário
   const [suggestion, setSuggestion] = useState<{ out: string; in: string } | null>(null);
+  const [rejectedSubs, setRejectedSubs] = useState<string[]>([]);
   const setPaused = useStore((s) => s.setPaused);
   // foto do estado ao abrir o modal: permite desfazer tudo (táticas, subs, formação)
   const snapshot = useRef<{
@@ -139,6 +140,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
     setSelectedOutId(null);
     setSelectedInId(null);
     setSuggestion(null);
+    setRejectedSubs([]);
   };
 
   const pickOut = (id: string) => {
@@ -182,6 +184,8 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
   const quickSub = (mode: "energia" | "posicao") => {
     if (subsLeft <= 0) return;
     const samePos = (a: Player, b: Player) => a.pos === b.pos;
+    const pairs: { out: string; in: string }[] = [];
+
     if (mode === "energia") {
       // goleiro nunca entra na sugestão: só jogadores de linha
       const tired = [...onField]
@@ -189,10 +193,13 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
         .sort((a, b) => a.energy - b.energy);
       for (const out of tired) {
         const outP = pById[out.playerId];
+        // Encontra reservas da mesma posição ordenados por força decrescente e energia
         const candidates = bench
           .filter((l) => samePos(pById[l.playerId], outP) && l.energy > out.energy + 10)
-          .sort((a, b) => b.energy - a.energy || pById[b.playerId].strength - pById[a.playerId].strength);
-        if (candidates.length) { setSuggestion({ out: out.playerId, in: candidates[0].playerId }); return; }
+          .sort((a, b) => pById[b.playerId].strength - pById[a.playerId].strength || b.energy - a.energy);
+        for (const cand of candidates) {
+          pairs.push({ out: out.playerId, in: cand.playerId });
+        }
       }
     } else {
       // 1º: corrige quem está fora de posição. Compara o que a formação pede com
@@ -205,35 +212,53 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
       // goleiro fora da análise: sugestões só mexem em jogadores de linha
       const lacking = (Object.keys(need) as Position[]).filter((k) => k !== "GOL" && have[k] < need[k]);
       const surplus = (Object.keys(need) as Position[]).filter((k) => have[k] > need[k]);
+      
       for (const lackPos of lacking) {
-        const inCandidate = bench
+        const inCandidates = bench
           .filter((l) => pById[l.playerId].pos === lackPos)
-          .sort((a, b) => pById[b.playerId].strength - pById[a.playerId].strength || b.energy - a.energy)[0];
-        if (!inCandidate) continue;
-        // sai o mais fraco do setor com excesso (o "fora de posição" na prática)
-        const outCandidate = onField
+          .sort((a, b) => pById[b.playerId].strength - pById[a.playerId].strength || b.energy - a.energy);
+        const outCandidates = onField
           .filter((l) => surplus.includes(pById[l.playerId].pos) && pById[l.playerId].pos !== "GOL")
-          .sort((a, b) => pById[a.playerId].strength - pById[b.playerId].strength)[0];
-        if (!outCandidate) continue;
-        setSuggestion({ out: outCandidate.playerId, in: inCandidate.playerId });
-        return;
+          .sort((a, b) => pById[a.playerId].strength - pById[b.playerId].strength);
+        
+        for (const inC of inCandidates) {
+          for (const outC of outCandidates) {
+            pairs.push({ out: outC.playerId, in: inC.playerId });
+          }
+        }
       }
+
       // 2º: sem desajuste de posição, sugere upgrade de força no mesmo setor
       const upgrades = bench
         .filter((inL) => pById[inL.playerId].pos !== "GOL")
         .flatMap((inL) => {
           const inP = pById[inL.playerId];
-          const weakest = onField
-            .filter((l) => samePos(pById[l.playerId], inP))
-            .sort((a, b) => pById[a.playerId].strength - pById[b.playerId].strength)[0];
-          if (!weakest) return [];
-          const gain = inP.strength - pById[weakest.playerId].strength;
-          return gain > 0 ? [{ out: weakest.playerId, in: inL.playerId, gain }] : [];
+          const matchableOuts = onField
+            .filter((l) => samePos(pById[l.playerId], inP));
+          return matchableOuts.flatMap((outL) => {
+            const gain = inP.strength - pById[outL.playerId].strength;
+            return gain > 0 ? [{ out: outL.playerId, in: inL.playerId, gain }] : [];
+          });
         })
         .sort((a, b) => b.gain - a.gain);
-      if (upgrades.length) { setSuggestion({ out: upgrades[0].out, in: upgrades[0].in }); return; }
+      for (const upg of upgrades) {
+        pairs.push({ out: upg.out, in: upg.in });
+      }
     }
-    setSuggestion(null);
+
+    // Filtra as sugestões que já foram descartadas anteriormente
+    let allowed = pairs.filter((p) => !rejectedSubs.includes(`${p.out}-${p.in}`));
+    if (allowed.length === 0 && pairs.length > 0) {
+      // Se todas as opções possíveis foram descartadas, reseta o histórico e volta para a primeira
+      setRejectedSubs([]);
+      allowed = pairs;
+    }
+
+    if (allowed.length > 0) {
+      setSuggestion({ out: allowed[0].out, in: allowed[0].in });
+    } else {
+      setSuggestion(null);
+    }
   };
 
   const pickIn = (id: string) => {
@@ -493,7 +518,12 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
                 Confirmar
               </button>
               <button
-                onClick={() => setSuggestion(null)}
+                onClick={() => {
+                  if (suggestion) {
+                    setRejectedSubs((prev) => [...prev, `${suggestion.out}-${suggestion.in}`]);
+                  }
+                  setSuggestion(null);
+                }}
                 className="rounded bg-zinc-800 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-700"
               >
                 Descartar

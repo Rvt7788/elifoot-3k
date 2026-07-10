@@ -527,8 +527,17 @@ export function fatigueSub(m: LiveMatch, idx: PlayersIndex, side: "home" | "away
   const pos = idx[tired.playerId].pos;
   const fresh = lineup
     .filter((l) => !l.onField && !l.subbedOut && !l.sentOff && idx[l.playerId].pos === pos && l.energy > 70)
-    .sort((a, b) => b.energy - a.energy)[0];
+    .sort((a, b) => idx[b.playerId].strength - idx[a.playerId].strength || b.energy - a.energy)[0];
   if (!fresh) return false;
+
+  // Inteligência de substituição: se o substituto for muito inferior ao titular cansado
+  // (diferença maior que 15 pontos), só substitui se a energia do titular estiver crítica (< 40).
+  const tiredStrength = idx[tired.playerId].strength;
+  const freshStrength = idx[fresh.playerId].strength;
+  if (tiredStrength - freshStrength > 15 && tired.energy >= 40) {
+    return false;
+  }
+
   return makeSub(m, idx, side, tired.playerId, fresh.playerId);
 }
 
