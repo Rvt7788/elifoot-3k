@@ -5,7 +5,7 @@ import { sortTable } from "../game/schedule";
 import { aiPregameTactics } from "../game/engine";
 import type { Club, GameState, Player } from "../types";
 import TacticsBoard from "./TacticsBoard";
-import { leagueName } from "../data/leagues";
+import { leagueName, cupName, continentalName } from "../data/leagues";
 import { IconPlay } from "./icons";
 import ClubModal from "./ClubModal";
 import { readableOn } from "../game/color";
@@ -243,6 +243,34 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
           </p>
         </div>
       )}
+      {/* Notícias da virada de temporada: prêmio de Melhor Técnico e contratos expirados */}
+      {game.seasonNews && game.seasonNews.season === game.season && game.week <= 2 && (
+        <div className="mb-4 rounded-lg border border-zinc-700 bg-zinc-900/70 px-4 py-3">
+          <p className="text-sm font-bold uppercase tracking-wide text-amber-400">
+            🎖 Melhor Técnico da temporada passada
+          </p>
+          <p className="mt-1 text-xs text-zinc-400">
+            {game.seasonNews.userWonAward ? (
+              <>
+                <span className="font-semibold text-emerald-400">Você venceu o prêmio!</span>{" "}
+                A diretoria depositou um bônus extra no caixa como reconhecimento.
+              </>
+            ) : (
+              <>
+                {game.seasonNews.bestManager} ({game.seasonNews.bestManagerClub}) levou o
+                prêmio. Veja o ranking completo na aba Tabela.
+              </>
+            )}
+          </p>
+          {game.seasonNews.contractLosses.length > 0 && (
+            <p className="mt-2 text-xs text-red-400">
+              📝 Saíram de graça com contrato expirado:{" "}
+              {game.seasonNews.contractLosses.join(", ")}. Renove contratos na aba Elenco
+              para não perder mais ninguém.
+            </p>
+          )}
+        </div>
+      )}
       {/* Alerta de dívida: contagem regressiva até a diretoria perder a paciência */}
       {!game.fired && (game.debtWeeks ?? 0) > 0 && (
         <div className="mb-4 rounded-lg border border-amber-700 bg-amber-950/50 px-4 py-3">
@@ -318,7 +346,10 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
                 €{(game.budget / 1e6).toFixed(1)}M
               </p>
               <p className="text-xs text-zinc-500">
-                Elenco €{(squadValue / 1e6).toFixed(1)}M · Folha €{(wageBill / 1e3).toFixed(0)}k/rodada
+                Elenco €{(squadValue / 1e6).toFixed(1)}M
+              </p>
+              <p className="text-xs text-zinc-500">
+                Folha €{(wageBill / 1e3).toFixed(0)}k/rodada
               </p>
             </div>
           </div>
@@ -412,11 +443,11 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
               </span>{" "}
               ·{" "}
               {info?.type === "cup"
-                ? `🏆 Copa — ${CUP_STAGE_NAMES[info.stage]} (${info.leg === 1 ? "ida" : "volta"})`
+                ? `🏆 ${cupName(club.country)} — ${CUP_STAGE_NAMES[info.stage]} (${info.leg === 1 ? "ida" : "volta"})`
                 : info?.type === "contgroup"
-                  ? `🌎 ${["BR", "AR"].includes(club.country) ? "Libertadores" : "Champions"} — Grupos (rodada ${info.matchday + 1})`
+                  ? `🌎 ${continentalName(club.country)} — Grupos (rodada ${info.matchday + 1})`
                 : info?.type === "continental"
-                  ? `🌎 ${["BR", "AR"].includes(club.country) ? "Libertadores" : "Champions"} — ${CONT_STAGE_NAMES[info.stage]} (${info.leg === 1 ? "ida" : "volta"})`
+                  ? `🌎 ${continentalName(club.country)} — ${CONT_STAGE_NAMES[info.stage]} (${info.leg === 1 ? "ida" : "volta"})`
                   : `Rodada ${next.round}`}
             </p>
             {week !== null && (
@@ -443,8 +474,8 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
           <div className="text-left">
             <p className="text-sm font-semibold uppercase tracking-wide text-zinc-300">
               {info?.type === "continental" || info?.type === "contgroup"
-                ? `🌎 Semana de ${["BR", "AR"].includes(club.country) ? "Libertadores" : "Champions"}`
-                : "🏆 Semana de Copa Nacional"}
+                ? `🌎 ${continentalName(club.country)}`
+                : `🏆 ${cupName(club.country)}`}
             </p>
             <p className="mt-1 text-xs text-zinc-500">
               Seu clube não disputa.
@@ -453,7 +484,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
         ) : eliminated && nextPlayableWeek(game) !== null ? (
           <div className="text-left">
             <p className="text-sm font-semibold uppercase tracking-wide text-red-400">
-              Copa Nacional: Eliminado
+              {cupName(club.country)}: Eliminado
             </p>
             <p className="mt-1 text-xs text-zinc-500">
               Sua próxima partida é pela liga — acompanhe a copa na aba Tabela.

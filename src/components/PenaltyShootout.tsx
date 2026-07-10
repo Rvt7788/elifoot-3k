@@ -101,7 +101,7 @@ export default function PenaltyShootout({
       <div className="w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-900 p-5">
         <h2 className="mb-1 text-center text-lg font-bold text-amber-400">🥅 Disputa de pênaltis</h2>
         <p className="mb-4 text-center text-xs text-zinc-500">
-          Agregado empatado — quem vencer avança na Copa Nacional
+          Agregado empatado — quem vencer avança de fase
         </p>
 
         <div className="mb-4 flex items-center justify-center gap-4 font-mono text-2xl font-bold">

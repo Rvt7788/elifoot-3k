@@ -24,7 +24,9 @@ export function listSlots(): (SlotMeta | null)[] {
       const raw = localStorage.getItem(`${SLOT_PREFIX}${i}`);
       if (!raw) { result.push(null); continue; }
       const data = JSON.parse(raw) as SaveSlotData;
-      result.push(data.meta);
+      // saves antigos podem não ter meta: nunca deixe `undefined` escapar,
+      // a UI depende de comparação estrita com null para achar slots vazios
+      result.push(data.meta ?? null);
     } catch {
       result.push(null);
     }
@@ -32,8 +34,9 @@ export function listSlots(): (SlotMeta | null)[] {
   return result;
 }
 
-/** Save the current game into a numbered slot. */
-export function saveToSlot(index: number, game: GameState): void {
+/** Save the current game into a numbered slot. Returns false when the write
+ *  fails (tipicamente cota do localStorage estourada). */
+export function saveToSlot(index: number, game: GameState): boolean {
   const club = game.clubs.find((c) => c.id === game.userClubId);
   const meta: SlotMeta = {
     clubName: club?.name ?? "???",
@@ -42,7 +45,13 @@ export function saveToSlot(index: number, game: GameState): void {
     savedAt: new Date().toISOString(),
   };
   const data: SaveSlotData = { game, meta };
-  localStorage.setItem(`${SLOT_PREFIX}${index}`, JSON.stringify(data));
+  try {
+    localStorage.setItem(`${SLOT_PREFIX}${index}`, JSON.stringify(data));
+    // round-trip: garante que o navegador realmente gravou
+    return localStorage.getItem(`${SLOT_PREFIX}${index}`) !== null;
+  } catch {
+    return false;
+  }
 }
 
 /** Load the GameState from a numbered slot (null if empty / corrupt). */

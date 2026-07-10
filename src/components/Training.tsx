@@ -84,18 +84,18 @@ export default function Training() {
       {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
 
       <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full text-[11px] sm:text-xs">
         <thead>
-          <tr className="border-b border-zinc-700 text-left text-zinc-400">
-            <th className="py-1 pr-2 text-center">Nº</th>
-            <th className="pr-3">Pos</th>
-            <th>Nome</th>
-            <th className="hidden text-center sm:table-cell">Idade</th>
-            <th className="text-center">Força</th>
-            <th className="text-center" title="Força ganha nesta temporada">Evol.</th>
-            <th className="w-16 sm:w-28">Progresso</th>
-            <th className="hidden text-center sm:table-cell" title="Ritmo de evolução pela idade">Ritmo</th>
-            <th className="text-center">Regime</th>
+          <tr className="border-b border-zinc-700 text-left text-[9px] sm:text-[10px] uppercase tracking-wide text-zinc-400">
+            <th className="py-1 px-1 text-center">Nº</th>
+            <th className="px-1">Pos</th>
+            <th className="px-1">Nome</th>
+            <th className="hidden px-1 text-center sm:table-cell">Idade</th>
+            <th className="px-1 text-center">Força</th>
+            <th className="px-1 text-center" title="Força ganha nesta temporada">Evol.</th>
+            <th className="w-16 px-1 sm:w-28">Progresso</th>
+            <th className="hidden px-1 text-center sm:table-cell" title="Ritmo de evolução pela idade">Ritmo</th>
+            <th className="px-1 text-center">Regime</th>
           </tr>
         </thead>
         <tbody>
@@ -154,7 +154,7 @@ export default function Training() {
                   <select
                     value={training}
                     onChange={(e) => setPlayerTraining(p.id, e.target.value as TrainingIntensity)}
-                    className="rounded border border-zinc-700 bg-zinc-900 px-1 py-0.5 text-xs capitalize"
+                    className="rounded border border-zinc-700 bg-zinc-900 px-1 py-0.5 text-[10px] sm:text-xs capitalize"
                   >
                     {INTENSITIES.map((i) => (
                       <option key={i} value={i}>{i}</option>

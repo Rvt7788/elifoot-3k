@@ -6,13 +6,15 @@ import { applyWeeklyGain, RECOVERY } from "./game/training";
 import {
   applyContGroupResults, applyCupResults, CONT_STAGES, drawContinental, drawCup,
   groupFixturesForMatchday, leagueWeek, nextContWeek, nextCupWeek, tiesForLeg, weekInfo,
+  cupChampion,
 } from "./game/cup";
 import continentalData from "./data/continental.json";
 import { newGame, assignShirtNumbers, playerSalary, processSeasonTransitions } from "./game/seeder";
 import { bestXI, createLiveMatch, simulateMinute } from "./game/engine";
 import { applyResult, buildLeagueFixtures, initTable, sortTable } from "./game/schedule";
 import { mulberry32, pick } from "./game/rng";
-import { aiAcceptChance, askingPrice } from "./game/market";
+import { aiAcceptChance, askingPrice, canNegotiate } from "./game/market";
+import { createManagers, processManagerSeason, remapManagerNames, swapUserClub } from "./game/managers";
 
 export interface Settings {
   speed: number; // multiplicador: 0.5, 1, 2, 4
@@ -140,6 +142,10 @@ interface Store {
   payBicho: (level: BichoLevel) => boolean;
   sellPlayer: (id: string) => { ok: boolean; amount?: number };
   buyPlayer: (id: string, offer: number) => { ok: boolean; message: string };
+  renewContract: (id: string) => { ok: boolean; message: string };
+  acceptIncomingOffer: () => void;
+  declineIncomingOffer: () => void;
+  dismissContractWarning: () => void;
   finishMatchday: (userTieWinnerId?: string) => void;
   skipMatchday: () => void;
   acceptJobOffer: () => void;
@@ -202,6 +208,63 @@ export const nextPlayableWeek = (g: GameState): number | null => {
   return candidates.length ? Math.min(...candidates) : null;
 };
 
+// Clube da IA que abriga um jogador saindo do time do usuário (venda ou dispensa):
+// entre os clubes com quem a divisão do usuário negocia, prioriza quem tem menos
+// jogadores na posição (repõe carência real), desempatando pelo maior orçamento.
+// Sorteia entre os 5 mais carentes para o destino não ser sempre o mesmo.
+function findBuyerClub(g: GameState, playerId: string): string {
+  const player = g.players.find((p) => p.id === playerId);
+  const userClub = g.clubs.find((c) => c.id === g.userClubId)!;
+  if (!player) return userClub.id;
+  const counts = new Map<string, number>();
+  for (const p of g.players)
+    if (p.pos === player.pos) counts.set(p.clubId, (counts.get(p.clubId) ?? 0) + 1);
+  const candidates = g.clubs
+    .filter((c) => c.id !== g.userClubId && canNegotiate(c.division, userClub.division))
+    .sort(
+      (a, b) =>
+        (counts.get(a.id) ?? 0) - (counts.get(b.id) ?? 0) ||
+        b.baseBudget - a.baseBudget,
+    );
+  if (candidates.length === 0) return userClub.id;
+  const top = candidates.slice(0, 5);
+  return top[Math.floor(Math.random() * top.length)].id;
+}
+
+// Luvas de renovação (+2 temporadas): ~20 salários semanais, arredondado.
+export function renewalCost(p: Player): number {
+  return Math.round((playerSalary(p) * 20) / 1000) * 1000;
+}
+
+// Sorteia (ou não) uma proposta de clube da IA por um jogador do usuário ao fim
+// da rodada: os melhores jogadores atraem mais interesse, e contratos perto do
+// fim rendem propostas menores (o comprador sabe que pode levar de graça depois).
+function maybeIncomingOffer(g: GameState): GameState["incomingOffer"] {
+  if (g.fired) return undefined;
+  const squad = g.players.filter((p) => p.clubId === g.userClubId);
+  if (squad.length <= MIN_SQUAD) return undefined;
+  if (Math.random() > 0.12) return undefined; // ~1 proposta a cada 8 rodadas
+  const userClub = g.clubs.find((c) => c.id === g.userClubId)!;
+  const buyers = g.clubs.filter(
+    (c) => c.id !== g.userClubId && canNegotiate(c.division, userClub.division),
+  );
+  if (buyers.length === 0) return undefined;
+  // alvo: sorteio pesado pela força ao quadrado — craques no radar
+  const weights = squad.map((p) => p.strength * p.strength);
+  const total = weights.reduce((s, w) => s + w, 0);
+  let roll = Math.random() * total;
+  let target = squad[0];
+  for (let i = 0; i < squad.length; i++) {
+    roll -= weights[i];
+    if (roll <= 0) { target = squad[i]; break; }
+  }
+  const buyer = buyers[Math.floor(Math.random() * buyers.length)];
+  const contractFactor = (target.contract ?? 2) <= 1 ? 0.65 : 1;
+  const amount =
+    Math.round((askingPrice(g, target) * (0.85 + Math.random() * 0.45) * contractFactor) / 1000) * 1000;
+  return { clubId: buyer.id, playerId: target.id, amount };
+}
+
 export const useStore = create<Store>()(
   persist(
     (set, get) => ({
@@ -222,7 +285,9 @@ export const useStore = create<Store>()(
         if (!g || g.fired) return;
         const squad = g.players.filter((p) => p.clubId === g.userClubId);
         if (squad.length <= MIN_SQUAD) return;
-        const players = g.players.filter((p) => p.id !== id);
+        // dispensado não some do mundo: outro clube o abriga (de graça)
+        const dest = findBuyerClub(g, id);
+        const players = g.players.map((p) => (p.id === id ? { ...p, clubId: dest } : p));
         let starters = g.starters;
         if (starters.includes(id)) {
           const rest = players.filter((p) => p.clubId === g.userClubId);
@@ -240,7 +305,9 @@ export const useStore = create<Store>()(
         const player = squad.find((p) => p.id === id);
         if (!player) return { ok: false };
         const amount = askingPrice(g, player);
-        const players = g.players.filter((p) => p.id !== id);
+        // vendido segue carreira num clube comprador, em vez de ser apagado do jogo
+        const dest = findBuyerClub(g, id);
+        const players = g.players.map((p) => (p.id === id ? { ...p, clubId: dest } : p));
         let starters = g.starters;
         if (starters.includes(id)) {
           const rest = players.filter((p) => p.clubId === g.userClubId);
@@ -249,6 +316,72 @@ export const useStore = create<Store>()(
         }
         set({ game: { ...g, players, starters, budget: g.budget + amount } });
         return { ok: true, amount };
+      },
+
+      // Renovação de contrato: +2 temporadas (teto 5) mediante luvas proporcionais
+      // ao salário do jogador. Sem renovar, contrato que zera no fim da temporada
+      // faz o jogador sair de graça.
+      renewContract: (id) => {
+        const g = get().game;
+        if (!g) return { ok: false, message: "Sem jogo ativo." };
+        if (g.fired) return { ok: false, message: "Você foi demitido: não comanda mais o clube." };
+        const player = g.players.find((p) => p.id === id && p.clubId === g.userClubId);
+        if (!player) return { ok: false, message: "Jogador indisponível." };
+        if ((player.contract ?? 1) >= 5)
+          return { ok: false, message: "Contrato já está no teto de 5 temporadas." };
+        const cost = renewalCost(player);
+        if (cost > g.budget) return { ok: false, message: "Orçamento insuficiente para as luvas." };
+        const players = g.players.map((p) =>
+          p.id === id ? { ...p, contract: Math.min(5, (p.contract ?? 1) + 2) } : p,
+        );
+        set({ game: { ...g, players, budget: g.budget - cost } });
+        return {
+          ok: true,
+          message: `${player.name} renovou por +2 temporadas (luvas de €${(cost / 1e3).toFixed(0)}k).`,
+        };
+      },
+
+      // Proposta recebida de um clube da IA: aceitar transfere o jogador na hora.
+      acceptIncomingOffer: () => {
+        const g = get().game;
+        const offer = g?.incomingOffer;
+        if (!g || !offer || g.fired) return;
+        const squad = g.players.filter((p) => p.clubId === g.userClubId);
+        const player = squad.find((p) => p.id === offer.playerId);
+        if (!player || squad.length <= MIN_SQUAD) {
+          set({ game: { ...g, incomingOffer: undefined } });
+          return;
+        }
+        const players = g.players.map((p) =>
+          p.id === offer.playerId ? { ...p, clubId: offer.clubId } : p,
+        );
+        let starters = g.starters;
+        if (starters.includes(offer.playerId)) {
+          const rest = players.filter((p) => p.clubId === g.userClubId);
+          const sub = rest.find((p) => !starters.includes(p.id));
+          starters = starters
+            .map((s) => (s === offer.playerId ? (sub?.id ?? s) : s))
+            .filter((s) => s !== offer.playerId);
+        }
+        set({
+          game: {
+            ...g, players, starters,
+            budget: g.budget + offer.amount,
+            incomingOffer: undefined,
+          },
+        });
+      },
+      declineIncomingOffer: () => {
+        const g = get().game;
+        if (!g) return;
+        set({ game: { ...g, incomingOffer: undefined } });
+      },
+
+      // Marca o aviso de contratos a vencer como visto nesta temporada.
+      dismissContractWarning: () => {
+        const g = get().game;
+        if (!g) return;
+        set({ game: { ...g, contractWarningSeason: g.season } });
       },
 
       buyPlayer: (id, offer) => {
@@ -277,7 +410,12 @@ export const useStore = create<Store>()(
         const game = newGame(seed, clubId);
         const userClub = game.clubs.find((c) => c.id === clubId)!;
         set({
-          game: { ...game, managerName, budget: game.budget + seasonRevenue(userClub.baseBudget) },
+          game: {
+            ...game, managerName,
+            budget: game.budget + seasonRevenue(userClub.baseBudget),
+            managers: createManagers(seed, game.clubs, clubId, managerName, game.players),
+            managerAwards: [],
+          },
           live: null,
           lastResults: null,
         });
@@ -327,10 +465,51 @@ export const useStore = create<Store>()(
                 )
               : [];
           const jobOffer = suitors.length > 0 ? pick(seasonRng, suitors).id : undefined;
+          // ── campeões da temporada: título para os jogadores e técnicos ──
+          const champions = [
+            finalA[0]?.clubId,
+            cupChampion(g.cup),
+            g.continental ? cupChampion(g.continental, CONT_STAGES) : undefined,
+          ].filter((id): id is string => !!id);
+          const championCount = new Map<string, number>();
+          for (const id of champions) championCount.set(id, (championCount.get(id) ?? 0) + 1);
+          const playersTitled = g.players.map((p) =>
+            championCount.has(p.clubId)
+              ? { ...p, titles: (p.titles ?? 0) + championCount.get(p.clubId)! }
+              : p,
+          );
+          // clubes campeões também somam títulos no ranking do save
+          const clubsTitled = clubs.map((c) =>
+            championCount.has(c.id)
+              ? { ...c, titles: (c.titles ?? 0) + championCount.get(c.id)! }
+              : c,
+          );
+          // ── técnicos: reputação, títulos, prêmio de Melhor Técnico e carrossel ──
+          const mgrRes = processManagerSeason(
+            g.seed, g.season,
+            g.managers ?? createManagers(g.seed, g.clubs, g.userClubId, g.managerName, g.players),
+            g.clubs, g.tables, champions, g.userClubId,
+          );
+          // ── contratos queimam 1 ano; expirados do usuário saem de graça ──
+          const transitions = processSeasonTransitions(seasonRng, playersTitled, clubsTitled, g.userClubId);
+          const awardBonus =
+            mgrRes.userWonAward && !g.fired
+              ? Math.round(seasonRevenue(userClub.baseBudget) * 0.25)
+              : 0;
           g = {
             ...g,
             jobOffer,
-            clubs,
+            clubs: clubsTitled,
+            managers: mgrRes.managers,
+            managerAwards: [...(g.managerAwards ?? []), mgrRes.award],
+            seasonNews: {
+              season: g.season + 1,
+              bestManager: mgrRes.award.managerName,
+              bestManagerClub: mgrRes.award.clubName,
+              userWonAward: mgrRes.userWonAward,
+              contractLosses: transitions.expiredContracts,
+            },
+            incomingOffer: undefined,
             season: g.season + 1,
             week: 1,
             // divisões mudaram: novo sorteio de confrontos da liga
@@ -341,20 +520,13 @@ export const useStore = create<Store>()(
               ]),
             ),
             // clube falido não recebe aporte: o caixa fica congelado onde parou
-            budget: g.fired ? g.budget : g.budget + seasonRevenue(userClub.baseBudget),
-            ...(() => {
-              const { updatedPlayers, pendingPromotions, retiredLastSeason } = processSeasonTransitions(
-                seasonRng,
-                g!.players,
-                clubs,
-                g!.userClubId
-              );
-              return {
-                players: updatedPlayers,
-                pendingPromotions: pendingPromotions.length > 0 ? pendingPromotions : undefined,
-                retiredLastSeason: retiredLastSeason.length > 0 ? retiredLastSeason : undefined,
-              };
-            })(),
+            // (prêmio de Melhor Técnico rende um bônus extra da diretoria)
+            budget: g.fired ? g.budget : g.budget + seasonRevenue(userClub.baseBudget) + awardBonus,
+            players: transitions.updatedPlayers,
+            pendingPromotions:
+              transitions.pendingPromotions.length > 0 ? transitions.pendingPromotions : undefined,
+            retiredLastSeason:
+              transitions.retiredLastSeason.length > 0 ? transitions.retiredLastSeason : undefined,
             cup: drawCup(
               seasonRng,
               countryClubs.filter((c) => c.division === "Série A").map((c) => c.id),
@@ -364,8 +536,22 @@ export const useStore = create<Store>()(
               mulberry32((g.seed ^ ((g.season + 1) * 79087)) >>> 0),
               clubs, g.userClubId,
               continentalData as unknown as Record<string, Record<string, string[]>>,
-              // classificados: os 4 primeiros da Série A na tabela final da temporada
-              finalA.slice(0, 4).map((r) => r.clubId),
+              // classificados: os 4 primeiros da Série A na tabela final da temporada,
+              // mas o campeão da Copa Nacional (se for do mesmo país) tem vaga garantida
+              // (substituindo o 4º colocado se não estiver no top 4)
+              (() => {
+                const top4 = finalA.slice(0, 4).map((r) => r.clubId);
+                const cupChamp = cupChampion(g!.cup);
+                if (cupChamp) {
+                  const champClub = clubs.find((c) => c.id === cupChamp);
+                  if (champClub && champClub.country === userClub.country) {
+                    if (!top4.includes(cupChamp) && top4.length >= 4) {
+                      top4[3] = cupChamp;
+                    }
+                  }
+                }
+                return top4;
+              })(),
             ),
           };
           set({ game: g });
@@ -491,6 +677,11 @@ export const useStore = create<Store>()(
             slotOrder: undefined,
             formation: "4-4-2",
             jobOffer: undefined,
+            incomingOffer: undefined,
+            // troca de cadeiras: o técnico deslocado do novo clube herda o antigo
+            managers: g.managers
+              ? swapUserClub(g.managers, g.userClubId, club.id)
+              : g.managers,
           },
         });
       },
@@ -831,6 +1022,8 @@ export const useStore = create<Store>()(
             debtWeeks,
             fired,
             jobOffer: fired ? undefined : game.jobOffer,
+            // proposta antiga expira ao fim da rodada; nova pode chegar no lugar
+            incomingOffer: fired ? undefined : maybeIncomingOffer(game),
             // balanço da rodada para a tela do clube: bilheteria, prêmios, folha e o bicho pago
             lastFinance: { revenue, prize, wages, bicho: game.pendingBicho ?? 0 },
             pendingBicho: undefined,
@@ -845,9 +1038,9 @@ export const useStore = create<Store>()(
     }),
     {
       name: "retro-manager-save",
-      version: 8,
+      version: 11,
       // saves antigos: preenche campos de treinamento/pé/número/suspensão e encaixa a copa no calendário
-      migrate: (state: any) => {
+      migrate: (state: any, version?: number) => {
         const g = state?.game;
         if (g) {
           g.players = g.players.map((p: any) => ({
@@ -858,7 +1051,18 @@ export const useStore = create<Store>()(
             suspendedLeague: p.suspendedLeague ?? p.suspended ?? false,
             suspendedCup: p.suspendedCup ?? false,
             number: p.number ?? 0,
+            // v9: contratos com prazo e contagem de títulos
+            contract: p.contract ?? 1 + Math.floor(Math.random() * 4),
+            titles: p.titles ?? 0,
           }));
+          // v9: ecossistema de técnicos para saves antigos
+          if (!g.managers) {
+            g.managers = createManagers(g.seed, g.clubs, g.userClubId, g.managerName, g.players);
+            g.managerAwards = g.managerAwards ?? [];
+          } else if ((version ?? 0) < 11) {
+            // v10/v11: troca nomes genéricos por técnicos reais (BR) / nomes do elenco
+            g.managers = remapManagerNames(g.seed, g.managers, g.clubs, g.players);
+          }
           delete g.trainingIntensity;
           // numeração de camisa: atribui por clube para quem ainda não tem
           if (g.players.some((p: Player) => !p.number)) {

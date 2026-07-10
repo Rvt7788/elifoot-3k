@@ -48,7 +48,9 @@ export default function ClubModal({ game, club, onClose }: { game: GameState; cl
                 {club.division}
                 {row ? ` · ${posIdx + 1}º · ${row.pts} pts` : ""}
                 {" · Téc. "}
-                {isUser ? (game.managerName ?? "Você") : "IA"}
+                {isUser
+                  ? (game.managerName ?? "Você")
+                  : game.managers?.find((m) => m.clubId === club.id)?.name ?? "—"}
               </p>
             </div>
           </div>

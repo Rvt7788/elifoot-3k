@@ -4,8 +4,10 @@ import type { Club, Fixture, LiveMatch, MatchEvent } from "../types";
 import TacticsModal from "./TacticsModal";
 import { playGoal, playGoalConceded, playRed } from "../game/sound";
 import { distinctPair } from "../game/color";
-import { weekInfo, tiesForLeg, groupFixturesForMatchday, CUP_STAGE_NAMES, CONT_STAGE_NAMES } from "../game/cup";
+import { weekInfo, tiesForLeg, groupFixturesForMatchday, CUP_STAGE_NAMES, CONT_STAGE_NAMES, TOTAL_WEEKS } from "../game/cup";
 import { formatMatchDateLong } from "../game/calendar";
+import { cupName, continentalName } from "../data/leagues";
+import ClubModal from "./ClubModal";
 
 const ORDINAL_ROUNDS = [
   "",
@@ -49,25 +51,26 @@ const ORDINAL_ROUNDS = [
   "Trigésima Oitava Rodada",
 ];
 
-// Título da semana: rodada da liga, fase da copa ou da continental (ida/volta) em duas partes (título/data)
-function weekLabelHeader(week: number, season: number): { title: string; subtitle: string } {
+// Título da rodada: liga, fase da copa ou da continental (ida/volta) em duas
+// partes (título/data), usando o nome real da competição do país do usuário.
+function weekLabelHeader(week: number, season: number, country: string): { title: string; subtitle: string } {
   const info = weekInfo(week);
   const dateStr = formatMatchDateLong(season, week);
   if (info.type === "cup") {
     return {
-      title: `🏆 Copa — ${CUP_STAGE_NAMES[info.stage]} (${info.leg === 1 ? "Ida" : "Volta"})`,
+      title: `🏆 ${cupName(country)} — ${CUP_STAGE_NAMES[info.stage]} (${info.leg === 1 ? "Ida" : "Volta"})`,
       subtitle: dateStr,
     };
   }
   if (info.type === "contgroup") {
     return {
-      title: `🌎 Continental — Grupos · Rodada ${info.matchday + 1}`,
+      title: `🌎 ${continentalName(country)} — Grupos · Rodada ${info.matchday + 1}`,
       subtitle: dateStr,
     };
   }
   if (info.type === "continental") {
     return {
-      title: `🌎 Continental — ${CONT_STAGE_NAMES[info.stage]} (${info.leg === 1 ? "Ida" : "Volta"})`,
+      title: `🌎 ${continentalName(country)} — ${CONT_STAGE_NAMES[info.stage]} (${info.leg === 1 ? "Ida" : "Volta"})`,
       subtitle: dateStr,
     };
   }
@@ -139,10 +142,11 @@ function MomentumBar({ m, homeColor, awayColor }: { m: LiveMatch; homeColor: str
 }
 
 function MatchRow({
-  m, home, away, isUser, highlight, onClick,
+  m, home, away, isUser, highlight, onClick, onSelectClub,
 }: {
   m: LiveMatch; home: Club; away: Club; isUser: boolean; highlight?: boolean;
   onClick: () => void;
+  onSelectClub?: (c: Club) => void;
 }) {
   const [homeColor, awayColor] = distinctPair(home.primaryColor, away.primaryColor);
   return (
@@ -165,7 +169,12 @@ function MatchRow({
         {/* Times + placar: no mobile usa flex-1 + min-w-0; no desktop w-64 fixo */}
         <div className="flex min-w-0 flex-1 sm:w-64 sm:flex-initial sm:shrink-0 items-center gap-1.5 sm:gap-2">
           <div className="flex flex-1 items-center justify-end gap-1 sm:gap-1.5 overflow-hidden min-w-0">
-            <span className="truncate text-xs sm:text-sm font-semibold match-team-name">{getClubDisplayName(home.name)}</span>
+            <span
+              onClick={(e) => { if (onSelectClub) { e.stopPropagation(); onSelectClub(home); } }}
+              className="truncate text-xs sm:text-sm font-semibold match-team-name cursor-pointer hover:underline"
+            >
+              {getClubDisplayName(home.name)}
+            </span>
             <span
               className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border border-white/30"
               style={{ background: homeColor }}
@@ -179,7 +188,12 @@ function MatchRow({
               className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border border-white/30"
               style={{ background: awayColor }}
             />
-            <span className="truncate text-xs sm:text-sm font-semibold match-team-name">{getClubDisplayName(away.name)}</span>
+            <span
+              onClick={(e) => { if (onSelectClub) { e.stopPropagation(); onSelectClub(away); } }}
+              className="truncate text-xs sm:text-sm font-semibold match-team-name cursor-pointer hover:underline"
+            >
+              {getClubDisplayName(away.name)}
+            </span>
           </div>
         </div>
         {/* Momentum: tamanho fixo no mobile no canto do container */}
@@ -236,18 +250,30 @@ function MatchClock({
   );
 }
 
-function FixtureRow({ f, home, away, isUser }: { f: Fixture; home: Club; away: Club; isUser: boolean }) {
+function FixtureRow({ f, home, away, isUser, onSelectClub }: {
+  f: Fixture; home: Club; away: Club; isUser: boolean; onSelectClub?: (c: Club) => void;
+}) {
   const [homeColor, awayColor] = distinctPair(home.primaryColor, away.primaryColor);
   return (
     <div className={`flex items-center gap-2 py-1 ${isUser ? "text-emerald-400" : ""}`}>
       <div className="flex flex-1 items-center justify-end gap-2 overflow-hidden">
-        <span className="truncate text-sm font-semibold">{getClubDisplayName(home.name)}</span>
+        <span
+          onClick={() => onSelectClub?.(home)}
+          className="cursor-pointer truncate text-sm font-semibold hover:underline"
+        >
+          {getClubDisplayName(home.name)}
+        </span>
         <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border border-white/30" style={{ background: homeColor }} />
       </div>
       <span className="shrink-0 text-xs text-zinc-500">vs</span>
       <div className="flex flex-1 items-center gap-2 overflow-hidden">
         <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border border-white/30" style={{ background: awayColor }} />
-        <span className="truncate text-sm font-semibold">{getClubDisplayName(away.name)}</span>
+        <span
+          onClick={() => onSelectClub?.(away)}
+          className="cursor-pointer truncate text-sm font-semibold hover:underline"
+        >
+          {getClubDisplayName(away.name)}
+        </span>
       </div>
     </div>
   );
@@ -429,6 +455,10 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
   const [modalOpen, setModalOpen] = useState(false);
   const [detailMatch, setDetailMatch] = useState<LiveMatch | null>(null);
   const [halftimeNotice, setHalftimeNotice] = useState(false);
+  // navegação pelas rodadas do calendário (setas no título); null = semana atual
+  const [browseWeek, setBrowseWeek] = useState<number | null>(null);
+  // clique no nome de um time abre a ficha do clube
+  const [selectedClub, setSelectedClub] = useState<Club | null>(null);
   const timer = useRef<ReturnType<typeof setInterval>>();
   const prevCounts = useRef<{ userGoals: number; oppGoals: number; userReds: number } | null>(null);
   const halftimePaused = useRef(false);
@@ -440,6 +470,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
 
   // Pausa automática no intervalo (minuto 45), para dar chance de mexer na equipe.
   useEffect(() => {
+    if (live) setBrowseWeek(null); // rodada nova ao vivo: volta o foco para a semana atual
     if (!live) { halftimePaused.current = false; return; }
     if (userMatchMinute >= 45 && !halftimePaused.current) {
       halftimePaused.current = true;
@@ -493,6 +524,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
 
   if (!game) return null;
   const clubById = (id: string) => game.clubs.find((c) => c.id === id)!;
+  const userCountry = game.clubs.find((c) => c.id === game.userClubId)!.country;
   const playerLookup = Object.fromEntries(
     game.players.map((p) => [p.id, { name: p.name, pos: p.pos, strength: p.strength, number: p.number }]),
   );
@@ -502,7 +534,155 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
     setDetailMatch(m);
   };
 
+  // ── navegação pelas rodadas: setas ao lado do título percorrem o calendário ──
+  const weekNav = (w: number) => {
+    const { title, subtitle } = weekLabelHeader(w, game.season, userCountry);
+    const isCupW = weekInfo(w).type !== "league";
+    return (
+      <div className="mb-4 flex items-center justify-center gap-1 sm:gap-3">
+        <button
+          onClick={() => setBrowseWeek(Math.max(1, w - 1))}
+          disabled={w <= 1}
+          className="shrink-0 rounded px-2 py-1 text-xl leading-none text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 disabled:opacity-20"
+          title="Rodada anterior"
+        >
+          ‹
+        </button>
+        <div className="min-w-0 text-center">
+          <p className={`text-lg font-bold tracking-wide ${isCupW ? "text-amber-400" : "text-zinc-200"}`}>
+            {title}
+          </p>
+          <p className="mt-1 text-sm text-zinc-500">{subtitle}</p>
+        </div>
+        <button
+          onClick={() => setBrowseWeek(Math.min(TOTAL_WEEKS, w + 1))}
+          disabled={w >= TOTAL_WEEKS}
+          className="shrink-0 rounded px-2 py-1 text-xl leading-none text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 disabled:opacity-20"
+          title="Próxima rodada"
+        >
+          ›
+        </button>
+      </div>
+    );
+  };
+
+  // linha de confronto genérica para a navegação: placar quando já jogado, "vs" quando não
+  const BrowseRow = ({ homeId, awayId, hs, as: aScore }: {
+    homeId: string; awayId: string; hs?: number; as?: number;
+  }) => {
+    const home = clubById(homeId);
+    const away = clubById(awayId);
+    const isUser = homeId === game.userClubId || awayId === game.userClubId;
+    const [hc, ac] = distinctPair(home.primaryColor, away.primaryColor);
+    return (
+      <div className={`flex items-center gap-2 py-1 ${isUser ? "text-emerald-400" : ""}`}>
+        <div className="flex flex-1 items-center justify-end gap-2 overflow-hidden">
+          <span
+            onClick={() => setSelectedClub(home)}
+            className="cursor-pointer truncate text-sm font-semibold hover:underline"
+          >
+            {getClubDisplayName(home.name)}
+          </span>
+          <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border border-white/30" style={{ background: hc }} />
+        </div>
+        {hs != null ? (
+          <span className="shrink-0 rounded bg-zinc-800 px-2 py-0.5 font-mono text-xs font-bold text-zinc-100">
+            {hs}-{aScore}
+          </span>
+        ) : (
+          <span className="shrink-0 text-xs text-zinc-500">vs</span>
+        )}
+        <div className="flex flex-1 items-center gap-2 overflow-hidden">
+          <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border border-white/30" style={{ background: ac }} />
+          <span
+            onClick={() => setSelectedClub(away)}
+            className="cursor-pointer truncate text-sm font-semibold hover:underline"
+          >
+            {getClubDisplayName(away.name)}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  // conteúdo de qualquer semana do calendário (liga, copa, grupos ou mata-mata continental)
+  const renderWeek = (w: number) => {
+    const info = weekInfo(w);
+    if (info.type === "league") {
+      const fx = game.fixtures.filter((f) => f.week === w);
+      if (fx.length === 0)
+        return <p className="text-center text-sm text-zinc-500">Sem jogos nesta semana.</p>;
+      return ["Série A", "Série B"].map((div) => {
+        const matches = fx.filter((f) => clubById(f.homeId).division === div);
+        if (matches.length === 0) return null;
+        return (
+          <div key={div} className="mb-6">
+            <p className={`mb-2 text-center text-base font-bold ${DIVISION_COLOR[div]}`}>{div}</p>
+            <div className="flex flex-col">
+              {matches.map((f, i) => (
+                <BrowseRow
+                  key={i}
+                  homeId={f.homeId}
+                  awayId={f.awayId}
+                  hs={f.played ? f.homeScore : undefined}
+                  as={f.played ? f.awayScore : undefined}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      });
+    }
+    if (info.type === "contgroup") {
+      const fx = game.continental ? groupFixturesForMatchday(game.continental, info.matchday) : [];
+      if (fx.length === 0)
+        return <p className="text-center text-sm text-zinc-500">Grupos ainda não sorteados.</p>;
+      return (
+        <div className="mb-6 flex flex-col">
+          {fx.map((f, i) => (
+            <BrowseRow
+              key={i}
+              homeId={f.homeId}
+              awayId={f.awayId}
+              hs={f.played ? f.homeScore : undefined}
+              as={f.played ? f.awayScore : undefined}
+            />
+          ))}
+        </div>
+      );
+    }
+    const knockout = info.type === "cup" ? game.cup : game.continental;
+    const ties = knockout?.rounds[info.stage];
+    if (!knockout || !ties || ties.length === 0)
+      return <p className="text-center text-sm text-zinc-500">Confrontos ainda não sorteados.</p>;
+    return (
+      <div className="mb-6 flex flex-col">
+        {tiesForLeg(knockout, info.stage, info.leg).map((t, i) => {
+          const tie = ties[t.tieIndex];
+          const hs = info.leg === 1 ? tie.g1h : tie.g2h;
+          const as2 = info.leg === 1 ? tie.g1a : tie.g2a;
+          return (
+            <BrowseRow key={i} homeId={t.homeId} awayId={t.awayId} hs={hs ?? undefined} as={as2 ?? undefined} />
+          );
+        })}
+      </div>
+    );
+  };
+
   if (!live) {
+    const defaultWeek = lastResults ? game.week - 1 : nextPlayableWeek(game);
+    // navegando fora da semana "atual": renderiza a semana escolhida do calendário
+    if (browseWeek !== null && browseWeek !== defaultWeek) {
+      return (
+        <div className="mx-auto max-w-4xl p-4">
+          {weekNav(browseWeek)}
+          {renderWeek(browseWeek)}
+          {selectedClub && (
+            <ClubModal game={game} club={selectedClub} onClose={() => setSelectedClub(null)} />
+          )}
+        </div>
+      );
+    }
     if (!lastResults) {
       const week = nextPlayableWeek(game);
       const info = week !== null ? weekInfo(week) : null;
@@ -522,14 +702,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
             </p>
           ) : (
             <>
-              <div className="mb-4 text-center">
-                <p className={`text-lg font-bold tracking-wide ${isCup ? "text-amber-400" : "text-zinc-200"}`}>
-                  {weekLabelHeader(week!, game.season).title}
-                </p>
-                <p className="text-sm text-zinc-500 mt-1">
-                  {weekLabelHeader(week!, game.season).subtitle}
-                </p>
-              </div>
+              {weekNav(week!)}
               {(isCup ? [null] : ["Série A", "Série B"]).map((div) => {
                 const matches = div === null
                   ? upcoming
@@ -545,6 +718,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
                     <div className="flex flex-col">
                       {matches.map((f, i) => (
                         <FixtureRow
+                          onSelectClub={setSelectedClub}
                           key={i}
                           f={f as Fixture}
                           home={clubById(f.homeId)}
@@ -557,6 +731,9 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
                 );
               })}
             </>
+          )}
+          {selectedClub && (
+            <ClubModal game={game} club={selectedClub} onClose={() => setSelectedClub(null)} />
           )}
         </div>
       );
@@ -572,14 +749,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
     const lastIsCup = lastInfo.type !== "league";
     return (
       <div className="mx-auto max-w-4xl p-4">
-        <div className="mb-4 text-center">
-          <p className={`text-lg font-bold tracking-wide ${lastIsCup ? "text-amber-400" : "text-zinc-200"}`}>
-            {weekLabelHeader(game.week - 1, game.season).title}
-          </p>
-          <p className="text-sm text-zinc-500 mt-1">
-            {weekLabelHeader(game.week - 1, game.season).subtitle}
-          </p>
-        </div>
+        {weekNav(game.week - 1)}
 
         {/* na copa a lista é única e o jogo do usuário já vem primeiro e destacado:
             o bloco "SEU JOGO" separado só é necessário na liga */}
@@ -587,6 +757,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
           <div className="mb-4">
             <p className="mb-1 text-xs font-bold text-emerald-500 text-center">⭐ SEU JOGO</p>
             <MatchRow
+              onSelectClub={setSelectedClub}
               m={userMatch}
               home={clubById(userMatch.homeId)}
               away={clubById(userMatch.awayId)}
@@ -608,6 +779,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
               <div className="flex flex-col gap-1">
                 {matches.map((m, i) => (
                   <MatchRow
+              onSelectClub={setSelectedClub}
                     key={i}
                     m={m}
                     home={clubById(m.homeId)}
@@ -630,6 +802,9 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
             onClose={() => setDetailMatch(null)}
           />
         )}
+        {selectedClub && (
+          <ClubModal game={game} club={selectedClub} onClose={() => setSelectedClub(null)} />
+        )}
       </div>
     );
   }
@@ -650,15 +825,19 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
     <div className="mx-auto max-w-4xl p-4">
       <div className="mb-4 text-center">
         <p className={`text-lg font-bold tracking-wide ${liveIsCup ? "text-amber-400" : "text-zinc-200"}`}>
-          {weekLabelHeader(game.week, game.season).title}
-          {live && !allDone && <span className="text-red-500 text-xs animate-pulse ml-2 font-bold uppercase">● Ao vivo</span>}
+          {weekLabelHeader(game.week, game.season, userCountry).title}
         </p>
+        {live && !allDone && (
+          <p className="mt-0.5">
+            <span className="text-red-500 text-xs animate-pulse font-bold uppercase">● Ao vivo</span>
+          </p>
+        )}
         <p className="text-sm text-zinc-500 mt-1">
-          {weekLabelHeader(game.week, game.season).subtitle}
+          {weekLabelHeader(game.week, game.season, userCountry).subtitle}
         </p>
       </div>
 
-      <div className="mb-4 flex items-center justify-center">
+      <div className="mb-4 flex flex-col items-center justify-center gap-2">
         <MatchClock
           minute={live[0]?.minute ?? 0}
           paused={paused}
@@ -669,6 +848,14 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
           }}
           showPlay={!allDone}
         />
+        {allDone && onFinishRound && (
+          <button
+            onClick={onFinishRound}
+            className="btn-ghost-amber !border !border-amber-600/50 rounded-lg px-5 py-2.5 text-base font-semibold"
+          >
+            ✔ Encerrar rodada
+          </button>
+        )}
       </div>
 
       {/* Destaque: confronto do jogador, sempre no topo (na copa a lista única já o traz primeiro) */}
@@ -676,6 +863,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
         <div className="mb-4">
           <p className="mb-1 text-xs font-bold text-emerald-500 text-center">⭐ SEU JOGO</p>
           <MatchRow
+              onSelectClub={setSelectedClub}
             m={userMatch}
             home={clubById(userMatch.homeId)}
             away={clubById(userMatch.awayId)}
@@ -708,6 +896,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
                   m.homeId === game.userClubId || m.awayId === game.userClubId;
                 return (
                   <MatchRow
+              onSelectClub={setSelectedClub}
                     key={i}
                     m={m}
                     home={home}
@@ -746,6 +935,9 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
           players={playerLookup}
           onClose={() => setDetailMatch(null)}
         />
+      )}
+      {selectedClub && (
+        <ClubModal game={game} club={selectedClub} onClose={() => setSelectedClub(null)} />
       )}
     </div>
   );

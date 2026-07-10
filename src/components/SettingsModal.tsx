@@ -62,7 +62,12 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
       const ok = await appConfirm("Sobrescrever save existente?");
       if (!ok) return;
     }
-    saveToSlot(i, game);
+    const ok = saveToSlot(i, game);
+    if (!ok) {
+      appAlert(
+        "Não foi possível salvar: o armazenamento do navegador está cheio. Apague um slot antigo e tente novamente.",
+      );
+    }
     refreshSlots();
   };
 

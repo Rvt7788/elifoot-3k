@@ -1,37 +1,44 @@
 import { useState } from "react";
 import { useStore } from "../store";
+import MatchDay from "./MatchDay";
 import { sortTable } from "../game/schedule";
 import {
-  CONT_STAGES, CONT_STAGE_NAMES, contStageWeeks, CUP_STAGE_NAMES, CUP_STAGES,
-  cupChampion, cupStageWeeks, groupStandings, type CupState, type CupTie,
+  CONT_STAGES, CONT_STAGE_NAMES, CUP_STAGE_NAMES, CUP_STAGES,
+  cupChampion, groupStandings, type CupState, type CupTie,
 } from "../game/cup";
+import { cupName, continentalName } from "../data/leagues";
 import type { Club, TableRow } from "../types";
 import ClubModal from "./ClubModal";
 import { readableOn } from "../game/color";
 
 function CupBracket({
-  cup, clubs, userClubId, stageNames, stageWeeks, totalStages, championLabel,
+  cup, clubs, userClubId, stageNames, totalStages, championLabel, onSelect,
 }: {
   cup: CupState; clubs: Club[]; userClubId: string;
-  stageNames: string[]; stageWeeks: (s: number) => [number, number];
+  stageNames: string[];
   totalStages: number; championLabel: string;
+  onSelect?: (club: Club) => void;
 }) {
   const name = (id: string) => clubs.find((c) => c.id === id)?.name ?? "?";
+  const select = (id: string) => {
+    const club = clubs.find((c) => c.id === id);
+    if (club && onSelect) onSelect(club);
+  };
   const champion = cupChampion(cup, totalStages);
   const TieRow = ({ t }: { t: CupTie }) => {
     const isUser = t.homeId === userClubId || t.awayId === userClubId;
     const cls = (id: string) =>
-      `${t.winnerId === id ? "font-bold text-emerald-400" : t.winnerId ? "text-zinc-500" : ""}`;
+      `cursor-pointer hover:underline ${t.winnerId === id ? "font-bold text-emerald-400" : t.winnerId ? "text-zinc-500" : ""}`;
     return (
       <div className={`flex items-center justify-between border-b border-zinc-800 py-1.5 text-xs sm:text-sm ${isUser ? "bg-emerald-950/40" : ""}`}>
-        <span className={`flex-1 truncate text-right pr-2 ${cls(t.homeId)}`}>{name(t.homeId)}</span>
+        <span onClick={() => select(t.homeId)} className={`flex-1 truncate text-right pr-2 ${cls(t.homeId)}`}>{name(t.homeId)}</span>
         <span className="w-24 shrink-0 text-center font-mono text-[10px] sm:text-xs text-zinc-300 bg-zinc-800/20 py-0.5 rounded border border-zinc-800/60">
           {t.g1h != null ? `${t.g1h}-${t.g1a}` : "—"}
           <span className="mx-1 text-zinc-600">·</span>
           {t.g2h != null ? `${t.g2a}-${t.g2h}` : "—"}
           {t.pens && <span className="ml-1 text-[9px] text-amber-400 block sm:inline" title="Decidido nos pênaltis">pên.</span>}
         </span>
-        <span className={`flex-1 truncate text-left pl-2 ${cls(t.awayId)}`}>{name(t.awayId)}</span>
+        <span onClick={() => select(t.awayId)} className={`flex-1 truncate text-left pl-2 ${cls(t.awayId)}`}>{name(t.awayId)}</span>
       </div>
     );
   };
@@ -42,22 +49,17 @@ function CupBracket({
           🏆 {championLabel}: {name(champion)}
         </p>
       )}
-      {cup.rounds.map((ties, s) => {
-        const [ida, volta] = stageWeeks(s);
-        return (
-          <div key={s} className="mb-4">
-            <h4 className="mb-1 text-sm font-bold text-amber-400">
-              {stageNames[s]}{" "}
-              <span className="text-xs font-normal text-zinc-500">
-                (semanas {ida} e {volta} · ida e volta)
-              </span>
-            </h4>
-            {ties.map((t, i) => (
-              <TieRow key={i} t={t} />
-            ))}
-          </div>
-        );
-      })}
+      {cup.rounds.map((ties, s) => (
+        <div key={s} className="mb-4">
+          <h4 className="mb-1 text-sm font-bold text-amber-400">
+            {stageNames[s]}{" "}
+            <span className="text-xs font-normal text-zinc-500">(ida e volta)</span>
+          </h4>
+          {ties.map((t, i) => (
+            <TieRow key={i} t={t} />
+          ))}
+        </div>
+      ))}
       <p className="text-xs text-zinc-500">
         Placares: ida · volta (na perspectiva do mandante da ida). Agregado empatado vai para os pênaltis.
         As próximas fases são sorteadas quando a anterior termina.
@@ -131,13 +133,245 @@ function DivisionTable({
   );
 }
 
-export default function Standings() {
+// Seção de ranking com limite expansível: mostra 5 por padrão, com opção de
+// abrir para 10 ou 20.
+const RANK_LIMITS = [5, 10, 20] as const;
+
+function RankSection({
+  title, emptyText, count, children, limit, setLimit,
+}: {
+  title: string;
+  emptyText: string;
+  count: number;
+  children: React.ReactNode;
+  limit: number;
+  setLimit: (n: number) => void;
+}) {
+  return (
+    <div className="mb-6">
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-base font-bold text-amber-400">{title}</h3>
+        {count > RANK_LIMITS[0] && (
+          <div className="flex gap-1">
+            {RANK_LIMITS.map((n) => (
+              <button
+                key={n}
+                onClick={() => setLimit(n)}
+                className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
+                  limit === n ? "bg-emerald-600 text-white" : "bg-zinc-800/60 text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      {count === 0 ? <p className="text-xs text-zinc-500">{emptyText}</p> : children}
+    </div>
+  );
+}
+
+// Ranking geral do save: clubes, jogadores e técnicos mais vitoriosos (títulos
+// de liga, copa e continental), mais o histórico do prêmio de Melhor Técnico.
+// Exportado para a aba própria "Ranking" no cabeçalho do app.
+export function HallOfFame() {
+  const game = useStore((s) => s.game)!;
+  const [clubLimit, setClubLimit] = useState<number>(RANK_LIMITS[0]);
+  const [playerLimit, setPlayerLimit] = useState<number>(RANK_LIMITS[0]);
+  const [managerLimit, setManagerLimit] = useState<number>(RANK_LIMITS[0]);
+  const [selected, setSelected] = useState<Club | null>(null);
+  const selectClub = (id: string | null) => {
+    const club = id ? game.clubs.find((c) => c.id === id) : undefined;
+    if (club) setSelected(club);
+  };
+  const clubName = (id: string | null) =>
+    id ? game.clubs.find((c) => c.id === id)?.name ?? "?" : "sem clube";
+
+  // O ranking é do ecossistema do país do save: clubes estrangeiros (e seus
+  // técnicos/jogadores) existem só para a copa continental e ficam de fora.
+  const userCountry = game.clubs.find((c) => c.id === game.userClubId)!.country;
+  const countryClubIds = new Set(
+    game.clubs.filter((c) => c.country === userCountry).map((c) => c.id),
+  );
+
+  const clubs = game.clubs
+    .filter((c) => countryClubIds.has(c.id) && (c.titles ?? 0) > 0)
+    .sort((a, b) => (b.titles ?? 0) - (a.titles ?? 0) || b.baseBudget - a.baseBudget);
+  const players = game.players
+    .filter((p) => countryClubIds.has(p.clubId) && (p.titles ?? 0) > 0)
+    .sort((a, b) => (b.titles ?? 0) - (a.titles ?? 0) || b.strength - a.strength);
+  const managers = (game.managers ?? [])
+    // desempregados (clubId null) só existem no carrossel do país do usuário
+    .filter((m) => m.clubId === null || countryClubIds.has(m.clubId))
+    .sort((a, b) => b.titles - a.titles || b.reputation - a.reputation);
+  const awards = [...(game.managerAwards ?? [])].sort((a, b) => b.season - a.season);
+
+  const thCls = "border-b border-zinc-700 text-left text-[10px] uppercase tracking-wide text-zinc-400";
+
+  return (
+    <div>
+      <RankSection
+        title="🏆 Clubes vitoriosos"
+        emptyText="Nenhum clube levantou taça neste save ainda — liga, copa e continental contam a partir do fim da primeira temporada."
+        count={clubs.length}
+        limit={clubLimit}
+        setLimit={setClubLimit}
+      >
+        <table className="w-full text-xs sm:text-sm">
+          <thead>
+            <tr className={thCls}>
+              <th className="py-1 pl-2 pr-1 w-6 text-center">#</th>
+              <th>Clube</th>
+              <th>Divisão</th>
+              <th className="w-14 text-center">Títulos</th>
+            </tr>
+          </thead>
+          <tbody>
+            {clubs.slice(0, clubLimit).map((c, i) => (
+              <tr
+                key={c.id}
+                onClick={() => setSelected(c)}
+                className={`cursor-pointer border-b border-zinc-800 hover:bg-zinc-900/60 ${c.id === game.userClubId ? "font-bold text-emerald-400" : "text-zinc-200"}`}
+              >
+                <td className="py-1 text-center font-mono tabular-nums opacity-70">{i + 1}</td>
+                <td className="truncate max-w-[140px] hover:underline sm:max-w-none">
+                  <span
+                    className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full border border-white/30 align-baseline"
+                    style={{ background: c.primaryColor }}
+                  />
+                  {c.name}
+                </td>
+                <td className="text-zinc-400">{c.division}</td>
+                <td className="text-center font-mono tabular-nums">{c.titles ?? 0}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </RankSection>
+
+      <RankSection
+        title="⚽ Jogadores vitoriosos"
+        emptyText="Ainda nenhum jogador levantou taça — os títulos entram ao fim de cada temporada."
+        count={players.length}
+        limit={playerLimit}
+        setLimit={setPlayerLimit}
+      >
+        <table className="w-full text-xs sm:text-sm">
+          <thead>
+            <tr className={thCls}>
+              <th className="py-1 pl-2 pr-1 w-6 text-center">#</th>
+              <th>Jogador</th>
+              <th>Clube</th>
+              <th className="w-10 text-center">Pos</th>
+              <th className="w-14 text-center">Títulos</th>
+            </tr>
+          </thead>
+          <tbody>
+            {players.slice(0, playerLimit).map((p, i) => (
+              <tr
+                key={p.id}
+                className={`border-b border-zinc-800 ${p.clubId === game.userClubId ? "font-bold text-emerald-400" : "text-zinc-200"}`}
+              >
+                <td className="py-1 text-center font-mono tabular-nums opacity-70">{i + 1}</td>
+                <td className="truncate max-w-[120px] sm:max-w-none">{p.name}</td>
+                <td
+                  onClick={() => selectClub(p.clubId)}
+                  className="cursor-pointer truncate max-w-[100px] text-zinc-400 hover:underline sm:max-w-none"
+                >
+                  {clubName(p.clubId)}
+                </td>
+                <td className="text-center text-zinc-400">{p.pos}</td>
+                <td className="text-center font-mono tabular-nums">{p.titles ?? 0}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </RankSection>
+
+      <RankSection
+        title="🏅 Técnicos"
+        emptyText="Sem técnicos registrados neste save."
+        count={managers.length}
+        limit={managerLimit}
+        setLimit={setManagerLimit}
+      >
+        <table className="w-full text-xs sm:text-sm">
+          <thead>
+            <tr className={thCls}>
+              <th className="py-1 pl-2 pr-1 w-6 text-center">#</th>
+              <th>Técnico</th>
+              <th>Clube</th>
+              <th className="w-14 text-center">Títulos</th>
+              <th className="w-16 text-center" title="Reputação (5-99): sobe com campanhas acima do esperado e títulos">Reput.</th>
+            </tr>
+          </thead>
+          <tbody>
+            {managers.slice(0, managerLimit).map((m, i) => (
+              <tr
+                key={m.id}
+                className={`border-b border-zinc-800 ${m.isUser ? "font-bold text-emerald-400" : "text-zinc-200"}`}
+              >
+                <td className="py-1 text-center font-mono tabular-nums opacity-70">{i + 1}</td>
+                <td className="truncate max-w-[120px] sm:max-w-none">{m.name}{m.isUser ? " (você)" : ""}</td>
+                <td
+                  onClick={() => selectClub(m.clubId)}
+                  className="cursor-pointer truncate max-w-[100px] text-zinc-400 hover:underline sm:max-w-none"
+                >
+                  {clubName(m.clubId)}
+                </td>
+                <td className="text-center font-mono tabular-nums">{m.titles}</td>
+                <td className="text-center font-mono tabular-nums text-zinc-400">{m.reputation}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </RankSection>
+
+      <h3 className="mb-2 text-base font-bold text-amber-400">🎖 Melhor Técnico da temporada</h3>
+      {awards.length === 0 ? (
+        <p className="text-xs text-zinc-500">
+          O prêmio é entregue ao fim de cada temporada para o técnico da melhor campanha.
+        </p>
+      ) : (
+        <div className="mb-4">
+          {awards.map((a) => (
+            <div
+              key={a.season}
+              className="flex items-center justify-between border-b border-zinc-800 py-1.5 text-xs sm:text-sm text-zinc-200"
+            >
+              <span className="text-zinc-500">Temporada {a.season}</span>
+              <span className="font-semibold">{a.managerName}</span>
+              <span className="text-zinc-400">{a.clubName}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {selected && (
+        <ClubModal game={game} club={selected} onClose={() => setSelected(null)} />
+      )}
+    </div>
+  );
+}
+
+// Sub-abas da Tabela, incluindo a Rodada (jogos ao vivo/resultados). A aba ativa
+// é controlada pelo App para o botão "Jogar"/"Ao vivo" abrir direto na Rodada.
+export type TableView = "rodada" | "liga" | "copa" | "continental";
+
+export default function Standings({
+  view, setView, onFinishRound,
+}: {
+  view: TableView;
+  setView: (v: TableView) => void;
+  onFinishRound?: () => void;
+}) {
   const game = useStore((s) => s.game);
-  const [view, setView] = useState<"liga" | "copa" | "continental">("liga");
   const [selected, setSelected] = useState<Club | null>(null);
   if (!game) return null;
   const userClub = game.clubs.find((c) => c.id === game.userClubId)!;
-  const contName = ["BR", "AR"].includes(userClub.country) ? "Libertadores" : "Champions";
+  const contName = continentalName(userClub.country);
+  const nationalCupName = cupName(userClub.country);
 
   // Render all active divisions in the save
   const divisions = Object.keys(game.tables).sort((a, b) => a.localeCompare(b));
@@ -147,19 +381,37 @@ export default function Standings() {
       view === v ? "bg-emerald-600 text-white" : "bg-zinc-800/40 text-zinc-400 hover:text-zinc-200"
     }`;
 
+  // A Rodada usa o layout largo do MatchDay; as demais sub-abas ficam no
+  // container estreito de tabelas.
+  const tabs = (
+    <div className="mb-4 flex w-full justify-between gap-1.5">
+      <button onClick={() => setView("rodada")} className={tabCls("rodada")}>
+        ⚽ Rodada
+      </button>
+      <button onClick={() => setView("liga")} className={tabCls("liga")}>
+        Liga
+      </button>
+      <button onClick={() => setView("copa")} className={tabCls("copa")}>
+        🏆 {nationalCupName}
+      </button>
+      <button onClick={() => setView("continental")} className={tabCls("continental")}>
+        🌎 {contName}
+      </button>
+    </div>
+  );
+
+  if (view === "rodada") {
+    return (
+      <>
+        <div className="mx-auto max-w-2xl px-4 pt-4">{tabs}</div>
+        <MatchDay onFinishRound={onFinishRound} />
+      </>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-2xl p-4">
-      <div className="mb-4 flex w-full justify-between gap-1.5">
-        <button onClick={() => setView("liga")} className={tabCls("liga")}>
-          Liga
-        </button>
-        <button onClick={() => setView("copa")} className={tabCls("copa")}>
-          🏆 Copa Nacional
-        </button>
-        <button onClick={() => setView("continental")} className={tabCls("continental")}>
-          🌎 Copa Continental
-        </button>
-      </div>
+      {tabs}
 
       {view === "liga" ? (
         <>
@@ -184,9 +436,9 @@ export default function Standings() {
             clubs={game.clubs}
             userClubId={game.userClubId}
             stageNames={CUP_STAGE_NAMES}
-            stageWeeks={cupStageWeeks}
             totalStages={CUP_STAGES}
-            championLabel="Campeão da Copa"
+            championLabel={`Campeão da ${nationalCupName}`}
+            onSelect={setSelected}
           />
         ) : (
           <p className="text-center text-sm text-zinc-500">A copa começa após a 5ª rodada.</p>
@@ -211,7 +463,10 @@ export default function Standings() {
                             isUser ? "text-emerald-400 font-semibold" : i < 2 ? "text-zinc-200" : "text-zinc-500"
                           }`}
                         >
-                          <span className="truncate">
+                          <span
+                            className="cursor-pointer truncate hover:underline"
+                            onClick={() => c && setSelected(c)}
+                          >
                             <span className="mr-1 inline-block w-3 text-zinc-600">{i + 1}</span>
                             {c?.name ?? "?"}
                           </span>
@@ -232,9 +487,9 @@ export default function Standings() {
             clubs={game.clubs}
             userClubId={game.userClubId}
             stageNames={CONT_STAGE_NAMES}
-            stageWeeks={contStageWeeks}
             totalStages={CONT_STAGES}
             championLabel={`Campeão da ${contName}`}
+            onSelect={setSelected}
           />
         </>
       ) : (

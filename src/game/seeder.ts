@@ -174,6 +174,8 @@ export function makePlayer(
     training: "normal",
     foot: chance(rng, 0.25) ? "canhoto" : "destro",
     number: 0, // atribuído em bulk por clube depois que o elenco inteiro existe
+    contract: young ? randInt(rng, 3, 4) : randInt(rng, 1, 4), // base assina longo; veterano pode estar no fim
+    titles: 0,
   };
   p.value = playerValue(p);
   return p;
@@ -412,10 +414,16 @@ export function processSeasonTransitions(
   players: Player[],
   clubs: Club[],
   userClubId: string
-): { updatedPlayers: Player[]; pendingPromotions: PendingPromotion[]; retiredLastSeason: RetiredPlayerInfo[] } {
+): {
+  updatedPlayers: Player[];
+  pendingPromotions: PendingPromotion[];
+  retiredLastSeason: RetiredPlayerInfo[];
+  expiredContracts: string[]; // jogadores do usuário que saíram de graça (fim de contrato)
+} {
   const activePlayers: Player[] = [];
   const pendingPromotions: PendingPromotion[] = [];
   const retiredLastSeason: RetiredPlayerInfo[] = [];
+  const expiredContracts: string[] = [];
 
   const clubNameMap = new Map<string, string>();
   for (const c of clubs) clubNameMap.set(c.id, c.name);
@@ -449,10 +457,53 @@ export function processSeasonTransitions(
       list.push({ pos: p.pos, name: p.name, age: nextAge });
       retirementsPerClub.set(p.clubId, list);
     } else {
-      activePlayers.push({
+      let strength = p.strength;
+      let cap = p.cap;
+      let loss = 0;
+      if (p.pos === "GOL") {
+        if (nextAge === 35 && rng() < 0.3) loss = 1;
+        else if (nextAge === 36 && rng() < 0.5) loss = 1;
+        else if (nextAge === 37 && rng() < 0.7) loss = 1;
+        else if (nextAge >= 38) loss = rng() < 0.5 ? 1 : 2;
+      } else {
+        if (nextAge === 32 && rng() < 0.3) loss = 1;
+        else if (nextAge === 33 && rng() < 0.5) loss = 1;
+        else if (nextAge === 34 && rng() < 0.7) loss = 1;
+        else if (nextAge >= 35) loss = rng() < 0.5 ? 1 : 2;
+      }
+      if (loss > 0) {
+        strength = Math.max(1, strength - loss);
+        cap = Math.min(cap, strength);
+      }
+
+      // contrato: queima 1 temporada; IA renova sozinha ao expirar. Jogador do
+      // usuário com contrato zerado sai DE GRAÇA para outro clube do país — a
+      // renovação tem que acontecer durante a temporada, na aba Elenco.
+      let contract = (p.contract ?? 2) - 1;
+      let clubId = p.clubId;
+      if (contract <= 0) {
+        if (p.clubId === userClubId) {
+          const userCountry = clubs.find((c) => c.id === userClubId)?.country;
+          const sameCountry = clubs.filter((c) => c.id !== userClubId && c.country === userCountry);
+          const destinations = sameCountry.length > 0 ? sameCountry : clubs.filter((c) => c.id !== userClubId);
+          if (destinations.length > 0) {
+            clubId = destinations[Math.floor(rng() * destinations.length)].id;
+            expiredContracts.push(p.name);
+          }
+          contract = Math.max(2, Math.round(2 + rng() * 2)); // contrato novo no destino
+        } else {
+          contract = Math.max(2, Math.round(2 + rng() * 2)); // IA renova por 2-4 anos
+        }
+      }
+
+      const updatedP: Player = {
         ...p,
+        clubId,
+        contract,
         age: nextAge,
-        gained: 0,
+        strength,
+        cap,
+        gained: -loss, // valor negativo indica declínio na UI
         energy: 100,
         goals: 0,
         assists: 0,
@@ -464,7 +515,9 @@ export function processSeasonTransitions(
         suspendedLeague: false,
         suspendedCup: false,
         suspendedContinental: false
-      });
+      };
+      updatedP.value = playerValue(updatedP);
+      activePlayers.push(updatedP);
     }
   }
 
@@ -516,6 +569,7 @@ export function processSeasonTransitions(
   return {
     updatedPlayers: activePlayers,
     pendingPromotions,
-    retiredLastSeason
+    retiredLastSeason,
+    expiredContracts
   };
 }

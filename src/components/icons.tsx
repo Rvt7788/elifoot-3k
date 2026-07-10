@@ -82,6 +82,16 @@ export function IconGear({ className }: IconProps) {
   );
 }
 
+export function IconTrophy({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path d="M8 4h8v5a4 4 0 0 1-8 0V4Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M8 5H4.5v1.5A3.5 3.5 0 0 0 8 10M16 5h3.5v1.5A3.5 3.5 0 0 1 16 10" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M12 13v4M9 20h6M10 17h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function IconPlay({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className}>

@@ -15,6 +15,7 @@ export interface Club {
   primaryColor: string;
   secondaryColor: string;
   baseBudget: number;
+  titles?: number; // títulos conquistados no save (liga, copa, continental) — ranking de clubes
 }
 
 export interface Player {
@@ -44,6 +45,8 @@ export interface Player {
   training: TrainingIntensity; // regime de treino individual
   foot: Foot; // pé dominante: rende mais no lado do campo compatível (canhoto à esquerda)
   number: number; // número da camisa (1-99), editável em Elenco
+  contract: number; // temporadas restantes de contrato (1 = último ano; expira no fim da temporada)
+  titles: number; // títulos conquistados na carreira (liga, copa, continental) — ranking de vitoriosos
 }
 
 export type TrainingIntensity = "leve" | "normal" | "pesada";
@@ -174,6 +177,42 @@ export interface TransferOffer {
   amount: number;
 }
 
+// Proposta de um clube da IA por um jogador do usuário: aparece entre rodadas
+// e vale até a próxima rodada ser encerrada (aceitar vende na hora).
+export interface IncomingOffer {
+  clubId: string; // clube comprador
+  playerId: string;
+  amount: number;
+}
+
+// Técnico do ecossistema: cada clube tem o seu; reputação sobe com campanhas
+// acima do esperado e títulos, e o carrossel de fim de temporada realoca os
+// técnicos demitidos entre os clubes vagos.
+export interface Manager {
+  id: string;
+  name: string;
+  clubId: string | null; // null = desempregado (no mercado)
+  reputation: number; // 5-99
+  titles: number; // títulos de liga/copa/continental na carreira
+  isUser?: boolean; // técnico controlado pelo jogador
+}
+
+// Registro do prêmio de Melhor Técnico da temporada.
+export interface ManagerAward {
+  season: number;
+  managerName: string;
+  clubName: string;
+}
+
+// Resumo de notícias da virada de temporada, exibido nas primeiras semanas.
+export interface SeasonNews {
+  season: number; // temporada que está começando
+  bestManager: string;
+  bestManagerClub: string;
+  userWonAward: boolean;
+  contractLosses: string[]; // jogadores do usuário que saíram de graça (contrato expirado)
+}
+
 import type { CupState } from "./game/cup";
 
 export interface PendingPromotion {
@@ -212,4 +251,9 @@ export interface GameState {
   fired?: boolean; // faliu: técnico demitido — só observa os jogos, sem comandar nada
   pendingPromotions?: PendingPromotion[];
   retiredLastSeason?: RetiredPlayerInfo[];
+  managers?: Manager[]; // um técnico por clube + eventuais desempregados
+  managerAwards?: ManagerAward[]; // histórico do prêmio de Melhor Técnico por temporada
+  incomingOffer?: IncomingOffer; // proposta pendente de um clube da IA por jogador do usuário
+  seasonNews?: SeasonNews; // notícias da virada de temporada (prêmio, contratos expirados)
+  contractWarningSeason?: number; // temporada em que o aviso de contratos a vencer já foi exibido
 }

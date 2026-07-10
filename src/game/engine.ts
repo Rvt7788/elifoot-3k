@@ -244,7 +244,9 @@ interface PlayersIndex { [id: string]: Player }
 
 // Força efetiva em campo, com a energia da partida (LivePlayer) — mesma curva gradual.
 function effStrength(p: Player, lp: LivePlayer): number {
-  return p.strength * energyFactor(lp.energy);
+  let s = p.strength * energyFactor(lp.energy);
+  if (p.traits.includes("Raçudo")) s *= 1.12; // raçudo tem bônus de 12% na força efetiva por garra
+  return s;
 }
 
 // Bônus de pé pelo lado do campo: numa linha (DEF/MEI/ATA), canhoto rende mais na
@@ -414,7 +416,28 @@ function tryShot(
   // "tudo ou nada" mexe na CONVERSÃO, não só no volume: quem ataca com tudo
   // finaliza melhor (todo mundo no ataque), e quem defende nessa mentalidade
   // está com a linha lá na frente — o goleiro fica exposto ao 1×1.
+  // Determina assistente em potencial antes de calcular o chute para aplicar bônus do Criativo
+  let assistantLp: LivePlayer | undefined = undefined;
+  if (chance(rng, 0.65)) {
+    const mates = atkLineup.filter(
+      (lp) =>
+        lp.onField && !lp.sentOff &&
+        idx[lp.playerId].id !== striker.id &&
+        ((lp.posOverride ?? idx[lp.playerId].pos) === "MEI" || (lp.posOverride ?? idx[lp.playerId].pos) === "ATA"),
+    );
+    if (mates.length > 0) {
+      // Criativo é o garçom do time: peso dobrado na escolha de quem dá o passe
+      assistantLp = pickWeighted(rng, mates, (lp) =>
+        idx[lp.playerId].traits.includes("Criativo") ? 2 : 1,
+      );
+    }
+  }
+
   let atk = striker.strength * (striker.traits.includes("Goleador") ? 1.25 : 1);
+  if (assistantLp && idx[assistantLp.playerId].traits.includes("Criativo")) {
+    atk *= 1.15; // passe criativo dá bônus de 15% na finalização
+  }
+
   if (atkTactics.mentality === "tudo_ou_nada") atk *= 1.2;
   let gk = (keeper?.strength ?? 5) * (keeper?.traits.includes("Paredão") ? 1.3 : 1);
   gk += (bestDef?.strength ?? 5) * 0.4; // último defensor ajuda a segurar a finalização
@@ -426,14 +449,8 @@ function tryShot(
     else m.awayScore++;
     striker.goals++;
     m.events.push({ minute: m.minute, type: "goal", side, playerName: striker.name });
-    if (chance(rng, 0.65)) {
-      const mates = atkLineup.filter(
-        (lp) =>
-          lp.onField && !lp.sentOff &&
-          idx[lp.playerId].id !== striker.id &&
-          ((lp.posOverride ?? idx[lp.playerId].pos) === "MEI" || (lp.posOverride ?? idx[lp.playerId].pos) === "ATA"),
-      );
-      if (mates.length > 0) idx[pick(rng, mates).playerId].assists++;
+    if (assistantLp) {
+      idx[assistantLp.playerId].assists++;
     }
     m.momentum = 0;
     m.dangerTime = 0;
@@ -611,8 +628,9 @@ function aiThink(rng: Rng, m: LiveMatch, idx: PlayersIndex, side: "home" | "away
     changed = true;
   } else if (losing && m.minute >= 70 - aggression * 15) {
     // Total ao Ataque + atacantes frescos: times agressivos arriscam mais cedo
-    t.mentality = "ofensivo";
+    t.mentality = aggression > 0.75 && m.minute >= 85 ? "tudo_ou_nada" : "ofensivo";
     t.truculencia = false;
+    t.marking = "apertada"; // pressiona a saída de bola para recuperar rápido
     // acima de 0.7 de agressividade e faltando pouco, sacrifica um defensor por atacante
     if (aggression > 0.7 && m.minute >= 80) {
       changed = pushForward(m, idx, side, lineup) || changed;
@@ -631,6 +649,10 @@ function aiThink(rng: Rng, m: LiveMatch, idx: PlayersIndex, side: "home" | "away
     // segurar o resultado: times conservadores fecham mais cedo, agressivos demoram a recuar
     t.cera = true;
     t.mentality = "defensivo";
+    // reta final segurando por 1 gol: retranca total (marcação extrema) e, se o time
+    // é truculento por natureza, entra a faca também
+    t.marking = m.minute >= 85 && myScore - oppScore === 1 ? "extrema" : "apertada";
+    if (aggression > 0.7 && m.minute >= 85) t.truculencia = true;
     changed = true;
   } else if (drawing && m.minute >= 80 && aggression > 0.6 && rng() < 0.4) {
     // empate não serve para quem precisa da vitória: arrisca no fim
@@ -676,8 +698,15 @@ export function simulateMinute(
       (t.mentality === "ofensivo" ? 1.2 : t.mentality === "tudo_ou_nada" ? 1.35 : 1) *
       (t.truculencia ? 1.15 : 1) *
       MARKING_DRAIN[t.marking];
-    for (const lp of lineup)
-      if (lp.onField && !lp.sentOff) lp.energy = Math.max(0, lp.energy - drain);
+    for (const lp of lineup) {
+      if (lp.onField && !lp.sentOff) {
+        let playerDrain = drain;
+        if (idx[lp.playerId]?.traits.includes("Raçudo")) {
+          playerDrain *= 0.7; // raçudo tem 30% mais resistência física e cansa menos
+        }
+        lp.energy = Math.max(0, lp.energy - playerDrain);
+      }
+    }
   }
 
   // deslocamento da barra de momentum: ataque de cada lado é freado pela defesa do outro.
