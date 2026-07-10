@@ -74,7 +74,10 @@ export interface MarketFilters {
   minStrength: number;
   maxStrength: number;
   trait: string; // "ALL" | Trait
+  minValue: number | null;
   maxValue: number | null;
+  minAge: number | null;
+  maxAge: number | null;
   query: string;
 }
 
@@ -90,7 +93,11 @@ export function filterMarket(
     if (filters.position !== "ALL" && p.pos !== filters.position) return false;
     if (p.strength < filters.minStrength || p.strength > filters.maxStrength) return false;
     if (filters.trait !== "ALL" && !p.traits.includes(filters.trait as any)) return false;
-    if (filters.maxValue !== null && askingPrice(game, p) > filters.maxValue) return false;
+    const price = askingPrice(game, p);
+    if (filters.minValue !== null && price < filters.minValue) return false;
+    if (filters.maxValue !== null && price > filters.maxValue) return false;
+    if (filters.minAge !== null && p.age < filters.minAge) return false;
+    if (filters.maxAge !== null && p.age > filters.maxAge) return false;
     if (filters.query && !p.name.toLowerCase().includes(filters.query.toLowerCase())) return false;
     return true;
   });

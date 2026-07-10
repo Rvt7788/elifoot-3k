@@ -93,34 +93,36 @@ function MatchRow({
           : "border-zinc-800 bg-zinc-900/60 hover:bg-zinc-800/80"
       } ${m.aiFlash ? "ai-flash" : ""} ${highlight ? "shadow-lg shadow-emerald-900/40" : ""}`}
     >
-      <div className="flex items-center gap-3">
-        {/* público no estádio, alinhado à esquerda do confronto */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* público no estádio — oculto no mobile para dar espaço ao momentum */}
         <span
-          className="w-16 shrink-0 text-left font-mono text-sm tabular-nums text-zinc-500"
+          className="hidden sm:inline-block w-16 shrink-0 text-left font-mono text-sm tabular-nums text-zinc-500"
           title="Público no estádio"
         >
           {m.attendance ? m.attendance.toLocaleString("pt-BR") : ""}
         </span>
-        <div className="flex w-64 shrink-0 items-center gap-2">
-          <div className="flex flex-1 items-center justify-end gap-1.5 overflow-hidden">
-            <span className="truncate text-sm font-semibold">{getClubDisplayName(home.name)}</span>
+        {/* Times + placar: no mobile usa min-w-0 + flex-shrink para encolher; no desktop w-64 fixo */}
+        <div className="flex min-w-0 shrink items-center gap-1.5 sm:w-64 sm:shrink-0 sm:gap-2">
+          <div className="flex flex-1 items-center justify-end gap-1 sm:gap-1.5 overflow-hidden min-w-0">
+            <span className="truncate text-xs sm:text-sm font-semibold match-team-name">{getClubDisplayName(home.name)}</span>
             <span
               className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border border-white/30"
               style={{ background: homeColor }}
             />
           </div>
-          <span className="shrink-0 rounded bg-zinc-800 px-2 py-0.5 font-mono text-sm font-bold">
+          <span className="shrink-0 rounded bg-zinc-800 px-1.5 sm:px-2 py-0.5 font-mono text-xs sm:text-sm font-bold">
             {m.homeScore}-{m.awayScore}
           </span>
-          <div className="flex flex-1 items-center gap-1.5 overflow-hidden">
+          <div className="flex flex-1 items-center gap-1 sm:gap-1.5 overflow-hidden min-w-0">
             <span
               className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border border-white/30"
               style={{ background: awayColor }}
             />
-            <span className="truncate text-sm font-semibold">{getClubDisplayName(away.name)}</span>
+            <span className="truncate text-xs sm:text-sm font-semibold match-team-name">{getClubDisplayName(away.name)}</span>
           </div>
         </div>
-        <div className="flex-1">
+        {/* Momentum: min-width garante visibilidade no mobile */}
+        <div className="flex-1 min-w-[60px] sm:min-w-0">
           <MomentumBar m={m} homeColor={homeColor} awayColor={awayColor} />
         </div>
       </div>

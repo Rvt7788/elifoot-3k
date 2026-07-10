@@ -342,3 +342,10 @@ h1, h2, h3, .font-display {
 .ai-flash {
   animation: flash 0.6s ease-in-out 3;
 }
+
+/* Mobile: nomes de times truncados para caber o momentum ao lado */
+@media (max-width: 639px) {
+  .match-team-name {
+    max-width: 72px;
+  }
+}

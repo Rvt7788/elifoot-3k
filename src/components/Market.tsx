@@ -70,7 +70,7 @@ export default function Market() {
   const { game, buyPlayer, sellPlayer } = useStore();
   const [tab, setTab] = useState<"buy" | "sell">("buy");
   const emptyFilters: MarketFilters = {
-    position: "ALL", minStrength: 1, maxStrength: 50, trait: "ALL", maxValue: null, query: "",
+    position: "ALL", minStrength: 1, maxStrength: 50, trait: "ALL", minValue: null, maxValue: null, minAge: null, maxAge: null, query: "",
   };
   const [filters, setFilters] = useState<MarketFilters>(emptyFilters);
   const [appliedFilters, setAppliedFilters] = useState<MarketFilters | null>(null);
@@ -144,7 +144,7 @@ export default function Market() {
 
       {tab === "buy" && (
         <>
-          <div className="mb-3 grid grid-cols-2 gap-2 rounded-lg border border-zinc-800 bg-zinc-900 p-3 sm:grid-cols-4">
+          <div className="mb-3 grid grid-cols-2 gap-2 rounded-lg border border-zinc-800 bg-zinc-900 p-3 sm:grid-cols-3 lg:grid-cols-6">
             <label className="text-xs text-zinc-400">
               Posição
               <select
@@ -178,6 +178,44 @@ export default function Market() {
                   type="number" min={1} max={50}
                   value={Number.isNaN(filters.maxStrength) ? "" : filters.maxStrength}
                   onChange={(e) => updateFilters({ maxStrength: e.target.valueAsNumber })}
+                  className="w-1/2 rounded bg-zinc-800 px-2 py-1 text-sm"
+                />
+              </div>
+            </label>
+            <label className="text-xs text-zinc-400">
+              Valor mín–máx (€M)
+              <div className="mt-0.5 flex gap-1">
+                <input
+                  type="number" min={0} step={0.1}
+                  placeholder="mín"
+                  value={filters.minValue !== null ? filters.minValue / 1e6 : ""}
+                  onChange={(e) => updateFilters({ minValue: e.target.value === "" ? null : e.target.valueAsNumber * 1e6 })}
+                  className="w-1/2 rounded bg-zinc-800 px-2 py-1 text-sm"
+                />
+                <input
+                  type="number" min={0} step={0.1}
+                  placeholder="máx"
+                  value={filters.maxValue !== null ? filters.maxValue / 1e6 : ""}
+                  onChange={(e) => updateFilters({ maxValue: e.target.value === "" ? null : e.target.valueAsNumber * 1e6 })}
+                  className="w-1/2 rounded bg-zinc-800 px-2 py-1 text-sm"
+                />
+              </div>
+            </label>
+            <label className="text-xs text-zinc-400">
+              Idade mín–máx
+              <div className="mt-0.5 flex gap-1">
+                <input
+                  type="number" min={15} max={42}
+                  placeholder="mín"
+                  value={filters.minAge ?? ""}
+                  onChange={(e) => updateFilters({ minAge: e.target.value === "" ? null : e.target.valueAsNumber })}
+                  className="w-1/2 rounded bg-zinc-800 px-2 py-1 text-sm"
+                />
+                <input
+                  type="number" min={15} max={42}
+                  placeholder="máx"
+                  value={filters.maxAge ?? ""}
+                  onChange={(e) => updateFilters({ maxAge: e.target.value === "" ? null : e.target.valueAsNumber })}
                   className="w-1/2 rounded bg-zinc-800 px-2 py-1 text-sm"
                 />
               </div>
