@@ -60,6 +60,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
       tactics,
       lineup,
       subsLeft,
+      events: match.events,
       liveSlotOrder: side === "home" ? match.homeSlotOrder : match.awaySlotOrder,
       formation: game.formation ?? "4-4-2",
       gameSlotOrder: game.slotOrder,
