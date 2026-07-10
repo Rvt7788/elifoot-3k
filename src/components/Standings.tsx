@@ -23,15 +23,15 @@ function CupBracket({
     const cls = (id: string) =>
       `${t.winnerId === id ? "font-bold text-emerald-400" : t.winnerId ? "text-zinc-500" : ""}`;
     return (
-      <div className={`flex items-center justify-between border-b border-zinc-800 py-1 text-sm ${isUser ? "bg-emerald-950/40" : ""}`}>
-        <span className={`flex-1 truncate text-right ${cls(t.homeId)}`}>{name(t.homeId)}</span>
-        <span className="mx-2 shrink-0 font-mono text-xs text-zinc-300">
+      <div className={`flex items-center justify-between border-b border-zinc-800 py-1.5 text-xs sm:text-sm ${isUser ? "bg-emerald-950/40" : ""}`}>
+        <span className={`flex-1 truncate text-right pr-2 ${cls(t.homeId)}`}>{name(t.homeId)}</span>
+        <span className="w-24 shrink-0 text-center font-mono text-[10px] sm:text-xs text-zinc-300 bg-zinc-800/20 py-0.5 rounded border border-zinc-800/60">
           {t.g1h != null ? `${t.g1h}-${t.g1a}` : "—"}
           <span className="mx-1 text-zinc-600">·</span>
           {t.g2h != null ? `${t.g2a}-${t.g2h}` : "—"}
-          {t.pens && <span className="ml-1 text-amber-400" title="Decidido nos pênaltis">pên.</span>}
+          {t.pens && <span className="ml-1 text-[9px] text-amber-400 block sm:inline" title="Decidido nos pênaltis">pên.</span>}
         </span>
-        <span className={`flex-1 truncate ${cls(t.awayId)}`}>{name(t.awayId)}</span>
+        <span className={`flex-1 truncate text-left pl-2 ${cls(t.awayId)}`}>{name(t.awayId)}</span>
       </div>
     );
   };
@@ -87,15 +87,15 @@ function DivisionTable({
       </h3>
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-zinc-700 text-left text-zinc-400">
-            <th className="py-1 pr-2">#</th>
+          <tr className="border-b border-zinc-700 text-left text-zinc-400 text-xs sm:text-sm">
+            <th className="py-1 pl-2 pr-1 w-6 text-center">#</th>
             <th>Clube</th>
-            <th className="text-center">P</th>
-            <th className="text-center">J</th>
-            <th className="text-center">V</th>
-            <th className="text-center">E</th>
-            <th className="text-center">D</th>
-            <th className="text-center">SG</th>
+            <th className="w-8 text-center">P</th>
+            <th className="w-8 text-center">J</th>
+            <th className="w-8 text-center">V</th>
+            <th className="w-8 text-center">E</th>
+            <th className="w-8 text-center">D</th>
+            <th className="w-8 text-center">SG</th>
           </tr>
         </thead>
         <tbody>
@@ -110,18 +110,18 @@ function DivisionTable({
                 key={r.clubId}
                 onClick={() => c && onSelect(c)}
                 style={{ background: c.primaryColor, color: readableOn(c.primaryColor) }}
-                className={`cursor-pointer border-b border-black/40 hover:brightness-110 ${zone} ${
+                className={`cursor-pointer border-b border-black/40 hover:brightness-110 text-xs sm:text-sm ${zone} ${
                   r.clubId === userClubId ? "font-bold" : ""
                 }`}
               >
-                <td className="py-1 pl-2 pr-2 opacity-70">{i + 1}</td>
-                <td className="hover:underline">{c?.name}</td>
-                <td className="text-center font-bold">{r.pts}</td>
-                <td className="text-center">{r.p}</td>
-                <td className="text-center">{r.w}</td>
-                <td className="text-center">{r.d}</td>
-                <td className="text-center">{r.l}</td>
-                <td className="text-center">{r.gf - r.ga}</td>
+                <td className="py-1 text-center opacity-70 w-6 font-mono tabular-nums">{i + 1}</td>
+                <td className="hover:underline py-1 truncate max-w-[120px] sm:max-w-none">{c?.name}</td>
+                <td className="text-center font-bold font-mono tabular-nums w-8">{r.pts}</td>
+                <td className="text-center font-mono tabular-nums w-8">{r.p}</td>
+                <td className="text-center font-mono tabular-nums w-8">{r.w}</td>
+                <td className="text-center font-mono tabular-nums w-8">{r.d}</td>
+                <td className="text-center font-mono tabular-nums w-8">{r.l}</td>
+                <td className="text-center font-mono tabular-nums w-8">{r.gf - r.ga}</td>
               </tr>
             );
           })}
@@ -143,11 +143,13 @@ export default function Standings() {
   const divisions = Object.keys(game.tables).sort((a, b) => a.localeCompare(b));
 
   const tabCls = (v: typeof view) =>
-    `rounded px-3 py-1 text-sm ${view === v ? "bg-emerald-600 font-semibold text-white" : "text-zinc-400 hover:text-zinc-200"}`;
+    `rounded py-1.5 text-xs sm:text-sm flex-1 text-center font-semibold whitespace-nowrap transition-all ${
+      view === v ? "bg-emerald-600 text-white" : "bg-zinc-800/40 text-zinc-400 hover:text-zinc-200"
+    }`;
 
   return (
     <div className="mx-auto max-w-2xl p-4">
-      <div className="mb-4 flex justify-center gap-1">
+      <div className="mb-4 flex w-full justify-between gap-1.5">
         <button onClick={() => setView("liga")} className={tabCls("liga")}>
           Liga
         </button>
