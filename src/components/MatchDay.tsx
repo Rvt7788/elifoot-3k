@@ -751,11 +751,9 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
       <div className="mx-auto max-w-4xl p-4">
         {weekNav(game.week - 1)}
 
-        {/* na copa a lista é única e o jogo do usuário já vem primeiro e destacado:
-            o bloco "SEU JOGO" separado só é necessário na liga */}
-        {userMatch && !lastIsCup && (
+        {/* Confronto do usuário em destaque no topo */}
+        {userMatch && (
           <div className="mb-4">
-            <p className="mb-1 text-xs font-bold text-emerald-500 text-center">⭐ SEU JOGO</p>
             <MatchRow
               onSelectClub={setSelectedClub}
               m={userMatch}
@@ -837,7 +835,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
         </p>
       </div>
 
-      <div className="mb-4 flex flex-col items-center justify-center gap-2">
+      <div className="mb-6 flex flex-col items-center justify-center gap-4">
         <MatchClock
           minute={live[0]?.minute ?? 0}
           paused={paused}
@@ -858,10 +856,9 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
         )}
       </div>
 
-      {/* Destaque: confronto do jogador, sempre no topo (na copa a lista única já o traz primeiro) */}
-      {userMatch && !liveIsCup && (
+      {/* Confronto do usuário em destaque no topo */}
+      {userMatch && (
         <div className="mb-4">
-          <p className="mb-1 text-xs font-bold text-emerald-500 text-center">⭐ SEU JOGO</p>
           <MatchRow
               onSelectClub={setSelectedClub}
             m={userMatch}
@@ -902,7 +899,6 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
                     home={home}
                     away={away}
                     isUser={isUser}
-                    highlight={liveIsCup && isUser}
                     onClick={() => {
                       if (isUser && !m.finished && !game.fired) {
                         openTactics();

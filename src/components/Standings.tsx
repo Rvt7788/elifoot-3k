@@ -367,11 +367,13 @@ export default function Standings({
   onFinishRound?: () => void;
 }) {
   const game = useStore((s) => s.game);
+  const live = useStore((s) => s.live);
   const [selected, setSelected] = useState<Club | null>(null);
   if (!game) return null;
   const userClub = game.clubs.find((c) => c.id === game.userClubId)!;
   const contName = continentalName(userClub.country);
   const nationalCupName = cupName(userClub.country);
+  const liveRunning = live !== null;
 
   // Render all active divisions in the save
   const divisions = Object.keys(game.tables).sort((a, b) => a.localeCompare(b));
@@ -403,7 +405,7 @@ export default function Standings({
   if (view === "rodada") {
     return (
       <>
-        <div className="mx-auto max-w-2xl px-4 pt-4">{tabs}</div>
+        {!liveRunning && <div className="mx-auto max-w-2xl px-4 pt-4">{tabs}</div>}
         <MatchDay onFinishRound={onFinishRound} />
       </>
     );
@@ -411,7 +413,7 @@ export default function Standings({
 
   return (
     <div className="mx-auto max-w-2xl p-4">
-      {tabs}
+      {!liveRunning && tabs}
 
       {view === "liga" ? (
         <>

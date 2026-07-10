@@ -535,11 +535,11 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
                 <div key={i} className="flex items-center gap-1.5 border-b border-[rgba(30,42,56,0.6)] py-1 md:py-1.5 text-xs md:text-sm text-zinc-200">
                   <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${badge}`} />
                   <span className="truncate">
-                    {home.shortName}{" "}
+                    {home.name}{" "}
                     <span className="font-display font-semibold text-zinc-50">
                       {f.homeScore}-{f.awayScore}
                     </span>{" "}
-                    {away.shortName}
+                    {away.name}
                   </span>
                 </div>
               );
