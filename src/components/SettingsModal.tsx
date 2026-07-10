@@ -1,6 +1,7 @@
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useStore } from "../store";
 import { appAlert, appConfirm } from "./AppDialog";
+import { listSlots, saveToSlot, loadFromSlot, deleteSlot, type SlotMeta } from "../game/saveSlots";
 import type { GameState } from "../types";
 
 const SPEEDS = [
@@ -10,10 +11,26 @@ const SPEEDS = [
   { v: 4, label: "4×" },
 ];
 
+function formatDate(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+  } catch {
+    return "—";
+  }
+}
+
 export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const { game, settings, setSettings, loadGame, resetGame } = useStore();
   const fileRef = useRef<HTMLInputElement>(null);
+  const [slots, setSlots] = useState<(SlotMeta | null)[]>(() => listSlots());
 
+  // Refresh slots when modal opens
+  useEffect(() => setSlots(listSlots()), []);
+
+  const refreshSlots = () => setSlots(listSlots());
+
+  /* ── file export/import (unchanged) ── */
   const saveToFile = () => {
     if (!game) return;
     const club = game.clubs.find((c) => c.id === game.userClubId)!;
@@ -38,6 +55,34 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
     });
   };
 
+  /* ── slot actions ── */
+  const handleSaveSlot = async (i: number) => {
+    if (!game) return;
+    if (slots[i]) {
+      const ok = await appConfirm("Sobrescrever save existente?");
+      if (!ok) return;
+    }
+    saveToSlot(i, game);
+    refreshSlots();
+  };
+
+  const handleLoadSlot = async (i: number) => {
+    const ok = await appConfirm("Carregar este save? O progresso atual não salvo será perdido.");
+    if (!ok) return;
+    const g = loadFromSlot(i);
+    if (!g) { appAlert("Save corrompido ou vazio."); return; }
+    loadGame(g);
+    onClose();
+  };
+
+  const handleDeleteSlot = async (i: number) => {
+    const ok = await appConfirm(`Apagar o save do Slot ${i + 1}?`);
+    if (!ok) return;
+    deleteSlot(i);
+    refreshSlots();
+  };
+
+  /* ── Toggle sub-component ── */
   const Toggle = ({
     label, value, onChange,
   }: { label: string; value: boolean; onChange: (v: boolean) => void }) => (
@@ -57,7 +102,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
       <div
-        className="w-full max-w-sm rounded-xl border border-zinc-700 bg-zinc-900 p-5"
+        className="w-full max-w-sm max-h-[85vh] overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -65,6 +110,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
           <button onClick={onClose} className="text-zinc-400 hover:text-white">✕</button>
         </div>
 
+        {/* ── Speed ── */}
         <p className="mb-1 text-xs text-zinc-500">VELOCIDADE DOS JOGOS</p>
         <div className="mb-4 flex gap-2">
           {SPEEDS.map((s) => (
@@ -80,6 +126,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
           ))}
         </div>
 
+        {/* ── Sound ── */}
         <p className="mb-1 text-xs text-zinc-500">ALERTAS SONOROS</p>
         <div className="mb-4 flex flex-col gap-2">
           <Toggle
@@ -94,7 +141,69 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
           />
         </div>
 
-        <p className="mb-1 text-xs text-zinc-500">PARTIDA SALVA</p>
+        {/* ── Save Slots ── */}
+        <p className="mb-1 text-xs text-zinc-500">SLOTS DE SAVE</p>
+        <div className="mb-4 flex flex-col gap-1">
+          {slots.map((meta, i) => {
+            if (!meta) {
+              const firstEmpty = slots.findIndex((s) => s === null);
+              if (i !== firstEmpty) return null;
+            }
+            return (
+            <div
+              key={i}
+              className="flex items-center gap-2 rounded border border-zinc-300 bg-zinc-100 px-3 py-2 text-sm text-zinc-800"
+            >
+              <div className="flex-1 min-w-0">
+                {meta ? (
+                  <p className="truncate">
+                    <span className="font-bold text-zinc-600">{i + 1}.</span>{" "}
+                    {meta.clubName}{" "}
+                    <span className="text-zinc-500">— Ano {meta.season} — {formatDate(meta.savedAt)}</span>
+                  </p>
+                ) : (
+                  <p>
+                    <span className="font-bold">{i + 1}.</span> vazio
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-1 shrink-0">
+                {game && (
+                  <button
+                    onClick={() => handleSaveSlot(i)}
+                    className="rounded bg-emerald-700 px-2 py-1 text-xs text-white hover:bg-emerald-600"
+                    title="Salvar"
+                  >
+                    💾
+                  </button>
+                )}
+                {meta && (
+                  <>
+                    <button
+                      onClick={() => handleLoadSlot(i)}
+                      className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-500"
+                      title="Carregar"
+                    >
+                      📂
+                    </button>
+                    <button
+                      onClick={() => handleDeleteSlot(i)}
+                      className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-500"
+                      title="Apagar"
+                    >
+                      🗑
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+          })}
+        </div>
+
+        {/* ── File export/import ── */}
+        <p className="mb-1 text-xs text-zinc-500">ARQUIVO EXTERNO</p>
         <div className="flex flex-col gap-2">
           <button
             onClick={saveToFile}

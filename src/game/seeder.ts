@@ -14,9 +14,9 @@ const MIN_GOALKEEPERS = 3;
 const MIN_LINE_PLAYERS_BY_POS = 5;
 const LINE_POSITIONS: Position[] = ["DEF", "MEI", "ATA"];
 
-// Cada elenco nasce com profundidade mínima nas posições de linha. Isso impede
-// saves em que uma formação válida fica impossível por falta de defensores,
-// meias ou atacantes disponíveis no clube.
+// Cada elenco nasce com profundidade minima nas posicoes de linha. Isso impede
+// saves em que uma formacao valida fica impossivel por falta de defensores,
+// meias ou atacantes disponiveis no clube.
 function squadShape(rng: Rng): Position[] {
   const base: Position[] = [
     ...Array.from({ length: MIN_GOALKEEPERS }, () => "GOL" as const),
@@ -79,6 +79,7 @@ export function makePlayer(
   idNum: number,
   young = false,
   realName?: string,
+  realAge?: number,
 ): Player {
   // dispersÃ£o em torno da mÃ©dia do time: a maioria fica perto do nÃ­vel do clube,
   // com cauda para cima (revelaÃ§Ã£o) e para baixo (reserva fraco)
@@ -90,7 +91,7 @@ export function makePlayer(
   // teto de evoluÃ§Ã£o: parte da forÃ§a atual + folga; craque tem mais talento a crescer
   const tierBonus = tier === "craque" ? randInt(rng, 6, 12) : tier === "bom" ? randInt(rng, 3, 7) : randInt(rng, 1, 4);
   const cap = young ? 46 : Math.min(50, Math.max(capFor(tier), strength + tierBonus));
-  const age = young ? 17 : randInt(rng, 18, 34);
+  const age = young ? 17 : realAge ?? randInt(rng, 18, 34);
   const traits: Trait[] = chance(rng, tier === "bagre" ? 0.25 : 0.7)
     ? [pick(rng, TRAITS_BY_POS[pos])]
     : [];
@@ -173,8 +174,12 @@ export function newGame(seed: number, userClubId: string): GameState {
     const clubSquad: Player[] = [];
     squadShape(rng).forEach((pos) => {
       const names = roster?.[pos];
-      const realName = names && used[pos] < names.length ? names[used[pos]++] : undefined;
-      const p = makePlayer(rng, club.id, club.country, pos, target, ++n, false, realName);
+      // formato "Nome:idade": a idade real (quando pesquisada) substitui o sorteio
+      const raw = names && used[pos] < names.length ? names[used[pos]++] : undefined;
+      const m = raw?.match(/^(.*):(\d{2})$/);
+      const realName = m ? m[1] : raw;
+      const realAge = m ? parseInt(m[2], 10) : undefined;
+      const p = makePlayer(rng, club.id, club.country, pos, target, ++n, false, realName, realAge);
       clubSquad.push(p);
       players.push(p);
     });

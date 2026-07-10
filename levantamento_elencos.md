@@ -10,143 +10,143 @@ Este arquivo reúne todos os clubes (jogáveis e convidados das copas continenta
 
 - [x] **Athletico Paranaense** (CAP)
   - *Jogadores pesquisados (10):*
-    - **GOL:** Léo Linck
-    - **DEF:** Thiago Heleno, Kaique Rocha, Esquivel
-    - **MEI:** Fernandinho, Erick, Zapelli
-    - **ATA:** Mastriani, Pablo, Canobbio
+    - **GOL:** Léo Linck:23
+    - **DEF:** Thiago Heleno:37, Kaique Rocha:24, Esquivel:25
+    - **MEI:** Fernandinho:40, Erick:28, Zapelli:23
+    - **ATA:** Mastriani:32, Pablo:33, Canobbio:26
 
 - [x] **Atlético Mineiro** (CAM)
   - *Jogadores pesquisados (16):*
-    - **GOL:** Everson
-    - **DEF:** Junior Alonso, Battaglia, Lyanco, Saravia, Guilherme Arana
-    - **MEI:** Otávio, Alan Franco, Fausto Vera, Zaracho, Gustavo Scarpa, Bernard
-    - **ATA:** Hulk, Paulinho, Deyverson, Eduardo Vargas
+    - **GOL:** Everson:35
+    - **DEF:** Junior Alonso:32, Battaglia:34, Lyanco:28, Saravia:32, Guilherme Arana:28
+    - **MEI:** Otávio:30, Alan Franco:29, Fausto Vera:25, Zaracho:27, Gustavo Scarpa:31, Bernard:33
+    - **ATA:** Hulk:39, Paulinho:25, Deyverson:34, Eduardo Vargas:35
 
 - [x] **Bahia** (BAH)
   - *Jogadores pesquisados (13):*
-    - **GOL:** Marcos Felipe
-    - **DEF:** Gabriel Xavier, Kanu, Santiago Arias, Luciano Juba
-    - **MEI:** Caio Alexandre, Jean Lucas, Everton Ribeiro, Cauly, Thaciano
-    - **ATA:** Everaldo, Lucho Rodríguez, Biel
+    - **GOL:** Marcos Felipe:29
+    - **DEF:** Gabriel Xavier:32, Kanu:28, Santiago Arias:33, Luciano Juba:26
+    - **MEI:** Caio Alexandre:26, Jean Lucas:27, Everton Ribeiro:36, Cauly:30, Thaciano:30
+    - **ATA:** Everaldo:34, Lucho Rodríguez:25, Biel:27
 
 - [x] **Botafogo** (BOT)
   - *Jogadores pesquisados (18):*
-    - **GOL:** John, Gatito Fernández
-    - **DEF:** Bastos, Alexander Barboza, Adryelson, Vitinho, Cuiabano, Marçal
-    - **MEI:** Marlon Freitas, Gregore, Danilo Barbosa, Thiago Almada, Eduardo
-    - **ATA:** Luiz Henrique, Igor Jesus, Júnior Santos, Tiquinho Soares, Matheus Martins
+    - **GOL:** John:29, Gatito Fernández:37
+    - **DEF:** Bastos:34, Alexander Barboza:30, Adryelson:27, Vitinho:26, Cuiabano:22, Marçal:36
+    - **MEI:** Marlon Freitas:30, Gregore:31, Danilo Barbosa:29, Thiago Almada:24, Eduardo:29
+    - **ATA:** Luiz Henrique:24, Igor Jesus:24, Júnior Santos:31, Tiquinho Soares:34, Matheus Martins:22
 
 - [x] **Corinthians** (COR)
   - *Jogadores pesquisados (15):*
-    - **GOL:** Hugo Souza
-    - **DEF:** André Ramalho, Gustavo Henrique, Cacá, Fagner, Hugo
-    - **MEI:** Raniele, José Martínez, Rodrigo Garro, Igor Coronado, Carrillo
-    - **ATA:** Memphis Depay, Yuri Alberto, Romero, Talles Magno
+    - **GOL:** Hugo Souza:26
+    - **DEF:** André Ramalho:33, Gustavo Henrique:32, Cacá:26, Fagner:36, Hugo:28
+    - **MEI:** Raniele:29, José Martínez:31, Rodrigo Garro:27, Igor Coronado:35, Carrillo:34
+    - **ATA:** Memphis Depay:31, Yuri Alberto:24, Romero:33, Talles Magno:23
 
 - [x] **Criciúma** (CRI)
   - *Jogadores pesquisados (12):*
-    - **GOL:** Bruno Meneghel, Alex Muralha
-    - **DEF:** Marcelo Benevenuto, Rodrigo Soares, Ronei, Zé Marcos
-    - **MEI:** Barreto, Marquinhos Gabriel, Matheusinho, Bolasie
-    - **ATA:** Marcelinho, Fabinho, Ronald
+    - **GOL:** Bruno Meneghel:39, Alex Muralha:36
+    - **DEF:** Marcelo Benevenuto:30, Rodrigo Soares:33, Ronei:28, Zé Marcos:28
+    - **MEI:** Barreto:30, Marquinhos Gabriel:35, Matheusinho:28, Bolasie:36
+    - **ATA:** Marcelinho:23, Fabinho:26, Ronald:29
 
 - [x] **Cruzeiro** (CRU)
   - *Jogadores pesquisados (13):*
-    - **GOL:** Cássio
-    - **DEF:** João Marcelo, Zé Ivaldo, William, Marlon
-    - **MEI:** Lucas Romero, Walace, Matheus Henrique, Matheus Pereira
-    - **ATA:** Lautaro Díaz, Gabriel Veron, Kaio Jorge, Barreal
+    - **GOL:** Cássio:38
+    - **DEF:** João Marcelo:25, Zé Ivaldo:27, William:30, Marlon:30
+    - **MEI:** Lucas Romero:31, Walace:30, Matheus Henrique:27, Matheus Pereira:29
+    - **ATA:** Lautaro Díaz:27, Gabriel Veron:23, Kaio Jorge:23, Barreal:25
 
 - [x] **Cuiabá** (CUI)
   - *Jogadores pesquisados (12):*
-    - **GOL:** Walter, Gabriel Vasconcellos
-    - **DEF:** Alan Empereur, Marllon, João Lucas, Mauricio Lemos
-    - **MEI:** Fernando Sobral, Denilson, Max, Pitta
-    - **ATA:** Isidro Pitta, Deyverson, Rafael Gava
+    - **GOL:** Walter:38, Gabriel Vasconcellos:33
+    - **DEF:** Alan Empereur:31, Marllon:33, João Lucas:27, Mauricio Lemos:29
+    - **MEI:** Fernando Sobral:31, Denilson:25, Max:25, Pitta:26
+    - **ATA:** Isidro Pitta:26, Deyverson:34, Rafael Gava:32
 
 - [x] **Flamengo** (FLA)
   - *Jogadores pesquisados (21):*
-    - **GOL:** Rossi, Matheus Cunha
-    - **DEF:** Léo Pereira, Fabrício Bruno, Léo Ortiz, David Luiz, Ayrton Lucas, Varela, Viña
-    - **MEI:** Gerson, De La Cruz, Arrascaeta, Pulgar, Alcaraz, Allan
-    - **ATA:** Pedro, Gabriel Barbosa, Bruno Henrique, Luiz Araújo, Everton Cebolinha, Gonzalo Plata
+    - **GOL:** Rossi:30, Matheus Cunha:24
+    - **DEF:** Léo Pereira:29, Fabrício Bruno:29, Léo Ortiz:29, David Luiz:38, Ayrton Lucas:28, Varela:32, Viña:26
+    - **MEI:** Gerson:28, De La Cruz:28, Arrascaeta:31, Pulgar:31, Alcaraz:22, Allan:28
+    - **ATA:** Pedro:28, Gabriel Barbosa:29, Bruno Henrique:34, Luiz Araújo:29, Everton Cebolinha:29, Gonzalo Plata:24
 
 - [x] **Fluminense** (FLU)
   - *Jogadores pesquisados (16):*
-    - **GOL:** Fábio
-    - **DEF:** Thiago Silva, Thiago Santos, Samuel Xavier, Marcelo, Diogo Barbosa
-    - **MEI:** Martinelli, Bernal, Ganso, Renato Augusto, Lima
-    - **ATA:** Jhon Arias, Keno, Kauã Elias, Germán Cano, Serna
+    - **GOL:** Fábio:45
+    - **DEF:** Thiago Silva:41, Thiago Santos:36, Samuel Xavier:35, Marcelo:37, Diogo Barbosa:33
+    - **MEI:** Martinelli:24, Bernal:22, Ganso:35, Renato Augusto:37, Lima:29
+    - **ATA:** Jhon Arias:28, Keno:36, Kauã Elias:19, Germán Cano:37, Serna:27
 
 - [x] **Fortaleza** (FOR)
   - *Jogadores pesquisados (12):*
-    - **GOL:** João Ricardo
-    - **DEF:** Brítez, Kuscevic, Tinga, Bruno Pacheco
-    - **MEI:** Hércules, Pochettino, Lucas Sasha
-    - **ATA:** Lucero, Yago Pikachu, Moisés, Breno Lopes
+    - **GOL:** João Ricardo:37
+    - **DEF:** Brítez:32, Kuscevic:29, Tinga:32, Bruno Pacheco:34
+    - **MEI:** Hércules:25, Pochettino:30, Lucas Sasha:35
+    - **ATA:** Lucero:34, Yago Pikachu:33, Moisés:30, Breno Lopes:29
 
 - [x] **Grêmio** (GRE)
   - *Jogadores pesquisados (15):*
-    - **GOL:** Marchesín
-    - **DEF:** Jemerson, Rodrigo Ely, Kannemann, João Pedro, Reinaldo
-    - **MEI:** Villasanti, Dodi, Pepê, Cristaldo, Monsalve
-    - **ATA:** Soteldo, Pavón, Braithwaite, Diego Costa
+    - **GOL:** Marchesín:37
+    - **DEF:** Jemerson:33, Rodrigo Ely:31, Kannemann:34, João Pedro:29, Reinaldo:36
+    - **MEI:** Villasanti:28, Dodi:29, Pepê:28, Cristaldo:29, Monsalve:22
+    - **ATA:** Soteldo:28, Pavón:29, Braithwaite:34, Diego Costa:37
 
 - [x] **Internacional** (INT)
   - *Jogadores pesquisados (14):*
-    - **GOL:** Rochet
-    - **DEF:** Vitão, Mercado, Bustos, Bernabei
-    - **MEI:** Thiago Maia, Bruno Henrique, Fernando, Alan Patrick, Gabriel Carvalho
-    - **ATA:** Enner Valencia, Rafael Borré, Wesley, Wanderson
+    - **GOL:** Rochet:32
+    - **DEF:** Vitão:25, Mercado:38, Bustos:29, Bernabei:25
+    - **MEI:** Thiago Maia:28, Bruno Henrique:35, Fernando:38, Alan Patrick:34, Gabriel Carvalho:18
+    - **ATA:** Enner Valencia:35, Rafael Borré:30, Wesley:26, Wanderson:31
 
 - [x] **Juventude** (JUV)
   - *Jogadores pesquisados (12):*
-    - **GOL:** Gabriel Vasconcelos, Douglas Friedrich
-    - **DEF:** Rafael Forster, Alan Ruschel, Reynaldo, Danny Morais
-    - **MEI:** Jadson, Jean Irmer, Gilberto, Marcelo Hermes
-    - **ATA:** Ronaldo Henrique, Erick Farias, Chico
+    - **GOL:** Gabriel Vasconcelos:33, Douglas Friedrich:37
+    - **DEF:** Rafael Forster:35, Alan Ruschel:36, Reynaldo:29, Danny Morais:41
+    - **MEI:** Jadson:32, Jean Irmer:31, Gilberto:37, Marcelo Hermes:30
+    - **ATA:** Ronaldo Henrique:32, Erick Farias:29, Chico:35
 
 - [x] **Palmeiras** (PAL)
   - *Jogadores pesquisados (20):*
-    - **GOL:** Weverton, Marcelo Lomba
-    - **DEF:** Gustavo Gómez, Murilo, Vitor Reis, Marcos Rocha, Mayke, Piquerez, Caio Paulista
-    - **MEI:** Aníbal Moreno, Zé Rafael, Richard Ríos, Raphael Veiga, Maurício, Gabriel Menino
-    - **ATA:** Estêvão, Felipe Anderson, Flaco López, Rony, Dudu
+    - **GOL:** Weverton:37, Marcelo Lomba:38
+    - **DEF:** Gustavo Gómez:32, Murilo:28, Vitor Reis:19, Marcos Rocha:36, Mayke:32, Piquerez:27, Caio Paulista:27
+    - **MEI:** Aníbal Moreno:26, Zé Rafael:32, Richard Ríos:25, Raphael Veiga:30, Maurício:24, Gabriel Menino:25
+    - **ATA:** Estêvão:18, Felipe Anderson:32, Flaco López:24, Rony:30, Dudu:33
 
 - [x] **Red Bull Bragantino** (RBB)
   - *Jogadores pesquisados (13):*
-    - **GOL:** Cleiton
-    - **DEF:** Léo Ortiz, Lucas Cunha, Fabinho, Andrés Hurtado, Natan
-    - **MEI:** Raul, Eric Ramires, Sasha, Praxedes
-    - **ATA:** Nacho Laquintana, Vitinho, Thaciano
+    - **GOL:** Cleiton:28
+    - **DEF:** Léo Ortiz:29, Lucas Cunha:24, Fabinho:24, Andrés Hurtado:23, Natan:24
+    - **MEI:** Raul:29, Eric Ramires:24, Sasha:33, Praxedes:23
+    - **ATA:** Nacho Laquintana:26, Vitinho:27, Thaciano:30
 
 - [x] **Santos** (SAN)
   - *Jogadores pesquisados (13):*
-    - **GOL:** João Paulo, Gabriel Brazão
-    - **DEF:** Gil, Jair Cunha, Luan Peres, Escobar
-    - **MEI:** João Schmidt, Diego Pituca, Giuliano, Otero
-    - **ATA:** Guilherme, Julio Furch, Willian Bigode
+    - **GOL:** João Paulo:30, Gabriel Brazão:25
+    - **DEF:** Gil:38, Jair Cunha:20, Luan Peres:31, Escobar:28
+    - **MEI:** João Schmidt:32, Diego Pituca:33, Giuliano:35, Otero:32
+    - **ATA:** Guilherme:30, Julio Furch:36, Willian Bigode:37
 
 - [x] **São Paulo** (SAO)
   - *Jogadores pesquisados (16):*
-    - **GOL:** Rafael
-    - **DEF:** Arboleda, Alan Franco, Igor Vinícius, Rafinha, Welington
-    - **MEI:** Luiz Gustavo, Bobadilla, Alisson, Pablo Maia, Nestor, Lucas Moura
-    - **ATA:** Calleri, Luciano, Ferreirinha, André Silva
+    - **GOL:** Rafael:36
+    - **DEF:** Arboleda:34, Alan Franco:29, Igor Vinícius:28, Rafinha:40, Welington:24
+    - **MEI:** Luiz Gustavo:38, Bobadilla:23, Alisson:32, Pablo Maia:23, Nestor:25, Lucas Moura:33
+    - **ATA:** Calleri:32, Luciano:32, Ferreirinha:27, André Silva:28
 
 - [x] **Vasco** (VAS)
   - *Jogadores pesquisados (13):*
-    - **GOL:** Léo Jardim
-    - **DEF:** Maicon, João Victor, Lucas Piton
-    - **MEI:** Hugo Moura, Mateus Carvalho, Sforza, Payet, Coutinho
-    - **ATA:** Vegetti, David, Adson, Rayan
+    - **GOL:** Léo Jardim:30
+    - **DEF:** Maicon:37, João Victor:27, Lucas Piton:25
+    - **MEI:** Hugo Moura:27, Mateus Carvalho:23, Sforza:23, Payet:38, Coutinho:33
+    - **ATA:** Vegetti:36, David:30, Adson:25, Rayan:19
 
 - [x] **Vitória** (VIT)
   - *Jogadores pesquisados (12):*
-    - **GOL:** Lucas Arcanjo, Léo Linck
-    - **DEF:** Camutanga, Wagner Leonardo, Reynaldo, Alisson Farias
-    - **MEI:** Willian Oliveira, Rodrigo Andrade, Baralhas, Matheusinho
-    - **ATA:** Osvaldo, Janderson, Iury Castilho
+    - **GOL:** Lucas Arcanjo:26, Léo Linck:23
+    - **DEF:** Camutanga:32, Wagner Leonardo:26, Reynaldo:29, Alisson Farias:30
+    - **MEI:** Willian Oliveira:33, Rodrigo Andrade:29, Baralhas:27, Matheusinho:28
+    - **ATA:** Osvaldo:38, Janderson:26, Iury Castilho:30
 
 
 ### Série B
