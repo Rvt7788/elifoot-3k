@@ -40,3 +40,18 @@ export function formatMatchDateFull(season: number, week: number): string {
   const d = weekDate(season, week);
   return `${DIAS[d.getDay()]}, ${d.getDate()} ${MESES[d.getMonth()]} ${d.getFullYear()}`;
 }
+
+const DIAS_FULL = [
+  "Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira",
+  "Quinta-feira", "Sexta-feira", "Sábado"
+];
+
+const MESES_FULL = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+];
+
+export function formatMatchDateLong(season: number, week: number): string {
+  const d = weekDate(season, week);
+  return `${DIAS_FULL[d.getDay()]}, ${d.getDate()} de ${MESES_FULL[d.getMonth()]} de ${d.getFullYear()}`;
+}

@@ -156,10 +156,16 @@ export default function TacticsBoard() {
 
   // suspensão é por competição: descobre se o próximo jogo do usuário é copa ou liga
   const nextWeek = nextPlayableWeek(game);
-  // copa e continental compartilham o regime de suspensões de mata-mata
-  const nextCompetition = nextWeek !== null && weekInfo(nextWeek).type !== "league" ? "cup" : "league";
-  const isSuspendedNext = (p: Player) =>
-    nextCompetition === "cup" ? p.suspendedCup : p.suspendedLeague;
+  const nextInfo = nextWeek !== null ? weekInfo(nextWeek) : null;
+  const nextCompetition = !nextInfo ? "league"
+    : nextInfo.type === "league" ? "league"
+    : (nextInfo.type === "continental" || nextInfo.type === "contgroup") ? "continental"
+    : "cup";
+  const isSuspendedNext = (p: Player) => {
+    if (nextCompetition === "league") return p.suspendedLeague;
+    if (nextCompetition === "cup") return p.suspendedCup;
+    return p.suspendedContinental ?? false;
+  };
 
   const squad = game.players.filter((p) => p.clubId === game.userClubId);
   const userClub = game.clubs.find((c) => c.id === game.userClubId)!;

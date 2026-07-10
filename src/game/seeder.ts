@@ -162,8 +162,12 @@ export function makePlayer(
     assists: 0,
     yellows: 0,
     reds: 0,
+    yellowsLeague: 0,
+    yellowsCup: 0,
+    yellowsContinental: 0,
     suspendedLeague: false,
     suspendedCup: false,
+    suspendedContinental: false,
     value: 0,
     xp: 0,
     gained: 0,
@@ -449,7 +453,17 @@ export function processSeasonTransitions(
         ...p,
         age: nextAge,
         gained: 0,
-        energy: 100
+        energy: 100,
+        goals: 0,
+        assists: 0,
+        yellows: 0,
+        reds: 0,
+        yellowsLeague: 0,
+        yellowsCup: 0,
+        yellowsContinental: 0,
+        suspendedLeague: false,
+        suspendedCup: false,
+        suspendedContinental: false
       });
     }
   }

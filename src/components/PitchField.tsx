@@ -34,15 +34,18 @@ export function pitchLayout(
 }
 
 export function PlayerPin({
-  p, x, y, selected, dim, energyOverride, colors, compact, onClick,
+  p, x, y, selected, energyOverride, colors, compact, yellowsMatch, goalsMatch, onClick,
 }: {
-  p: Player; x: number; y: number; selected: boolean; dim?: boolean;
+  p: Player; x: number; y: number; selected: boolean;
   energyOverride?: number; // energia ao vivo (LivePlayer), quando diferente da persistida
   colors?: { bg: string; border: string }; // camisa do clube (prancheta de tática)
   compact?: boolean; // prancheta pré-jogo: só a bolinha com a força, sem nome/energia (visual, não informativo)
+  yellowsMatch?: number;
+  goalsMatch?: number;
   onClick: () => void;
 }) {
   const energy = energyOverride ?? p.energy;
+  const pinColors = colors ?? { bg: "#27272a", border: "#3f3f46" };
   return (
     <button
       onClick={onClick}
@@ -50,24 +53,28 @@ export function PlayerPin({
       className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
       title={`${p.name} · Energia: ${Math.round(energy)}% · Pé ${p.foot}`}
     >
-      <span
-        style={
-          dim
-            ? undefined
-            : colors
-              ? { background: colors.bg, borderColor: colors.border }
-              : { background: energyStepColors(energy).bg, borderColor: energyStepColors(energy).border }
-        }
-        className={`flex items-center justify-center rounded-full border font-bold shadow ${
-          compact ? "h-4 w-4 text-[8px]" : "h-5 w-5 text-[9px]"
-        } ${
-          selected ? "ring-2 ring-sky-400 ring-offset-1 ring-offset-emerald-950" : ""
-        } ${
-          dim ? "border-red-400/70 bg-red-900/60 text-red-200" : "text-white"
-        }`}
-      >
-        {compact ? p.number : p.strength}
-      </span>
+      <div className="relative">
+        <span
+          style={{ background: pinColors.bg, borderColor: pinColors.border }}
+          className={`flex items-center justify-center rounded-full border border-zinc-950/65 font-bold shadow text-white ${
+            compact ? "h-4 w-4 text-[8px]" : "h-5 w-5 text-[9px]"
+          } ${
+            selected ? "ring-2 ring-sky-400 ring-offset-1 ring-offset-emerald-950" : ""
+          }`}
+        >
+          {compact ? p.number : p.strength}
+        </span>
+        {!compact && yellowsMatch !== undefined && yellowsMatch > 0 && (
+          <span className="absolute -right-1 -top-1 flex gap-0.5 text-[8px] leading-none">
+            {"🟨".repeat(yellowsMatch)}
+          </span>
+        )}
+        {!compact && goalsMatch !== undefined && goalsMatch > 0 && (
+          <span className="absolute -left-1.5 -top-1 text-[8px] leading-none" title={`${goalsMatch} gol(s)`}>
+            ⚽
+          </span>
+        )}
+      </div>
       {!compact && (
         <>
           <span className="mt-0.5 max-w-[44px] truncate rounded bg-black/60 px-1 text-[8px] leading-tight text-white">

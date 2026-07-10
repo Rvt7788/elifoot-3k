@@ -32,8 +32,12 @@ export interface Player {
   assists: number;
   yellows: number;
   reds: number;
+  yellowsLeague: number;
+  yellowsCup: number;
+  yellowsContinental: number;
   suspendedLeague: boolean; // recebeu vermelho na liga: fora da próxima partida da liga
   suspendedCup: boolean; // recebeu vermelho na copa: fora da próxima partida da copa
+  suspendedContinental: boolean; // recebeu vermelho na continental: fora da próxima partida da continental
   value: number;
   xp: number; // progresso de treino rumo ao próximo ponto de força
   gained: number; // pontos de força ganhos na temporada (para exibir evolução)
@@ -99,6 +103,8 @@ export interface LivePlayer {
   sentOff: boolean;
   subbedOut: boolean;
   subbedIn?: boolean; // entrou durante o jogo (para o ícone 🔄 nas listas)
+  posOverride?: Position; // reposicionamento tático temporário na partida (ex: após vermelho)
+  slotIdx?: number; // índice do slot específico na prancheta
   onField: boolean;
 }
 
@@ -114,7 +120,7 @@ export interface SideMatchStats {
 }
 
 export interface LiveMatch {
-  competition: "league" | "cup"; // suspensão por cartão vale só na mesma competição
+  competition: "league" | "cup" | "continental"; // suspensão por cartão vale só na mesma competição
   homeId: string;
   awayId: string;
   minute: number;

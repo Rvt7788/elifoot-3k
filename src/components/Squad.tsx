@@ -70,6 +70,11 @@ export default function Squad() {
                     🟥 susp. copa
                   </span>
                 )}
+                {p.suspendedContinental && (
+                  <span className="ml-1 rounded bg-red-950 px-1 text-[10px] text-red-400" title="Suspenso na continental: cumpre 1 partida fora">
+                    🟥 susp. cont
+                  </span>
+                )}
               </td>
               <td className="text-center">{p.age}</td>
               <td className="text-center font-bold">{p.strength}</td>

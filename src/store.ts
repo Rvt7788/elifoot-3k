@@ -392,8 +392,9 @@ export const useStore = create<Store>()(
           return div === userClub.division ? 0 : 1;
         };
         const sorted = [...pairs].sort((a, b) => divOrder(a) - divOrder(b));
-        // continental usa o mesmo regime de suspensões da copa (competição mata-mata)
-        const matchCompetition = info.type === "league" ? "league" : "cup";
+        const matchCompetition = info.type === "league" ? "league"
+          : (info.type === "continental" || info.type === "contgroup") ? "continental"
+          : "cup";
         // técnico demitido não comanda: o ex-clube entra em campo escalado pela IA
         const isUserTeam = (id: string) => id === g!.userClubId && !g!.fired;
         const live = sorted.map((f) =>
@@ -774,11 +775,18 @@ export const useStore = create<Store>()(
             if (lp.onField || lp.subbedOut || lp.sentOff) enteredField.add(lp.playerId);
           }
         // quem estava suspenso NESTA competição cumpriu a pena na rodada (ficou de
-        // fora do XI): libera só o campo da competição que acabou de rolar. Vermelho
-        // levado na liga não afeta a copa, e vice-versa.
+        // fora do XI): libera só o campo da competição que acabou de rolar.
+        const isLeague = info.type === "league";
+        const isCupNac = info.type === "cup";
+        const isCont = info.type === "continental" || info.type === "contgroup";
+
         const suspendedIds = new Set(
           game.players
-            .filter((p) => (isCup ? p.suspendedCup : p.suspendedLeague))
+            .filter((p) => (
+              isLeague ? p.suspendedLeague :
+              isCupNac ? p.suspendedCup :
+              p.suspendedContinental
+            ))
             .map((p) => p.id),
         );
         const players = game.players.map((p) => {
@@ -790,8 +798,9 @@ export const useStore = create<Store>()(
           const next = {
             ...p,
             energy: Math.min(100, Math.round(recovered)),
-            suspendedLeague: !isCup && suspendedIds.has(p.id) ? false : p.suspendedLeague,
-            suspendedCup: isCup && suspendedIds.has(p.id) ? false : p.suspendedCup,
+            suspendedLeague: isLeague && suspendedIds.has(p.id) ? false : p.suspendedLeague,
+            suspendedCup: isCupNac && suspendedIds.has(p.id) ? false : p.suspendedCup,
+            suspendedContinental: isCont && suspendedIds.has(p.id) ? false : p.suspendedContinental,
           };
           // evolução semanal: jogar rende muito mais XP; reservas evoluem só pelo treino
           applyWeeklyGain(next, enteredField.has(p.id), intensity);

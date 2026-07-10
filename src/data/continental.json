@@ -2,9 +2,9 @@
   "_comment": "Clubes do jogo com participação histórica em copa continental. Base do sorteio da Libertadores (BR/AR) e da Champions (EN/ES/DE/FR/PT). Nomes idênticos aos de clubs.json.",
   "libertadores": {
     "BR": [
-      "Flamengo", "Palmeiras", "Botafogo", "Atlético Mineiro", "São Paulo",
+      "Flamengo", "Palmeiras", "Botafogo", "Atlético-MG", "São Paulo",
       "Corinthians", "Bahia", "Fluminense", "Grêmio", "Internacional",
-      "Cruzeiro", "Vasco", "Athletico Paranaense", "Red Bull Bragantino",
+      "Cruzeiro", "Vasco", "Atlético-PR", "RB Bragantino",
       "Fortaleza", "Santos", "Vitória", "Criciúma", "Juventude",
       "Coritiba", "Sport", "Goiás", "América-MG", "Chapecoense",
       "Paysandu", "Guarani"

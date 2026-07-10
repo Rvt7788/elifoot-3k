@@ -63,15 +63,17 @@ export function effectiveStrength(p: Player): number {
 
 // Suspensão vale só na mesma competição: vermelho na liga não tira o jogador
 // da copa, e vice-versa.
-function isSuspended(p: Player, competition: "league" | "cup"): boolean {
-  return competition === "league" ? p.suspendedLeague : p.suspendedCup;
+function isSuspended(p: Player, competition: "league" | "cup" | "continental"): boolean {
+  if (competition === "league") return p.suspendedLeague;
+  if (competition === "cup") return p.suspendedCup;
+  return p.suspendedContinental ?? false;
 }
 
 // Melhor XI por posição, respeitando a formação (1 GOL + DEF/MEI/ATA da formação).
 // byEnergy=false ordena só pela força nominal (ignora cansaço); byEnergy=true usa a
 // força efetiva em campo, considerando o corte de energia do motor de simulação.
 export function bestXI(
-  squad: Player[], formation: Formation = "4-4-2", byEnergy = false, competition: "league" | "cup" = "league",
+  squad: Player[], formation: Formation = "4-4-2", byEnergy = false, competition: "league" | "cup" | "continental" = "league",
   custom?: CustomFormation,
 ): string[] {
   const shape = shapeOf(formation, custom);
@@ -137,7 +139,7 @@ function arrangeLine(players: Player[]): Player[] {
 // por força, mas cada linha é ordenada por pé/característica (canhoto à esquerda etc.).
 // Retorna os titulares e a disposição esquerda→direita (slotOrder) para a prancheta.
 export function bestXIByPosition(
-  squad: Player[], formation: Formation = "4-4-2", competition: "league" | "cup" = "league",
+  squad: Player[], formation: Formation = "4-4-2", competition: "league" | "cup" | "continental" = "league",
   custom?: CustomFormation,
 ): { starters: string[]; slotOrder: string[] } {
   const ids = bestXI(squad, formation, false, competition, custom);
@@ -151,7 +153,7 @@ export function bestXIByPosition(
 export function pickLineup(
   squad: Player[],
   starterIds?: string[],
-  competition: "league" | "cup" = "league",
+  competition: "league" | "cup" | "continental" = "league",
   formation: Formation = "4-4-2",
   custom?: CustomFormation,
 ): LivePlayer[] {
@@ -201,7 +203,7 @@ export function createLiveMatch(
   awayAggression = 0.5,
   homeSlotOrder?: string[],
   awaySlotOrder?: string[],
-  competition: "league" | "cup" = "league",
+  competition: "league" | "cup" | "continental" = "league",
   homeFormation: Formation = "4-4-2",
   awayFormation: Formation = "4-4-2",
   homeCustomFormation?: CustomFormation,
@@ -263,8 +265,11 @@ function orderedLine(
   lineup: LivePlayer[], idx: PlayersIndex, pos: Player["pos"], slotOrder?: string[],
 ): LivePlayer[] {
   const onField = lineup.filter(
-    (lp) => lp.onField && !lp.sentOff && idx[lp.playerId].pos === pos,
+    (lp) => lp.onField && !lp.sentOff && (lp.posOverride ?? idx[lp.playerId].pos) === pos,
   );
+  if (onField.some((lp) => lp.slotIdx !== undefined)) {
+    return [...onField].sort((a, b) => (a.slotIdx ?? 0) - (b.slotIdx ?? 0));
+  }
   if (slotOrder && slotOrder.length) {
     const rank = (id: string) => {
       const i = slotOrder.indexOf(id);
@@ -331,11 +336,14 @@ function bestOnField(
   lineup: LivePlayer[], idx: PlayersIndex, pos: Player["pos"],
 ): Player | null {
   const cands = lineup.filter(
-    (lp) => lp.onField && !lp.sentOff && idx[lp.playerId].pos === pos,
+    (lp) => lp.onField && !lp.sentOff && (lp.posOverride ?? idx[lp.playerId].pos) === pos,
   );
   if (cands.length === 0) return null;
   return cands
-    .map((lp) => idx[lp.playerId])
+    .map((lp) => ({
+      ...idx[lp.playerId],
+      pos: lp.posOverride ?? idx[lp.playerId].pos,
+    }))
     .sort((a, b) => b.strength - a.strength)[0];
 }
 
@@ -362,7 +370,12 @@ const MENTALITY_SHOT_TILT: Record<Mentality, Partial<Record<Position, number>>> 
 function pickStriker(
   rng: Rng, lineup: LivePlayer[], idx: PlayersIndex, mentality: Mentality,
 ): Player | null {
-  const onField = lineup.filter((lp) => lp.onField && !lp.sentOff).map((lp) => idx[lp.playerId]);
+  const onField = lineup
+    .filter((lp) => lp.onField && !lp.sentOff)
+    .map((lp) => ({
+      ...idx[lp.playerId],
+      pos: lp.posOverride ?? idx[lp.playerId].pos,
+    }));
   if (onField.length === 0) return null;
 
   const countBySector: Partial<Record<Position, number>> = {};
@@ -418,7 +431,7 @@ function tryShot(
         (lp) =>
           lp.onField && !lp.sentOff &&
           idx[lp.playerId].id !== striker.id &&
-          (idx[lp.playerId].pos === "MEI" || idx[lp.playerId].pos === "ATA"),
+          ((lp.posOverride ?? idx[lp.playerId].pos) === "MEI" || (lp.posOverride ?? idx[lp.playerId].pos) === "ATA"),
       );
       if (mates.length > 0) idx[pick(rng, mates).playerId].assists++;
     }
@@ -440,6 +453,7 @@ function tryShot(
 function sendOff(m: LiveMatch, side: "home" | "away", player: Player, lp: LivePlayer) {
   player.reds++;
   if (m.competition === "cup") player.suspendedCup = true;
+  else if (m.competition === "continental") player.suspendedContinental = true;
   else player.suspendedLeague = true;
   lp.sentOff = true;
   m.events.push({ minute: m.minute, type: "red", side, playerName: player.name });
@@ -465,6 +479,24 @@ function tryCards(rng: Rng, m: LiveMatch, idx: PlayersIndex, side: "home" | "awa
   player.yellows++;
   lp.yellowsMatch++;
   m.events.push({ minute: m.minute, type: "yellow", side, playerName: player.name });
+
+  if (m.competition === "cup") {
+    player.yellowsCup = (player.yellowsCup ?? 0) + 1;
+    if (player.yellowsCup % 3 === 0) {
+      player.suspendedCup = true;
+    }
+  } else if (m.competition === "continental") {
+    player.yellowsContinental = (player.yellowsContinental ?? 0) + 1;
+    if (player.yellowsContinental % 3 === 0) {
+      player.suspendedContinental = true;
+    }
+  } else {
+    player.yellowsLeague = (player.yellowsLeague ?? 0) + 1;
+    if (player.yellowsLeague % 3 === 0) {
+      player.suspendedLeague = true;
+    }
+  }
+
   if (lp.yellowsMatch >= 2) {
     // 2º amarelo na mesma partida: vermelho automático
     sendOff(m, side, player, lp);
@@ -482,7 +514,7 @@ function goalkeeperRuleOk(
   if (outPos === "GOL" && inPos !== "GOL") return false; // ficaria sem goleiro
   if (outPos !== "GOL" && inPos === "GOL") {
     const hasKeeperOnField = lineup.some(
-      (l) => l.onField && !l.sentOff && idx[l.playerId].pos === "GOL",
+      (l) => l.onField && !l.sentOff && (l.posOverride ?? idx[l.playerId].pos) === "GOL",
     );
     return !hasKeeperOnField; // só permite se o time está sem goleiro em campo
   }
@@ -499,7 +531,9 @@ export function makeSub(
   const out = lineup.find((l) => l.playerId === outId);
   const inn = lineup.find((l) => l.playerId === inId);
   if (!out?.onField || !inn || inn.onField || inn.subbedOut || inn.sentOff) return false;
-  if (!goalkeeperRuleOk(lineup, idx, idx[outId].pos, idx[inId].pos)) return false;
+  const outPos = out.posOverride ?? idx[outId].pos;
+  const inPos = inn.posOverride ?? idx[inId].pos;
+  if (!goalkeeperRuleOk(lineup, idx, outPos, inPos)) return false;
   out.onField = false;
   out.subbedOut = true;
   inn.onField = true;

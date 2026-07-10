@@ -5,17 +5,78 @@ import TacticsModal from "./TacticsModal";
 import { playGoal, playGoalConceded, playRed } from "../game/sound";
 import { distinctPair } from "../game/color";
 import { weekInfo, tiesForLeg, groupFixturesForMatchday, CUP_STAGE_NAMES, CONT_STAGE_NAMES } from "../game/cup";
+import { formatMatchDateLong } from "../game/calendar";
 
-// Título da semana: rodada da liga, fase da copa ou da continental (ida/volta)
-function weekLabel(week: number): string {
+const ORDINAL_ROUNDS = [
+  "",
+  "Primeira Rodada",
+  "Segunda Rodada",
+  "Terceira Rodada",
+  "Quarta Rodada",
+  "Quinta Rodada",
+  "Sexta Rodada",
+  "Sétima Rodada",
+  "Oitava Rodada",
+  "Nona Rodada",
+  "Décima Rodada",
+  "Décima Primeira Rodada",
+  "Décima Segunda Rodada",
+  "Décima Terceira Rodada",
+  "Décima Quarta Rodada",
+  "Décima Quinta Rodada",
+  "Décima Sexta Rodada",
+  "Décima Sétima Rodada",
+  "Décima Oitava Rodada",
+  "Décima Nona Rodada",
+  "Vigésima Rodada",
+  "Vigésima Primeira Rodada",
+  "Vigésima Segunda Rodada",
+  "Vigésima Terceira Rodada",
+  "Vigésima Quarta Rodada",
+  "Vigésima Quinta Rodada",
+  "Vigésima Sexta Rodada",
+  "Vigésima Sétima Rodada",
+  "Vigésima Oitava Rodada",
+  "Vigésima Nona Rodada",
+  "Trigésima Rodada",
+  "Trigésima Primeira Rodada",
+  "Trigésima Segunda Rodada",
+  "Trigésima Terceira Rodada",
+  "Trigésima Quarta Rodada",
+  "Trigésima Quinta Rodada",
+  "Trigésima Sexta Rodada",
+  "Trigésima Sétima Rodada",
+  "Trigésima Oitava Rodada",
+];
+
+// Título da semana: rodada da liga, fase da copa ou da continental (ida/volta) em duas partes (título/data)
+function weekLabelHeader(week: number, season: number): { title: string; subtitle: string } {
   const info = weekInfo(week);
-  if (info.type === "cup")
-    return `🏆 Copa Nacional — ${CUP_STAGE_NAMES[info.stage]} · ${info.leg === 1 ? "ida" : "volta"}`;
-  if (info.type === "contgroup")
-    return `🌎 Continental — Fase de grupos · Rodada ${info.matchday + 1}`;
-  if (info.type === "continental")
-    return `🌎 Continental — ${CONT_STAGE_NAMES[info.stage]} · ${info.leg === 1 ? "ida" : "volta"}`;
-  return `Rodada ${info.round}`;
+  const dateStr = formatMatchDateLong(season, week);
+  if (info.type === "cup") {
+    return {
+      title: `🏆 Copa — ${CUP_STAGE_NAMES[info.stage]} (${info.leg === 1 ? "Ida" : "Volta"})`,
+      subtitle: dateStr,
+    };
+  }
+  if (info.type === "contgroup") {
+    return {
+      title: `🌎 Continental — Grupos · Rodada ${info.matchday + 1}`,
+      subtitle: dateStr,
+    };
+  }
+  if (info.type === "continental") {
+    return {
+      title: `🌎 Continental — ${CONT_STAGE_NAMES[info.stage]} (${info.leg === 1 ? "Ida" : "Volta"})`,
+      subtitle: dateStr,
+    };
+  }
+  
+  const roundName = ORDINAL_ROUNDS[info.round] || `${info.round}ª Rodada`;
+  return {
+    title: roundName,
+    subtitle: dateStr,
+  };
 }
 
 const BASE_TICK_MS = 350; // 1 minuto de jogo por tick em 1×
@@ -101,8 +162,8 @@ function MatchRow({
         >
           {m.attendance ? m.attendance.toLocaleString("pt-BR") : ""}
         </span>
-        {/* Times + placar: no mobile usa min-w-0 + flex-shrink para encolher; no desktop w-64 fixo */}
-        <div className="flex min-w-0 shrink items-center gap-1.5 sm:w-64 sm:shrink-0 sm:gap-2">
+        {/* Times + placar: no mobile usa flex-1 + min-w-0; no desktop w-64 fixo */}
+        <div className="flex min-w-0 flex-1 sm:w-64 sm:flex-initial sm:shrink-0 items-center gap-1.5 sm:gap-2">
           <div className="flex flex-1 items-center justify-end gap-1 sm:gap-1.5 overflow-hidden min-w-0">
             <span className="truncate text-xs sm:text-sm font-semibold match-team-name">{getClubDisplayName(home.name)}</span>
             <span
@@ -121,8 +182,8 @@ function MatchRow({
             <span className="truncate text-xs sm:text-sm font-semibold match-team-name">{getClubDisplayName(away.name)}</span>
           </div>
         </div>
-        {/* Momentum: min-width garante visibilidade no mobile */}
-        <div className="flex-1 min-w-[60px] sm:min-w-0">
+        {/* Momentum: tamanho fixo no mobile no canto do container */}
+        <div className="w-16 shrink-0 sm:w-auto sm:flex-1">
           <MomentumBar m={m} homeColor={homeColor} awayColor={awayColor} />
         </div>
       </div>
@@ -461,9 +522,14 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
             </p>
           ) : (
             <>
-              <p className={`mb-4 text-center text-lg font-bold uppercase tracking-wide ${isCup ? "text-amber-400" : "text-zinc-200"}`}>
-                {weekLabel(week!)}
-              </p>
+              <div className="mb-4 text-center">
+                <p className={`text-lg font-bold tracking-wide ${isCup ? "text-amber-400" : "text-zinc-200"}`}>
+                  {weekLabelHeader(week!, game.season).title}
+                </p>
+                <p className="text-sm text-zinc-500 mt-1">
+                  {weekLabelHeader(week!, game.season).subtitle}
+                </p>
+              </div>
               {(isCup ? [null] : ["Série A", "Série B"]).map((div) => {
                 const matches = div === null
                   ? upcoming
@@ -506,9 +572,14 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
     const lastIsCup = lastInfo.type !== "league";
     return (
       <div className="mx-auto max-w-4xl p-4">
-        <p className={`mb-4 text-center text-lg font-bold uppercase tracking-wide ${lastIsCup ? "text-amber-400" : "text-zinc-200"}`}>
-          {weekLabel(game.week - 1)}
-        </p>
+        <div className="mb-4 text-center">
+          <p className={`text-lg font-bold tracking-wide ${lastIsCup ? "text-amber-400" : "text-zinc-200"}`}>
+            {weekLabelHeader(game.week - 1, game.season).title}
+          </p>
+          <p className="text-sm text-zinc-500 mt-1">
+            {weekLabelHeader(game.week - 1, game.season).subtitle}
+          </p>
+        </div>
 
         {/* na copa a lista é única e o jogo do usuário já vem primeiro e destacado:
             o bloco "SEU JOGO" separado só é necessário na liga */}
@@ -577,9 +648,13 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
 
   return (
     <div className="mx-auto max-w-4xl p-4">
-      <div className="mb-2 text-center">
-        <p className={`text-sm font-bold uppercase tracking-wider ${liveIsCup ? "text-amber-400" : "text-zinc-400"}`}>
-          {weekLabel(game.week)} {live && !allDone && <span className="text-red-500 animate-pulse ml-1.5">● Ao vivo</span>}
+      <div className="mb-4 text-center">
+        <p className={`text-lg font-bold tracking-wide ${liveIsCup ? "text-amber-400" : "text-zinc-200"}`}>
+          {weekLabelHeader(game.week, game.season).title}
+          {live && !allDone && <span className="text-red-500 text-xs animate-pulse ml-2 font-bold uppercase">● Ao vivo</span>}
+        </p>
+        <p className="text-sm text-zinc-500 mt-1">
+          {weekLabelHeader(game.week, game.season).subtitle}
         </p>
       </div>
 

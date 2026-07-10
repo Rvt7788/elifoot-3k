@@ -1,10 +1,10 @@
 import { useRef, useState } from "react";
 import { useStore } from "../store";
 import { makeSub } from "../game/engine";
-import { appConfirm } from "./AppDialog";
+import { appConfirm, appAlert } from "./AppDialog";
 import Toggle from "./Toggle";
 import EnergyBar from "./EnergyBar";
-import type { Marking, Mentality, Player, Position } from "../types";
+import type { Marking, Mentality, Player, Position, LivePlayer, Formation } from "../types";
 import { shapeOf } from "../types";
 import { pitchLayout, PlayerPin, EmptySlot, PitchBackground } from "./PitchField";
 
@@ -99,6 +99,10 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
   // Sair do modal: sem alteração volta ao jogo direto; com alteração pergunta —
   // Confirmar aplica e volta ao jogo; Desfazer reverte e permanece no modal.
   const closeAndResume = async () => {
+    if (!hasKeeperOnField) {
+      await appAlert("Você está sem goleiro!");
+      return;
+    }
     if (hasChanges()) {
       const keep = await appConfirm("Aplicar as alterações da intervenção tática?", {
         ok: "Confirmar",
@@ -121,7 +125,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
     POS_ORDER[pById[a.playerId].pos] - POS_ORDER[pById[b.playerId].pos];
   const onField = lineup.filter((l) => l.onField && !l.sentOff).sort(byPos);
   const bench = lineup.filter((l) => !l.onField && !l.subbedOut && !l.sentOff).sort(byPos);
-  const hasKeeperOnField = onField.some((l) => pById[l.playerId].pos === "GOL");
+  const hasKeeperOnField = onField.some((l) => (l.posOverride ?? pById[l.playerId].pos) === "GOL");
 
   const executeSub = (outPlayerId: string, inPlayerId: string) => {
     if (subsLeft <= 0) return;
@@ -144,11 +148,108 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
     setRejectedSubs([]);
   };
 
+  const reallocateLineup = (lineup2: LivePlayer[], f: Formation) => {
+    const shape = shapeOf(f, game?.customFormation);
+    const maxD = shape.DEF;
+    const maxM = shape.MEI;
+    const maxA = shape.ATA;
+
+    const players = useStore.getState().game?.players ?? [];
+    const pMap = new Map(players.map((p) => [p.id, p]));
+
+    const activeLine = lineup2.filter((l) => l.onField && !l.sentOff && pMap.get(l.playerId)?.pos !== "GOL");
+
+    const defs = activeLine.filter((l) => pMap.get(l.playerId)?.pos === "DEF");
+    const meis = activeLine.filter((l) => pMap.get(l.playerId)?.pos === "MEI");
+    const atas = activeLine.filter((l) => pMap.get(l.playerId)?.pos === "ATA");
+
+    const targetD: LivePlayer[] = [];
+    const targetM: LivePlayer[] = [];
+    const targetA: LivePlayer[] = [];
+    const unassigned: LivePlayer[] = [];
+
+    defs.forEach((l, idx) => {
+      if (idx < maxD) targetD.push(l);
+      else unassigned.push(l);
+    });
+
+    meis.forEach((l, idx) => {
+      if (idx < maxM) targetM.push(l);
+      else unassigned.push(l);
+    });
+
+    atas.forEach((l, idx) => {
+      if (idx < maxA) targetA.push(l);
+      else unassigned.push(l);
+    });
+
+    while (targetD.length < maxD && unassigned.length > 0) {
+      targetD.push(unassigned.shift()!);
+    }
+    while (targetM.length < maxM && unassigned.length > 0) {
+      targetM.push(unassigned.shift()!);
+    }
+    while (targetA.length < maxA && unassigned.length > 0) {
+      targetA.push(unassigned.shift()!);
+    }
+
+    targetD.forEach((l, idx) => {
+      l.posOverride = "DEF";
+      l.slotIdx = idx;
+    });
+    targetM.forEach((l, idx) => {
+      l.posOverride = "MEI";
+      l.slotIdx = idx;
+    });
+    targetA.forEach((l, idx) => {
+      l.posOverride = "ATA";
+      l.slotIdx = idx;
+    });
+  };
+
+  const changeFormation = (f: Formation) => {
+    setSuggestion(null);
+    useStore.setState((state) => {
+      if (!state.game) return state;
+      return { game: { ...state.game, formation: f } };
+    });
+    updateLive((ms) => {
+      const m2 = ms[mi];
+      const lineup2 = side === "home" ? m2.homeLineup : m2.awayLineup;
+      reallocateLineup(lineup2, f);
+    });
+  };
+
+  const movePlayerToSlot = (playerId: string, targetPos: Position, targetSlotIdx: number) => {
+    updateLive((ms) => {
+      const m2 = ms[mi];
+      const lp = (side === "home" ? m2.homeLineup : m2.awayLineup).find((l) => l.playerId === playerId);
+      if (lp) {
+        lp.posOverride = targetPos;
+        lp.slotIdx = targetSlotIdx;
+      }
+    });
+    setSelectedOutId(null);
+  };
+
+  const canMovePlayerToSlot = (player: Player, slotPos: Position, hasKeeper: boolean): boolean => {
+    if (player.pos === "GOL") {
+      return slotPos === "GOL";
+    }
+    if (slotPos === "GOL") {
+      return !hasKeeper;
+    }
+    return true;
+  };
+
   const pickOut = (id: string) => {
+    setSuggestion(null);
     if (selectedInId) {
       const outP = pById[id];
       const inP = pById[selectedInId];
-      if ((outP.pos === "GOL") === (inP.pos === "GOL")) {
+      const outLp = lineup.find((l) => l.playerId === id);
+      const isOutInGoal = (outLp?.posOverride ?? outP.pos) === "GOL";
+      if (isOutInGoal === (inP.pos === "GOL")) {
         executeSub(id, selectedInId);
       } else {
         setSelectedInId(null);
@@ -184,6 +285,12 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
   // "posicao" faz upgrade de força: entra o reserva mais forte que um titular do setor.
   const quickSub = (mode: "energia" | "posicao") => {
     if (subsLeft <= 0) return;
+
+    let currentRejected = [...rejectedSubs];
+    if (suggestion) {
+      currentRejected.push(`${suggestion.out}-${suggestion.in}`);
+    }
+
     const samePos = (a: Player, b: Player) => a.pos === b.pos;
     const pairs: { out: string; in: string }[] = [];
 
@@ -203,39 +310,38 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
         }
       }
     } else {
-      // 1º: corrige quem está fora de posição. Compara o que a formação pede com
-      // quem está em campo: setor com gente sobrando cede o mais fraco do excesso,
-      // e entra um reserva do setor em falta.
-      const shape = shapeOf(formation, game.customFormation);
-      const need: Record<Position, number> = { GOL: 1, DEF: shape.DEF, MEI: shape.MEI, ATA: shape.ATA };
-      const have: Record<Position, number> = { GOL: 0, DEF: 0, MEI: 0, ATA: 0 };
-      onField.forEach((l) => have[pById[l.playerId].pos]++);
-      // goleiro fora da análise: sugestões só mexem em jogadores de linha
-      const lacking = (Object.keys(need) as Position[]).filter((k) => k !== "GOL" && have[k] < need[k]);
-      const surplus = (Object.keys(need) as Position[]).filter((k) => have[k] > need[k]);
-      
-      for (const lackPos of lacking) {
-        const inCandidates = bench
-          .filter((l) => pById[l.playerId].pos === lackPos)
+      // 1º: corrige quem está fora de sua posição natural.
+      // Se um jogador em campo está atuando em uma posição diferente (l.posOverride) de sua posição natural,
+      // sugerimos substituí-lo por um reserva que naturalmente jogue nessa posição efetiva.
+      const outOfPos = onField.filter((l) => {
+        const p = pById[l.playerId];
+        const effPos = l.posOverride ?? p.pos;
+        return effPos !== p.pos && p.pos !== "GOL"; // Goleiro não entra nessa lógica
+      });
+
+      for (const l of outOfPos) {
+        const p = pById[l.playerId];
+        const effPos = l.posOverride!;
+        const candidates = bench
+          .filter((inL) => pById[inL.playerId].pos === effPos)
           .sort((a, b) => pById[b.playerId].strength - pById[a.playerId].strength || b.energy - a.energy);
-        const outCandidates = onField
-          .filter((l) => surplus.includes(pById[l.playerId].pos) && pById[l.playerId].pos !== "GOL")
-          .sort((a, b) => pById[a.playerId].strength - pById[b.playerId].strength);
-        
-        for (const inC of inCandidates) {
-          for (const outC of outCandidates) {
-            pairs.push({ out: outC.playerId, in: inC.playerId });
-          }
+        for (const cand of candidates) {
+          pairs.push({ out: l.playerId, in: cand.playerId });
         }
       }
 
-      // 2º: sem desajuste de posição, sugere upgrade de força no mesmo setor
+      // 2º: sem desajuste de posição (ou além deles), sugere upgrade de força no mesmo setor
+      // (baseando-se no setor efetivo em que o jogador está jogando)
       const upgrades = bench
         .filter((inL) => pById[inL.playerId].pos !== "GOL")
         .flatMap((inL) => {
           const inP = pById[inL.playerId];
           const matchableOuts = onField
-            .filter((l) => samePos(pById[l.playerId], inP));
+            .filter((l) => {
+              const p = pById[l.playerId];
+              const effPos = l.posOverride ?? p.pos;
+              return effPos === inP.pos;
+            });
           return matchableOuts.flatMap((outL) => {
             const gain = inP.strength - pById[outL.playerId].strength;
             return gain > 0 ? [{ out: outL.playerId, in: inL.playerId, gain }] : [];
@@ -248,11 +354,14 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
     }
 
     // Filtra as sugestões que já foram descartadas anteriormente
-    let allowed = pairs.filter((p) => !rejectedSubs.includes(`${p.out}-${p.in}`));
+    let allowed = pairs.filter((p) => !currentRejected.includes(`${p.out}-${p.in}`));
     if (allowed.length === 0 && pairs.length > 0) {
       // Se todas as opções possíveis foram descartadas, reseta o histórico e volta para a primeira
       setRejectedSubs([]);
+      currentRejected = [];
       allowed = pairs;
+    } else {
+      setRejectedSubs(currentRejected);
     }
 
     if (allowed.length > 0) {
@@ -263,10 +372,13 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
   };
 
   const pickIn = (id: string) => {
+    setSuggestion(null);
     if (selectedOutId) {
       const outP = pById[selectedOutId];
       const inP = pById[id];
-      if ((outP.pos === "GOL") === (inP.pos === "GOL")) {
+      const outLp = lineup.find((l) => l.playerId === selectedOutId);
+      const isOutInGoal = (outLp?.posOverride ?? outP.pos) === "GOL";
+      if (isOutInGoal === (inP.pos === "GOL")) {
         executeSub(selectedOutId, id);
       } else {
         setSelectedOutId(null);
@@ -279,10 +391,13 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
 
   const formation = game.formation ?? "4-4-2";
   const pos = pitchLayout(formation, game.customFormation);
-  const slots: { pos: Position; x: number; y: number; player?: Player; energy?: number }[] = [];
+  const slots: { pos: Position; slotIdx: number; x: number; y: number; player?: Player; energy?: number }[] = [];
 
   const activePlayers = onField.map((l) => ({
-    player: pById[l.playerId],
+    player: {
+      ...pById[l.playerId],
+      pos: l.posOverride ?? pById[l.playerId].pos,
+    },
     energy: l.energy,
   }));
 
@@ -303,58 +418,48 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
     playersByPos[ap.player.pos].push(ap);
   });
 
-  // Sort and apply slotOrder if applicable, otherwise sort by strength
+  // Match players to layout slots
   (["GOL", "DEF", "MEI", "ATA"] as const).forEach((posKey) => {
+    const coords = slotsByPos[posKey];
+    const N = coords.length;
+    const assigned = new Array<{ player: Player; energy: number } | undefined>(N).fill(undefined);
     const list = playersByPos[posKey];
-    const manual = (slotOrder ?? [])
-      .map((id) => list.find((ap) => ap.player.id === id))
-      .filter((ap): ap is typeof activePlayers[number] => !!ap);
+    const listWithLp = list.map(ap => {
+      const lp = lineup.find(l => l.playerId === ap.player.id);
+      return { ...ap, slotIdx: lp?.slotIdx };
+    });
 
-    if (manual.length === list.length && manual.every((ap) => list.some((b) => b.player.id === ap.player.id))) {
-      playersByPos[posKey] = manual;
-    } else {
-      playersByPos[posKey].sort((a, b) => b.player.strength - a.player.strength);
-    }
-  });
+    // 1st pass: place players who have a preferred slotIdx
+    const unplaced: typeof listWithLp = [];
+    listWithLp.forEach(ap => {
+      if (ap.slotIdx !== undefined && ap.slotIdx >= 0 && ap.slotIdx < N && !assigned[ap.slotIdx]) {
+        assigned[ap.slotIdx] = { player: ap.player, energy: ap.energy };
+      } else {
+        unplaced.push(ap);
+      }
+    });
 
-  const unmatchedSlots: typeof slotsByPos[Position] = [];
-  const unmatchedPlayers: typeof activePlayers = [];
+    // 2nd pass: place remaining players in empty spots
+    let emptyIdx = 0;
+    unplaced.forEach(ap => {
+      while (emptyIdx < N && assigned[emptyIdx]) {
+        emptyIdx++;
+      }
+      if (emptyIdx < N) {
+        assigned[emptyIdx] = { player: ap.player, energy: ap.energy };
+      }
+    });
 
-  // 1. Natural matching (match players to their matching positions first)
-  (["GOL", "DEF", "MEI", "ATA"] as const).forEach((posKey) => {
-    const sList = slotsByPos[posKey];
-    const pList = playersByPos[posKey];
-    const min = Math.min(sList.length, pList.length);
-
-    for (let i = 0; i < min; i++) {
+    coords.forEach((coord, i) => {
       slots.push({
-        pos: sList[i].pos,
-        x: sList[i].x,
-        y: sList[i].y,
-        player: pList[i].player,
-        energy: pList[i].energy,
+        pos: posKey,
+        slotIdx: i,
+        x: coord.x,
+        y: coord.y,
+        player: assigned[i]?.player,
+        energy: assigned[i]?.energy,
       });
-    }
-
-    if (sList.length > min) {
-      unmatchedSlots.push(...sList.slice(min));
-    }
-    if (pList.length > min) {
-      unmatchedPlayers.push(...pList.slice(min));
-    }
-  });
-
-  // 2. Greedy matching (place unassigned players into empty slots of other positions)
-  unmatchedSlots.forEach((slot, i) => {
-    if (unmatchedPlayers[i]) {
-      slots.push({
-        pos: slot.pos,
-        x: slot.x,
-        y: slot.y,
-        player: unmatchedPlayers[i].player,
-        energy: unmatchedPlayers[i].energy,
-      });
-    }
+    });
   });
 
   const MENT: { key: Mentality; label: string }[] = [
@@ -373,9 +478,9 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
 
   const cardedPlayers = (side2: "home" | "away") =>
     (side2 === "home" ? match.homeLineup : match.awayLineup)
-      .filter((l) => l.yellowsMatch > 0)
+      .filter((l) => l.yellowsMatch > 0 || l.sentOff)
       .map((l) => ({ p: pById[l.playerId], lp: l }))
-      .sort((a, b) => b.lp.yellowsMatch - a.lp.yellowsMatch);
+      .sort((a, b) => (b.lp.sentOff ? 2 : b.lp.yellowsMatch) - (a.lp.sentOff ? 2 : a.lp.yellowsMatch));
   const homeCarded = cardedPlayers("home");
   const awayCarded = cardedPlayers("away");
   // gols por lado, agregados por jogador com os minutos
@@ -403,21 +508,27 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg font-bold">Intervenção tática — {match.minute}&#39;</h2>
-            {/* play: confirma/desfaz e retoma o jogo, igual ao botão de baixo */}
+          <h2 className="text-lg font-bold">Intervenção tática — {match.minute}&#39;</h2>
+          <div className="flex items-center gap-4">
+            {/* confirmar/desfaz e retoma o jogo, igual ao botão de baixo */}
             <button
               onClick={closeAndResume}
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-xs hover:bg-emerald-500"
-              title="Voltar ao jogo"
+              disabled={!hasKeeperOnField}
+              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              title={hasKeeperOnField ? "Voltar ao jogo" : "Você precisa escalar um goleiro ou jogador de linha no gol!"}
             >
-              ▶
+              <span className="text-[10px]">▶</span> Jogar
+            </button>
+            {/* ✕: mesmo fluxo — sem alteração sai direto; com alteração pede confirmação */}
+            <button
+              onClick={closeAndResume}
+              disabled={!hasKeeperOnField}
+              className="text-zinc-400 hover:text-white text-lg font-bold px-1 disabled:opacity-45 disabled:cursor-not-allowed"
+              title={hasKeeperOnField ? "Voltar ao jogo" : "Você precisa escalar um goleiro ou jogador de linha no gol!"}
+            >
+              ✕
             </button>
           </div>
-          {/* ✕: mesmo fluxo — sem alteração sai direto; com alteração pede confirmação */}
-          <button onClick={closeAndResume} className="text-zinc-400 hover:text-white" title="Voltar ao jogo">
-            ✕
-          </button>
         </div>
 
         {/* Mentalidade e Marcação em linhas empilhadas (uma opção por linha, no
@@ -468,7 +579,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
           <Toggle
             checked={tactics.cera}
             onChange={() => setTactic((t) => (t.cera = !t.cera))}
-            label="🐢 Cera"
+            label="🐢 Catimba"
             color="#b45309"
             hint="Trava o ritmo do jogo; cede um pouco de volume e arrisca cartões"
           />
@@ -504,32 +615,100 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* sugestão pendente: mostra a troca e espera confirmação */}
-        {suggestion && (
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-700/60 bg-amber-950/30 px-3 py-2 text-sm">
-            <span className="text-zinc-200">
-              <span className="text-red-400">▼ {pById[suggestion.out].name}</span>
-              {" → "}
-              <span className="text-emerald-400">▲ {pById[suggestion.in].name}</span>
-            </span>
-            <span className="flex gap-2">
-              <button
-                onClick={() => executeSub(suggestion.out, suggestion.in)}
-                className="rounded bg-emerald-600 px-3 py-1 text-xs font-bold hover:bg-emerald-500"
-              >
-                Confirmar
-              </button>
-              <button
-                onClick={() => {
-                  if (suggestion) {
-                    setRejectedSubs((prev) => [...prev, `${suggestion.out}-${suggestion.in}`]);
-                  }
-                  setSuggestion(null);
-                }}
-                className="rounded bg-zinc-800 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-700"
-              >
-                Descartar
-              </button>
-            </span>
+        {suggestion && (() => {
+          const outP = pById[suggestion.out];
+          const inP = pById[suggestion.in];
+          const outLp = lineup.find((l) => l.playerId === suggestion.out);
+          const inLp = lineup.find((l) => l.playerId === suggestion.in);
+          const outEnergy = outLp ? Math.round(outLp.energy) : outP.energy;
+          const inEnergy = inLp ? Math.round(inLp.energy) : inP.energy;
+          return (
+            <div className="mb-3 flex flex-col gap-2.5 rounded-lg border border-amber-700/60 bg-amber-950/30 px-3 py-2 text-sm">
+              <div className="flex items-center justify-between gap-4">
+                {/* Quem sai */}
+                <div className="flex flex-1 flex-col text-left min-w-0">
+                  <span className="font-semibold text-zinc-200 truncate">{outP.name} <span className="text-[10px] text-zinc-500 font-normal">({outP.pos})</span></span>
+                  <div className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-400">
+                    <span className="text-red-400 font-bold">▼</span>
+                    <span className="font-mono">F-{outP.strength}</span>
+                    <EnergyBar value={outEnergy} className="scale-75 origin-left" />
+                  </div>
+                </div>
+
+                {/* Seta de transição */}
+                <span className="text-zinc-500 font-bold text-lg shrink-0">→</span>
+
+                {/* Quem entra */}
+                <div className="flex flex-1 flex-col text-right items-end min-w-0">
+                  <span className="font-semibold text-zinc-200 truncate"><span className="text-[10px] text-zinc-500 font-normal">({inP.pos})</span> {inP.name}</span>
+                  <div className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-400">
+                    <EnergyBar value={inEnergy} className="scale-75 origin-right" />
+                    <span className="font-mono">F-{inP.strength}</span>
+                    <span className="text-emerald-400 font-bold">▲</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botões de Ação */}
+              <div className="flex items-center justify-end gap-2 border-t border-zinc-800/40 pt-1.5">
+                <button
+                  onClick={() => {
+                    if (suggestion) {
+                      setRejectedSubs((prev) => [...prev, `${suggestion.out}-${suggestion.in}`]);
+                    }
+                    setSuggestion(null);
+                  }}
+                  className="rounded bg-zinc-800 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors"
+                >
+                  Descartar
+                </button>
+                <button
+                  onClick={() => executeSub(suggestion.out, suggestion.in)}
+                  className="rounded bg-emerald-600 px-4 py-1 text-xs font-bold text-white hover:bg-emerald-500 transition-colors"
+                >
+                  Confirmar
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* INFORMAÇÕES card moved up here to sit directly below quick sub suggestions */}
+        {(homeCarded.length > 0 || awayCarded.length > 0 || homeGoals.length > 0 || awayGoals.length > 0 || homeSubs.length > 0 || awaySubs.length > 0) && (
+          <div className="mb-3 rounded-lg bg-zinc-800/60 px-3 py-2">
+            <p className="mb-1 text-xs font-bold text-zinc-400">ℹ INFORMAÇÕES</p>
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              {([
+                { club: homeClub, goals: homeGoals, carded: homeCarded, subs: homeSubs },
+                { club: awayClub, goals: awayGoals, carded: awayCarded, subs: awaySubs },
+              ] as const).map(({ club, goals, carded, subs }) => (
+                <div key={club.id}>
+                  <p className="mb-0.5 text-[10px] text-zinc-500">{club.shortName}</p>
+                  {goals.length === 0 && carded.length === 0 && subs.length === 0 && <p className="text-zinc-600">—</p>}
+                  {goals.map((g) => (
+                    <div key={g.name} className="flex items-center justify-between">
+                      <span>{g.name}</span>
+                      <span>
+                        {"⚽".repeat(g.minutes.length)}
+                        <span className="ml-1 text-zinc-500">{g.minutes.map((m) => `${m}'`).join(" ")}</span>
+                      </span>
+                    </div>
+                  ))}
+                  {carded.map(({ p, lp }) => (
+                    <div key={p.id} className="flex items-center justify-between">
+                      <span className={lp.sentOff ? "text-zinc-500 line-through" : ""}>{p.name}</span>
+                      <span>{"🟨".repeat(Math.min(lp.yellowsMatch, 2))}{lp.sentOff ? "🟥" : ""}</span>
+                    </div>
+                  ))}
+                  {subs.map((e, i) => (
+                    <div key={i} className="flex items-center justify-between text-zinc-400">
+                      <span>🔄 {e.playerName}</span>
+                      <span className="text-zinc-500">{e.minute}'</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -539,12 +718,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
             {(["4-4-2", "4-3-3", "3-5-2", "4-5-1", "5-3-2", "3-4-3"] as const).map((f) => (
               <button
                 key={f}
-                onClick={() => {
-                  useStore.setState((state) => {
-                    if (!state.game) return state;
-                    return { game: { ...state.game, formation: f } };
-                  });
-                }}
+                onClick={() => changeFormation(f)}
                 className={`flex-1 whitespace-nowrap rounded px-1 py-1.5 text-[10px] transition-all sm:px-2.5 sm:text-xs ${
                   formation === f
                     ? "bg-emerald-600 font-bold border border-emerald-400"
@@ -586,47 +760,11 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
           );
         })()}
 
-        {(homeCarded.length > 0 || awayCarded.length > 0 || homeGoals.length > 0 || awayGoals.length > 0 || homeSubs.length > 0 || awaySubs.length > 0) && (
-          <div className="mb-3 rounded-lg bg-zinc-800/60 px-3 py-2">
-            <p className="mb-1 text-xs font-bold text-zinc-400">ℹ INFORMAÇÕES</p>
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              {([
-                { club: homeClub, goals: homeGoals, carded: homeCarded, subs: homeSubs },
-                { club: awayClub, goals: awayGoals, carded: awayCarded, subs: awaySubs },
-              ] as const).map(({ club, goals, carded, subs }) => (
-                <div key={club.id}>
-                  <p className="mb-0.5 text-[10px] text-zinc-500">{club.shortName}</p>
-                  {goals.length === 0 && carded.length === 0 && subs.length === 0 && <p className="text-zinc-600">—</p>}
-                  {goals.map((g) => (
-                    <div key={g.name} className="flex items-center justify-between">
-                      <span>{g.name}</span>
-                      <span>
-                        {"⚽".repeat(g.minutes.length)}
-                        <span className="ml-1 text-zinc-500">{g.minutes.map((m) => `${m}'`).join(" ")}</span>
-                      </span>
-                    </div>
-                  ))}
-                  {carded.map(({ p, lp }) => (
-                    <div key={p.id} className="flex items-center justify-between">
-                      <span className={lp.sentOff ? "text-zinc-500 line-through" : ""}>{p.name}</span>
-                      <span>{"🟨".repeat(Math.min(lp.yellowsMatch, 2))}{lp.sentOff && lp.yellowsMatch < 2 ? "🟥" : ""}</span>
-                    </div>
-                  ))}
-                  {subs.map((e, i) => (
-                    <div key={i} className="flex items-center justify-between text-zinc-400">
-                      <span>🔄 {e.playerName}</span>
-                      <span className="text-zinc-500">{e.minute}'</span>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+
 
         {!hasKeeperOnField && (
-          <p className="mb-2 rounded bg-red-950 px-2 py-1 text-xs text-red-400">
-            ⚠ Seu goleiro foi expulso! Escolha um goleiro do banco para entrar.
+          <p className="mb-3 rounded-lg bg-red-950 px-3 py-2 text-xs text-red-400 font-semibold border border-red-800/80 animate-pulse text-center">
+            🚨 Você está sem goleiro!
           </p>
         )}
 
@@ -636,8 +774,16 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
           <PitchBackground className="relative mx-auto w-full shrink-0 overflow-hidden rounded-lg border border-emerald-900 sm:mx-0 sm:w-56">
             {slots.map((s, i) => {
               const isSelected = selectedOutId === s.player?.id || suggestion?.out === s.player?.id;
-              const isCompatible = !selectedInId || !s.player || (pById[selectedInId].pos === "GOL") === (s.player.pos === "GOL");
+              const isCompatible = !selectedInId || !s.player || (pById[selectedInId].pos === "GOL") === (s.player.pos === "GOL") || (!hasKeeperOnField && pById[selectedInId].pos === "GOL");
               const shouldDim = s.player ? (s.player.reds > 0 || !isCompatible) : false;
+              
+              // Buscar informações do LivePlayer para cartões e gols
+              const lp = s.player ? lineup.find(l => l.playerId === s.player!.id) : null;
+              const yellowsMatch = lp?.yellowsMatch ?? 0;
+              const goalsMatch = s.player 
+                ? match.events.filter(e => e.type === "goal" && e.playerName === s.player!.name).length 
+                : 0;
+
               return s.player ? (
                 <PlayerPin
                   key={s.player.id}
@@ -646,12 +792,27 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
                   y={s.y}
                   colors={kit}
                   selected={isSelected}
-                  dim={shouldDim}
                   energyOverride={s.energy}
-                  onClick={() => isCompatible && pickOut(s.player!.id)}
+                  yellowsMatch={yellowsMatch}
+                  goalsMatch={goalsMatch}
+                  onClick={() => pickOut(s.player!.id)}
                 />
               ) : (
-                <EmptySlot key={i} x={s.x} y={s.y} label={s.pos} pulse={!hasKeeperOnField && s.pos === "GOL"} />
+                <EmptySlot
+                  key={i}
+                  x={s.x}
+                  y={s.y}
+                  label={s.pos}
+                  pulse={(!hasKeeperOnField && s.pos === "GOL") || (!!selectedOutId && canMovePlayerToSlot(pById[selectedOutId], s.pos, hasKeeperOnField))}
+                  onClick={() => {
+                    if (selectedOutId) {
+                      const outP = pById[selectedOutId];
+                      if (canMovePlayerToSlot(outP, s.pos, hasKeeperOnField)) {
+                        movePlayerToSlot(selectedOutId, s.pos, s.slotIdx);
+                      }
+                    }
+                  }}
+                />
               );
             })}
           </PitchBackground>
@@ -664,7 +825,8 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
                 {onField.map((l) => {
                   const p = pById[l.playerId];
                   const isSelected = selectedOutId === l.playerId || suggestion?.out === l.playerId;
-                  const isCompatible = !selectedInId || (pById[selectedInId].pos === "GOL") === (p.pos === "GOL");
+                  const isPlayerInGoal = (l.posOverride ?? p.pos) === "GOL";
+                  const isCompatible = !selectedInId || (pById[selectedInId].pos === "GOL") === isPlayerInGoal;
                   const shouldDim = !isCompatible;
                   return (
                     <button
@@ -697,7 +859,9 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
                 {bench.map((l) => {
                   const p = pById[l.playerId];
                   const isSelected = selectedInId === l.playerId || suggestion?.in === l.playerId;
-                  const isCompatible = !selectedOutId || (pById[selectedOutId].pos === "GOL") === (p.pos === "GOL");
+                  const outLp = selectedOutId ? lineup.find((x) => x.playerId === selectedOutId) : null;
+                  const isOutInGoal = outLp ? (outLp.posOverride ?? pById[selectedOutId!].pos) === "GOL" : false;
+                  const isCompatible = !selectedOutId || isOutInGoal === (p.pos === "GOL");
                   const isDisabled = subsLeft <= 0 || !isCompatible;
                   return (
                     <button

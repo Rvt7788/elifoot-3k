@@ -34,7 +34,7 @@
   },
   {
     "id": "cam_br",
-    "name": "Atlético Mineiro",
+    "name": "Atlético-MG",
     "shortName": "CAM",
     "division": "Série A",
     "primaryColor": "#000000",
@@ -133,7 +133,7 @@
   },
   {
     "id": "cap_br",
-    "name": "Athletico Paranaense",
+    "name": "Atlético-PR",
     "shortName": "CAP",
     "division": "Série A",
     "primaryColor": "#C8102E",
@@ -144,7 +144,7 @@
   },
   {
     "id": "rbb_br",
-    "name": "Red Bull Bragantino",
+    "name": "RB Bragantino",
     "shortName": "RBB",
     "division": "Série A",
     "primaryColor": "#DD052B",
@@ -243,7 +243,7 @@
   },
   {
     "id": "ago_br",
-    "name": "Atlético Goianiense",
+    "name": "Atlético-GO",
     "shortName": "ACG",
     "division": "Série B",
     "primaryColor": "#AC1B22",

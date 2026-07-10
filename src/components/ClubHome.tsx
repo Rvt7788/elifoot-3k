@@ -327,7 +327,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
             nextOpp && next && !game.fired ? (
               <button
                 onClick={onStartMatchday}
-                className="btn-play flex shrink-0 items-center gap-2 px-5 py-3 text-base"
+                className="btn-play flex w-full sm:w-auto justify-center shrink-0 items-center gap-2 px-5 py-3 text-base"
               >
                 <IconPlay className="h-5 w-5" />
                 Jogar
@@ -466,7 +466,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
 
         {/* Caixa da última rodada: bilheteria e prêmios arrecadados, bicho gasto */}
         {game.lastFinance && (
-          <div className="md:shrink-0">
+          <div className="md:shrink-0 pr-4 md:pr-0">
             <SectionLabel>Caixa</SectionLabel>
             <div className="flex flex-col gap-0.5 text-sm">
               <p className="text-emerald-400">
@@ -503,7 +503,6 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
               return (
                 <div key={i} className="flex items-center gap-1.5 border-b border-[rgba(30,42,56,0.6)] py-1 md:py-1.5 text-xs md:text-sm text-zinc-200">
                   <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${badge}`} />
-                  <span className="text-[10px] md:text-xs text-zinc-600">R{f.round}</span>
                   <span className="truncate">
                     {home.shortName}{" "}
                     <span className="font-display font-semibold text-zinc-50">
