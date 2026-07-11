@@ -505,6 +505,9 @@ export function processSeasonTransitions(
         cap,
         gained: -loss, // valor negativo indica declínio na UI
         energy: 100,
+        // gols/assistências da temporada zeram, mas somam no acumulado da carreira
+        careerGoals: (p.careerGoals ?? 0) + p.goals,
+        careerAssists: (p.careerAssists ?? 0) + p.assists,
         goals: 0,
         assists: 0,
         yellows: 0,

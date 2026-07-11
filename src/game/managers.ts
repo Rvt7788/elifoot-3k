@@ -174,7 +174,8 @@ export function processManagerSeason(
   userClubId: string,
 ): ManagerSeasonResult {
   const rng = mulberry32((seed ^ (season * 2654435761)) >>> 0);
-  const next = managers.map((m) => ({ ...m }));
+  // vitórias da temporada zeram na virada; as da carreira (winsA/winsB) ficam
+  const next = managers.map((m) => ({ ...m, seasonWinsA: 0, seasonWinsB: 0 }));
   const byClub = new Map(next.filter((m) => m.clubId).map((m) => [m.clubId!, m]));
   const championSet = new Set(champions);
 

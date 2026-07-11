@@ -7,7 +7,7 @@ import {
   cupChampion, groupStandings, type CupState, type CupTie,
 } from "../game/cup";
 import { cupName, continentalName } from "../data/leagues";
-import type { Club, TableRow } from "../types";
+import type { Club, Manager, Player, TableRow } from "../types";
 import ClubModal from "./ClubModal";
 import { readableOn } from "../game/color";
 
@@ -137,20 +137,42 @@ function DivisionTable({
 // abrir para 10 ou 20.
 const RANK_LIMITS = [5, 10, 20] as const;
 
+// Escopo dos rankings de gols/assistências: temporada atual ou o save inteiro.
+type RankScope = "temporada" | "geral";
+
+function ScopeToggle({ scope, setScope }: { scope: RankScope; setScope: (s: RankScope) => void }) {
+  return (
+    <div className="flex gap-1">
+      {(["temporada", "geral"] as const).map((s) => (
+        <button
+          key={s}
+          onClick={() => setScope(s)}
+          className={`rounded px-2 py-0.5 text-[10px] font-semibold capitalize ${
+            scope === s ? "bg-emerald-600 text-white" : "bg-zinc-800/60 text-zinc-400 hover:text-zinc-200"
+          }`}
+        >
+          {s}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function RankSection({
-  title, emptyText, count, children, limit, setLimit,
+  title, count, children, limit, setLimit, headerExtra,
 }: {
   title: string;
-  emptyText: string;
   count: number;
   children: React.ReactNode;
   limit: number;
   setLimit: (n: number) => void;
+  headerExtra?: React.ReactNode;
 }) {
   return (
     <div className="mb-6">
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-base font-bold text-amber-400">{title}</h3>
+        {headerExtra}
         {count > RANK_LIMITS[0] && (
           <div className="flex gap-1">
             {RANK_LIMITS.map((n) => (
@@ -167,7 +189,8 @@ function RankSection({
           </div>
         )}
       </div>
-      {count === 0 ? <p className="text-xs text-zinc-500">{emptyText}</p> : children}
+      {/* seção vazia mostra só o título — os dados aparecem conforme o save avança */}
+      {count === 0 ? null : children}
     </div>
   );
 }
@@ -181,6 +204,9 @@ export function HallOfFame() {
   const [playerLimit, setPlayerLimit] = useState<number>(RANK_LIMITS[0]);
   const [scorerLimit, setScorerLimit] = useState<number>(RANK_LIMITS[0]);
   const [assisterLimit, setAssisterLimit] = useState<number>(RANK_LIMITS[0]);
+  const [scorerScope, setScorerScope] = useState<RankScope>("temporada");
+  const [assisterScope, setAssisterScope] = useState<RankScope>("temporada");
+  const [mgrScope, setMgrScope] = useState<RankScope>("temporada");
   const [managerLimit, setManagerLimit] = useState<number>(RANK_LIMITS[0]);
   const [selected, setSelected] = useState<Club | null>(null);
   const selectClub = (id: string | null) => {
@@ -203,25 +229,47 @@ export function HallOfFame() {
   const players = game.players
     .filter((p) => countryClubIds.has(p.clubId) && (p.titles ?? 0) > 0)
     .sort((a, b) => (b.titles ?? 0) - (a.titles ?? 0) || b.strength - a.strength);
+  // gols/assistências: "temporada" usa o contador corrente; "geral" soma o
+  // acumulado de temporadas anteriores (careerGoals) com a temporada atual
+  const goalsOf = (p: Player) =>
+    scorerScope === "geral" ? (p.careerGoals ?? 0) + p.goals : p.goals;
+  const assistsOf = (p: Player) =>
+    assisterScope === "geral" ? (p.careerAssists ?? 0) + p.assists : p.assists;
   const scorers = game.players
-    .filter((p) => countryClubIds.has(p.clubId) && p.goals > 0)
-    .sort((a, b) => b.goals - a.goals || b.strength - a.strength);
+    .filter((p) => countryClubIds.has(p.clubId) && goalsOf(p) > 0)
+    .sort((a, b) => goalsOf(b) - goalsOf(a) || b.strength - a.strength);
   const assisters = game.players
-    .filter((p) => countryClubIds.has(p.clubId) && p.assists > 0)
-    .sort((a, b) => b.assists - a.assists || b.strength - a.strength);
+    .filter((p) => countryClubIds.has(p.clubId) && assistsOf(p) > 0)
+    .sort((a, b) => assistsOf(b) - assistsOf(a) || b.strength - a.strength);
+  // técnicos: "geral" ranqueia por títulos (só entra quem tem taça), desempatando
+  // pelas vitórias da carreira; "temporada" ranqueia pelas vitórias do ano.
+  // Nos dois casos a vitória pela Série A pesa 3× mais que pela Série B.
+  const mgrWins = (m: Manager) =>
+    mgrScope === "geral" ? (m.winsA ?? 0) + (m.winsB ?? 0) : (m.seasonWinsA ?? 0) + (m.seasonWinsB ?? 0);
+  const mgrWinScore = (m: Manager) =>
+    mgrScope === "geral"
+      ? (m.winsA ?? 0) * 3 + (m.winsB ?? 0)
+      : (m.seasonWinsA ?? 0) * 3 + (m.seasonWinsB ?? 0);
   const managers = (game.managers ?? [])
     // desempregados (clubId null) só existem no carrossel do país do usuário
-    .filter((m) => m.clubId === null || countryClubIds.has(m.clubId))
-    .sort((a, b) => b.titles - a.titles || b.reputation - a.reputation);
+    .filter((m) =>
+      (m.clubId === null || countryClubIds.has(m.clubId)) &&
+      (mgrScope === "geral" ? m.titles > 0 : mgrWins(m) > 0),
+    )
+    .sort((a, b) =>
+      mgrScope === "geral"
+        ? b.titles - a.titles || mgrWinScore(b) - mgrWinScore(a) || b.reputation - a.reputation
+        : mgrWinScore(b) - mgrWinScore(a) || b.titles - a.titles || b.reputation - a.reputation,
+    );
   const awards = [...(game.managerAwards ?? [])].sort((a, b) => b.season - a.season);
 
   const thCls = "border-b border-zinc-700 text-left text-[10px] uppercase tracking-wide text-zinc-400";
 
-  return (
-    <div>
+  // Seções sem dados vão para o fim da tela até começarem a ter conteúdo.
+  const sections: { key: string; count: number; node: React.ReactNode }[] = [
+    { key: "clubes", count: clubs.length, node: (
       <RankSection
         title="🏆 Clubes vitoriosos"
-        emptyText="Nenhum clube levantou taça neste save ainda — liga, copa e continental contam a partir do fim da primeira temporada."
         count={clubs.length}
         limit={clubLimit}
         setLimit={setClubLimit}
@@ -257,10 +305,10 @@ export function HallOfFame() {
           </tbody>
         </table>
       </RankSection>
-
+    ) },
+    { key: "jogadores", count: players.length, node: (
       <RankSection
         title="⚽ Jogadores vitoriosos"
-        emptyText="Ainda nenhum jogador levantou taça — os títulos entram ao fim de cada temporada."
         count={players.length}
         limit={playerLimit}
         setLimit={setPlayerLimit}
@@ -296,11 +344,12 @@ export function HallOfFame() {
           </tbody>
         </table>
       </RankSection>
-
+    ) },
+    { key: "artilheiros", count: scorers.length, node: (
       <RankSection
-        title="🥅 Maiores artilheiros da temporada"
-        emptyText="Nenhum gol marcado nesta temporada ainda."
+        title="🥅 Maiores artilheiros"
         count={scorers.length}
+        headerExtra={<ScopeToggle scope={scorerScope} setScope={setScorerScope} />}
         limit={scorerLimit}
         setLimit={setScorerLimit}
       >
@@ -329,17 +378,18 @@ export function HallOfFame() {
                   {clubName(p.clubId)}
                 </td>
                 <td className="text-center text-zinc-400">{p.pos}</td>
-                <td className="text-center font-mono tabular-nums text-amber-400 font-semibold">{p.goals}</td>
+                <td className="text-center font-mono tabular-nums text-amber-400 font-semibold">{goalsOf(p)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </RankSection>
-
+    ) },
+    { key: "garcons", count: assisters.length, node: (
       <RankSection
-        title="🎯 Maiores assistências da temporada"
-        emptyText="Nenhuma assistência registrada nesta temporada ainda."
+        title="🎯 Maiores garçons"
         count={assisters.length}
+        headerExtra={<ScopeToggle scope={assisterScope} setScope={setAssisterScope} />}
         limit={assisterLimit}
         setLimit={setAssisterLimit}
       >
@@ -368,17 +418,18 @@ export function HallOfFame() {
                   {clubName(p.clubId)}
                 </td>
                 <td className="text-center text-zinc-400">{p.pos}</td>
-                <td className="text-center font-mono tabular-nums text-emerald-400 font-semibold">{p.assists}</td>
+                <td className="text-center font-mono tabular-nums text-emerald-400 font-semibold">{assistsOf(p)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </RankSection>
-
+    ) },
+    { key: "tecnicos", count: managers.length, node: (
       <RankSection
-        title="🏅 Técnicos"
-        emptyText="Sem técnicos registrados neste save."
+        title="🏅 Melhores técnicos"
         count={managers.length}
+        headerExtra={<ScopeToggle scope={mgrScope} setScope={setMgrScope} />}
         limit={managerLimit}
         setLimit={setManagerLimit}
       >
@@ -389,6 +440,7 @@ export function HallOfFame() {
               <th>Técnico</th>
               <th>Clube</th>
               <th className="w-14 text-center">Títulos</th>
+              <th className="w-14 text-center" title="Vitórias na carreira — as da Série A pesam mais no desempate">Vit.</th>
               <th className="w-16 text-center" title="Reputação (5-99): sobe com campanhas acima do esperado e títulos">Reput.</th>
             </tr>
           </thead>
@@ -407,33 +459,42 @@ export function HallOfFame() {
                   {clubName(m.clubId)}
                 </td>
                 <td className="text-center font-mono tabular-nums">{m.titles}</td>
+                <td className="text-center font-mono tabular-nums text-amber-400">{mgrWins(m)}</td>
                 <td className="text-center font-mono tabular-nums text-zinc-400">{m.reputation}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </RankSection>
+    ) },
+    { key: "premio", count: awards.length, node: (
+      <div className="mb-6">
+        <h3 className="mb-2 text-base font-bold text-amber-400">🎖 Melhor Técnico da temporada</h3>
+        {awards.length === 0 ? null : (
+          <div className="mb-4">
+            {awards.map((a) => (
+              <div
+                key={a.season}
+                className="flex items-center justify-between border-b border-zinc-800 py-1.5 text-xs sm:text-sm text-zinc-200"
+              >
+                <span className="text-zinc-500">Temporada {a.season}</span>
+                <span className="font-semibold">{a.managerName}</span>
+                <span className="text-zinc-400">{a.clubName}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    ) },
+  ];
+  // com dados primeiro, vazias no fim — a ordem relativa original é preservada
+  const ordered = [...sections].sort((a, b) => Number(a.count === 0) - Number(b.count === 0));
 
-      <h3 className="mb-2 text-base font-bold text-amber-400">🎖 Melhor Técnico da temporada</h3>
-      {awards.length === 0 ? (
-        <p className="text-xs text-zinc-500">
-          O prêmio é entregue ao fim de cada temporada para o técnico da melhor campanha.
-        </p>
-      ) : (
-        <div className="mb-4">
-          {awards.map((a) => (
-            <div
-              key={a.season}
-              className="flex items-center justify-between border-b border-zinc-800 py-1.5 text-xs sm:text-sm text-zinc-200"
-            >
-              <span className="text-zinc-500">Temporada {a.season}</span>
-              <span className="font-semibold">{a.managerName}</span>
-              <span className="text-zinc-400">{a.clubName}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
+  return (
+    <div>
+      {ordered.map((s) => (
+        <div key={s.key}>{s.node}</div>
+      ))}
       {selected && (
         <ClubModal game={game} club={selected} onClose={() => setSelected(null)} />
       )}

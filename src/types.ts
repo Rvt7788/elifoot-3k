@@ -29,8 +29,10 @@ export interface Player {
   tier: Tier;
   traits: Trait[];
   energy: number; // 0-100, entre partidas
-  goals: number;
-  assists: number;
+  goals: number; // da temporada atual (zera na virada)
+  assists: number; // da temporada atual (zera na virada)
+  careerGoals?: number; // acumulado das temporadas anteriores (não inclui a atual)
+  careerAssists?: number; // acumulado das temporadas anteriores (não inclui a atual)
   yellows: number;
   reds: number;
   yellowsLeague: number;
@@ -194,6 +196,10 @@ export interface Manager {
   clubId: string | null; // null = desempregado (no mercado)
   reputation: number; // 5-99
   titles: number; // títulos de liga/copa/continental na carreira
+  winsA?: number; // vitórias na carreira comandando clube da Série A
+  winsB?: number; // vitórias na carreira comandando clube da Série B
+  seasonWinsA?: number; // vitórias na temporada atual pela Série A (zera na virada)
+  seasonWinsB?: number; // vitórias na temporada atual pela Série B (zera na virada)
   isUser?: boolean; // técnico controlado pelo jogador
 }
 

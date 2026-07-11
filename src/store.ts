@@ -1023,9 +1023,25 @@ export const useStore = create<Store>()(
         // BANKRUPTCY_WEEKS rodadas no vermelho antes de decretar falência e demitir
         const debtWeeks = game.fired ? game.debtWeeks : budget < 0 ? (game.debtWeeks ?? 0) + 1 : 0;
         const fired = game.fired || (debtWeeks ?? 0) >= BANKRUPTCY_WEEKS;
+        // vitórias da rodada por técnico: acumuladas por divisão do clube na hora
+        // da vitória (Série A pesa mais que B no ranking de técnicos)
+        const managers = game.managers?.map((m) => {
+          if (!m.clubId) return m;
+          const wins = live.filter(
+            (x) =>
+              x.finished &&
+              ((x.homeId === m.clubId && x.homeScore > x.awayScore) ||
+                (x.awayId === m.clubId && x.awayScore > x.homeScore)),
+          ).length;
+          if (wins === 0) return m;
+          const div = game.clubs.find((c) => c.id === m.clubId)?.division;
+          return div === "Série A"
+            ? { ...m, winsA: (m.winsA ?? 0) + wins, seasonWinsA: (m.seasonWinsA ?? 0) + wins }
+            : { ...m, winsB: (m.winsB ?? 0) + wins, seasonWinsB: (m.seasonWinsB ?? 0) + wins };
+        });
         set({
           game: {
-            ...game, fixtures, tables, players, cup, continental,
+            ...game, fixtures, tables, players, cup, continental, managers,
             week: game.week + 1,
             budget,
             debtWeeks,
