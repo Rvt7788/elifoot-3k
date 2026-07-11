@@ -733,8 +733,20 @@ export function simulateMinute(
   // mas o ruído continua alto o bastante para permitir zebra e jogo imprevisível.
   const homeDef = defensePower(m.homeLineup, idx, m.homeTactics, m.homeSlotOrder);
   const awayDef = defensePower(m.awayLineup, idx, m.awayTactics, m.awaySlotOrder);
-  // moral (0..1): time confiante rende até +5%, time em crise até -5%
-  const moraleBoost = (mor: number | undefined) => 1 + ((mor ?? 0.5) - 0.5) * 0.1;
+  // moral (0..1): neutra entre 40% e 60%; melhora gradualmente acima de 60% (até +10%);
+  // piora gradualmente abaixo de 40% (até -10%).
+  const moraleBoost = (mor: number | undefined) => {
+    const morale = Math.round((mor ?? 0.6) * 100);
+    if (morale > 60) {
+      const pct = (morale - 60) / 35; // 0..1 de 60 a 95
+      return 1.0 + 0.10 * pct;
+    } else if (morale < 40) {
+      const pct = (40 - morale) / 30; // 0..1 de 40 a 10
+      return 1.0 - 0.10 * pct;
+    } else {
+      return 1.0;
+    }
+  };
   const hp = teamPower(m.homeLineup, idx, m.homeTactics, awayDef, m.homeSlotOrder) * 1.08 * moraleBoost(m.homeMorale); // fator casa
   const ap = teamPower(m.awayLineup, idx, m.awayTactics, homeDef, m.awaySlotOrder) * moraleBoost(m.awayMorale);
   let delta = ((hp - ap) / (hp + ap)) * 34 + (rng() - 0.5) * 18;
