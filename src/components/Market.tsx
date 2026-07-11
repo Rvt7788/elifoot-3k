@@ -2,6 +2,7 @@ import { Fragment, useMemo, useState } from "react";
 import { useStore, MIN_SQUAD, MAX_SQUAD } from "../store";
 import { aiAcceptChance, askingPrice, filterMarket, type MarketFilters } from "../game/market";
 import { appConfirm } from "./AppDialog";
+import FinanceModal from "./FinanceModal";
 import type { Player, Position, Trait } from "../types";
 
 const POSITIONS: (Position | "ALL")[] = ["ALL", "GOL", "DEF", "MEI", "ATA"];
@@ -106,6 +107,9 @@ export default function Market() {
   const [sortKey, setSortKey] = useState<SortKey>("strength");
   const [sortAsc, setSortAsc] = useState(false);
   const [expandedSell, setExpandedSell] = useState<string | null>(null);
+  const [financeOpen, setFinanceOpen] = useState(false);
+  const [sellSort, setSellSort] = useState<"value" | "name" | "age" | "strength" | "apps" | "goals">("value");
+  const [sellAsc, setSellAsc] = useState(false);
 
   if (!game) return null;
   const squad = game.players.filter((p) => p.clubId === game.userClubId);
@@ -172,23 +176,29 @@ export default function Market() {
     <div className="mx-auto max-w-4xl p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-bold">Mercado de Transferências</h2>
-        <p className="text-sm text-zinc-400">
-          Orçamento: <b className="text-emerald-400">${(game.budget / 1e6).toFixed(1)}M</b>
-        </p>
+        <button
+          onClick={() => setFinanceOpen(true)}
+          className="rounded px-2 py-1 text-sm text-zinc-400 hover:bg-zinc-800"
+          title="Ver o detalhamento financeiro completo do clube"
+        >
+          Orçamento: <b className="text-emerald-400">${(game.budget / 1e6).toFixed(1)}M</b> ›
+        </button>
       </div>
+      {financeOpen && <FinanceModal onClose={() => setFinanceOpen(false)} />}
 
-      <div className="mb-3 flex gap-2">
+      {/* abas em linha cheia: Contratar de um lado, Vender do outro */}
+      <div className="mb-3 flex w-full gap-2">
         <button
           onClick={() => setTab("buy")}
-          className={`rounded px-3 py-1.5 text-sm ${tab === "buy" ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"}`}
+          className={`flex-1 rounded px-3 py-1.5 text-sm font-semibold ${tab === "buy" ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"}`}
         >
           🔍 Contratar
         </button>
         <button
           onClick={() => setTab("sell")}
-          className={`rounded px-3 py-1.5 text-sm ${tab === "sell" ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"}`}
+          className={`flex-1 rounded px-3 py-1.5 text-sm font-semibold ${tab === "sell" ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"}`}
         >
-          💰 Vender do meu elenco
+          💰 Vender
         </button>
       </div>
 
@@ -292,9 +302,7 @@ export default function Market() {
 
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-zinc-500">
-              {appliedFilters
-                ? `${results.length} jogadores disponíveis (clubes de divisão compatível)`
-                : "Preencha os filtros acima e clique em Buscar para ver os jogadores disponíveis."}
+              {appliedFilters ? `${results.length} jogadores disponíveis (clubes de divisão compatível)` : ""}
             </p>
 
             {/* Seletor de ordenação visível APENAS no mobile */}
@@ -328,7 +336,8 @@ export default function Market() {
 
           {appliedFilters && results.length > 0 && (
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-500 border-b border-zinc-800/80 mb-2">
-              <span className="w-6 shrink-0 text-right">#</span>
+              {/* cabeçalho na MESMA ordem das colunas da linha: pos, nome, clube,
+                  força, preço, idade, gols/assist., características, negociação */}
               <span className="w-8 shrink-0">Pos</span>
               <button
                 onClick={() => handleSortClick("name")}
@@ -344,79 +353,83 @@ export default function Market() {
                 For{renderSortIcon("strength")}
               </button>
               <button
-                onClick={() => handleSortClick("age")}
-                className={`w-10 shrink-0 text-center hover:text-zinc-300 transition-colors ${sortKey === "age" ? "text-amber-400" : ""}`}
-              >
-                Ida{renderSortIcon("age")}
-              </button>
-              <div className="w-16 shrink-0 flex items-center justify-center gap-2">
-                <button
-                  onClick={() => handleSortClick("goals")}
-                  className={`hover:text-zinc-300 transition-colors ${sortKey === "goals" ? "text-amber-400" : ""}`}
-                  title="Ordenar por Gols"
-                >
-                  ⚽{renderSortIcon("goals")}
-                </button>
-                <button
-                  onClick={() => handleSortClick("assists")}
-                  className={`hover:text-zinc-300 transition-colors ${sortKey === "assists" ? "text-amber-400" : ""}`}
-                  title="Ordenar por Assistências"
-                >
-                  🎯{renderSortIcon("assists")}
-                </button>
-              </div>
-              <span className="w-24 shrink-0 text-left">Caract.</span>
-              <button
                 onClick={() => handleSortClick("value")}
                 className={`w-20 shrink-0 text-right hover:text-zinc-300 transition-colors ${sortKey === "value" ? "text-amber-400" : ""}`}
               >
                 Preço{renderSortIcon("value")}
               </button>
+              <button
+                onClick={() => handleSortClick("age")}
+                className={`w-10 shrink-0 text-center hover:text-zinc-300 transition-colors ${sortKey === "age" ? "text-amber-400" : ""}`}
+              >
+                Ida{renderSortIcon("age")}
+              </button>
+              <div className="w-16 shrink-0 flex items-center justify-center gap-1">
+                <button
+                  onClick={() => handleSortClick("goals")}
+                  className={`hover:text-zinc-300 transition-colors ${sortKey === "goals" ? "text-amber-400" : ""}`}
+                  title="Ordenar por Gols"
+                >
+                  G{renderSortIcon("goals")}
+                </button>
+                <span>/</span>
+                <button
+                  onClick={() => handleSortClick("assists")}
+                  className={`hover:text-zinc-300 transition-colors ${sortKey === "assists" ? "text-amber-400" : ""}`}
+                  title="Ordenar por Assistências"
+                >
+                  A{renderSortIcon("assists")}
+                </button>
+              </div>
+              <span className="w-24 shrink-0 text-left">Caract.</span>
               <span className="w-[110px] shrink-0 text-center">Negociação</span>
             </div>
           )}
           <div className="flex flex-col gap-1.5">
             {results.slice(0, 60).map((p) => {
               const price = askingPrice(game, p);
+              // mobile: card de 2 linhas; desktop (sm:): os wrappers viram
+              // "contents" e tudo volta a ser uma linha única de colunas
               return (
-                <div key={p.id} className="flex flex-wrap sm:flex-nowrap items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm">
-                  <span className="w-6 shrink-0 text-right tabular-nums text-zinc-500">{p.number}</span>
-                  <span className="w-8 shrink-0 text-zinc-400">{p.pos}</span>
-                  <span className="min-w-[120px] flex-1 truncate flex items-center gap-1.5">
-                    <span className="truncate">{p.name}</span>
-                    <span className="text-amber-400 shrink-0">{TIER_BADGE[p.tier]}</span>
-                    <ChanceBar chance={aiAcceptChance(game, p, offerValue(p), () => 0.5)} />
-                  </span>
-                  <span className="w-24 shrink-0 truncate text-xs text-zinc-500">{clubName(p.clubId)}</span>
-                  <span className="w-10 shrink-0 text-center font-bold">
-                    {p.strength}
-                    {p.strength < p.cap && (
-                      <span className="ml-0.5 text-emerald-400" title={`Potencial até ${p.cap}`}>▲</span>
-                    )}
-                  </span>
-                  <span className="w-10 shrink-0 text-center text-xs text-zinc-400">{p.age}a</span>
-                  <span className="w-16 shrink-0 text-center text-xs text-zinc-500 font-mono" title="Gols / Assistências nesta temporada">
-                    {p.goals}/{p.assists}
-                  </span>
-                  <span className="w-24 shrink-0 truncate text-xs text-zinc-400">{p.traits.join(", ") || "—"}</span>
-                  <span className="w-20 shrink-0 text-right text-xs text-zinc-400 font-mono">
-                    ${(price / 1e6).toFixed(2)}M
-                  </span>
-                  <div className="w-[110px] shrink-0 flex items-center justify-end gap-1.5">
-                    <input
-                      type="number"
-                      placeholder={`${(price / 1e6).toFixed(1)}`}
-                      value={offers[p.id] ?? ""}
-                      onChange={(e) => setOffers({ ...offers, [p.id]: e.target.value })}
-                      className="w-12 shrink-0 rounded bg-zinc-800 px-1 py-0.5 text-xs text-zinc-100 text-center"
-                      title="Sua oferta em $M (vazio = valor pedido)"
-                    />
-                    <button
-                      onClick={() => doBuy(p)}
-                      className="shrink-0 rounded bg-emerald-700 px-1.5 py-0.5 text-xs hover:bg-emerald-600 text-white font-semibold"
-                    >
-                      Propor
-                    </button>
+                <div key={p.id} className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm sm:flex sm:flex-nowrap sm:items-center sm:gap-2">
+                  <div className="flex items-center gap-2 sm:contents">
+                    <span className="w-8 shrink-0 text-zinc-400">{p.pos}</span>
+                    <span className="min-w-0 flex-1 flex items-center gap-1.5 sm:min-w-[120px]">
+                      <span className="overflow-hidden whitespace-nowrap [text-overflow:clip]">{p.name}</span>
+                      <span className="text-amber-400 shrink-0">{TIER_BADGE[p.tier]}</span>
+                      <ChanceBar chance={aiAcceptChance(game, p, offerValue(p), () => 0.5)} />
+                    </span>
+                    <span className="max-w-[110px] shrink-0 truncate text-xs text-zinc-500 sm:w-24 sm:max-w-none">{clubName(p.clubId)}</span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs sm:contents">
+                    <span className="font-bold text-sm sm:w-10 sm:shrink-0 sm:text-center">
+                      {p.strength}
+                      {p.strength < p.cap && (
+                        <span className="ml-0.5 text-emerald-400" title={`Potencial até ${p.cap}`}>▲</span>
+                      )}
+                    </span>
+                    <span className="font-mono text-emerald-400 text-xs sm:w-20 sm:shrink-0 sm:text-right">${(price / 1e6).toFixed(2)}M</span>
+                    <span className="text-zinc-400 text-xs sm:w-10 sm:shrink-0 sm:text-center">{p.age}a</span>
+                    <span className="font-mono text-zinc-500 text-xs sm:w-16 sm:shrink-0 sm:text-center" title="Gols / Assistências nesta temporada">
+                      {p.goals}/{p.assists}
+                    </span>
+                    <span className="min-w-0 truncate text-zinc-400 text-xs sm:w-24 sm:shrink-0">{p.traits.join(", ") || "—"}</span>
+                    <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:ml-0 sm:w-[110px] sm:justify-end">
+                      <input
+                        type="number"
+                        placeholder={`${(price / 1e6).toFixed(1)}`}
+                        value={offers[p.id] ?? ""}
+                        onChange={(e) => setOffers({ ...offers, [p.id]: e.target.value })}
+                        className="w-12 shrink-0 rounded bg-zinc-800 px-1 py-0.5 text-xs text-zinc-100 text-center"
+                        title="Sua oferta em $M (vazio = valor pedido)"
+                      />
+                      <button
+                        onClick={() => doBuy(p)}
+                        className="shrink-0 rounded bg-emerald-700 px-1.5 py-0.5 text-xs hover:bg-emerald-600 text-white font-semibold"
+                      >
+                        Propor
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -430,12 +443,48 @@ export default function Market() {
 
       {tab === "sell" && (
         <>
-          <p className="mb-2 text-xs text-zinc-500">
-            {squad.length} jogadores (mínimo {MIN_SQUAD}, máximo {MAX_SQUAD})
-          </p>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-zinc-500">
+              {squad.length} jogadores (mínimo {MIN_SQUAD}, máximo {MAX_SQUAD})
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {([
+                ["value", "Valor"],
+                ["name", "Nome"],
+                ["age", "Idade"],
+                ["strength", "Força"],
+                ["apps", "Jogos"],
+                ["goals", "Gols"],
+              ] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  onClick={() => {
+                    if (sellSort === key) setSellAsc(!sellAsc);
+                    else { setSellSort(key); setSellAsc(key === "name" || key === "age"); }
+                  }}
+                  className={`rounded px-2 py-0.5 text-[11px] font-semibold ${
+                    sellSort === key ? "bg-emerald-600 text-white" : "bg-zinc-800/60 text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  {label}{sellSort === key ? (sellAsc ? " ↑" : " ↓") : ""}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="flex flex-col gap-1.5">
-            {squad
-              .sort((a, b) => b.value - a.value)
+            {[...squad]
+              .sort((a, b) => {
+                const key = (p: Player) =>
+                  sellSort === "value" ? askingPrice(game, p)
+                  : sellSort === "name" ? p.name
+                  : sellSort === "apps" ? (p.apps ?? 0)
+                  : p[sellSort];
+                const va = key(a);
+                const vb = key(b);
+                if (typeof va === "string" && typeof vb === "string")
+                  return sellAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+                return sellAsc ? (va as number) - (vb as number) : (vb as number) - (va as number);
+              })
               .map((p) => (
                 <Fragment key={p.id}>
                   <div
@@ -474,6 +523,7 @@ export default function Market() {
                         <p>Nível: <span className="text-zinc-200">{TIER_NAME[p.tier] || p.tier}</span></p>
                         <p>Pé: <span className="text-zinc-200 capitalize">{p.foot}</span></p>
                         <p className="col-span-2">Nascimento: <span className="text-zinc-200">{playerBirthDate(p.id, p.age, game.season)}</span></p>
+                        <p>Jogos: <span className="text-zinc-200">{p.apps ?? 0}</span></p>
                         <p>Gols: <span className="text-zinc-200">{p.goals}</span></p>
                         <p>Assistências: <span className="text-zinc-200">{p.assists}</span></p>
                         <p>Cartões: <span className="text-zinc-200">🟨 {p.yellows} · 🟥 {p.reds}</span></p>

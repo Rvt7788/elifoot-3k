@@ -73,7 +73,8 @@ export function stadiumAttendance(g: GameState, homeId: string, week: number): n
     .sort((a, b) => a.baseBudget - b.baseBudget);
   const power = peers.length > 1 ? peers.findIndex((c) => c.id === homeId) / (peers.length - 1) : 0.5;
   const isA = home.division === "Série A";
-  const base = isA ? 30000 + power * 20000 : 5000 + power * 15000;
+  // Série B: 10-25 mil lugares; Série A: 30-70 mil (o gigante lota 70 mil)
+  const base = isA ? 30000 + power * 40000 : 10000 + power * 15000;
   const info = weekInfo(week);
   // jogo eliminatório é evento: cada fase adiante enche mais o estádio;
   // fase de grupos da continental é um degrau acima da liga
@@ -83,7 +84,87 @@ export function stadiumAttendance(g: GameState, homeId: string, week: number): n
     : 1.15 + info.stage * 0.1;
   const rng = mulberry32((g.seed ^ (week * 2654435761) ^ strHash(homeId)) >>> 0);
   const variation = 0.85 + rng() * 0.3; // ±15% de jogo para jogo
+  if (homeId === g.userClubId) {
+    // clube do usuário: o estádio tem capacidade fixa (lugares); a ocupação vem
+    // da moral da torcida (resultados recentes), não do tamanho da arquibancada
+    const cap = stadiumCapacity(g);
+    const occupancy = 0.45 + 0.5 * crowdMorale(g); // 45% em crise .. 95% empolgada
+    return Math.min(cap, Math.round(cap * occupancy * importance * variation));
+  }
   return Math.min(70000, Math.round(base * importance * variation));
+}
+
+// ── Estádio: capacidade em lugares; comprar arquibancada só adiciona lugares ──
+// O custo cresce por nível, proporcional ao porte do clube. Vale a pena quando a
+// torcida está lotando o estádio — ocupação é moral, capacidade é investimento.
+export const STADIUM_MAX_LEVEL = 5;
+export const STADIUM_SEATS_PER_LEVEL = 3000; // lugares adicionados por nível
+
+// Capacidade total do estádio do usuário: base pelo porte do clube na divisão
+// + lugares comprados.
+export function stadiumCapacity(g: GameState): number {
+  const home = g.clubs.find((c) => c.id === g.userClubId);
+  if (!home) return 0;
+  const peers = g.clubs
+    .filter((c) => c.country === home.country && c.division === home.division)
+    .sort((a, b) => a.baseBudget - b.baseBudget);
+  const power = peers.length > 1 ? peers.findIndex((c) => c.id === home.id) / (peers.length - 1) : 0.5;
+  // mesmo piso/teto do público geral: Série B 10-25 mil, Série A 30-70 mil
+  const base = home.division === "Série A" ? 30000 + power * 40000 : 10000 + power * 15000;
+  return Math.round(base) + (g.stadiumLevel ?? 0) * STADIUM_SEATS_PER_LEVEL;
+}
+
+// Moral do time (0..1 para os consumidores): variável persistente do save que
+// sobe com vitória e cai com derrota — lota o estádio e dá gás em campo.
+function crowdMorale(g: GameState): number {
+  return (g.morale ?? 60) / 100;
+}
+
+// Atualiza a moral após a rodada: vitória +8, empate +2, derrota -8, com piso
+// 10 (nunca zerada de vez) e teto 95 (sempre há o que conquistar).
+export function nextMorale(current: number, my: number, op: number): number {
+  const delta = my > op ? 8 : my === op ? 2 : -8;
+  return Math.max(10, Math.min(95, current + delta));
+}
+
+export function stadiumUpgradeCost(g: GameState): number {
+  const club = g.clubs.find((c) => c.id === g.userClubId);
+  const level = g.stadiumLevel ?? 0;
+  return Math.round(((club?.baseBudget ?? 5e6) * 0.12 * (level + 1)) / 1e4) * 1e4;
+}
+
+// Manchetes da rodada: cobre só a divisão do usuário (o caderno acompanha a
+// competição que ele disputa) + lesões do próprio elenco. Goleadas, hat-tricks
+// e o resultado do técnico viram notícia; sem dado relevante, sem manchete.
+function buildRoundNews(
+  g: GameState,
+  live: { finished: boolean; homeId: string; awayId: string; homeScore: number; awayScore: number; events: { type: string; playerName?: string }[] }[],
+  injured: { name: string; weeks: number }[],
+): string[] {
+  const user = g.clubs.find((c) => c.id === g.userClubId)!;
+  const name = (id: string) => g.clubs.find((c) => c.id === id)?.name ?? "?";
+  const divIds = new Set(
+    g.clubs.filter((c) => c.country === user.country && c.division === user.division).map((c) => c.id),
+  );
+  const divMatches = live.filter((m) => m.finished && divIds.has(m.homeId) && divIds.has(m.awayId));
+  const news: string[] = [];
+  for (const m of divMatches) {
+    if (Math.abs(m.homeScore - m.awayScore) >= 3) {
+      const winner = m.homeScore > m.awayScore ? m.homeId : m.awayId;
+      const loser = winner === m.homeId ? m.awayId : m.homeId;
+      news.push(`🔥 ${name(winner)} atropela o ${name(loser)}: ${m.homeScore} a ${m.awayScore}.`);
+    }
+  }
+  for (const m of divMatches) {
+    const count = new Map<string, number>();
+    for (const e of m.events)
+      if (e.type === "goal" && e.playerName) count.set(e.playerName, (count.get(e.playerName) ?? 0) + 1);
+    for (const [player, gols] of count)
+      if (gols >= 3) news.push(`⚽ ${player} marca ${gols} gols em ${name(m.homeId)} x ${name(m.awayId)}.`);
+  }
+  for (const i of injured)
+    news.push(`🚑 ${i.name} se lesiona e desfalca o ${user.name} por ${i.weeks} rodada${i.weeks > 1 ? "s" : ""}.`);
+  return news.slice(0, 6);
 }
 
 // Custo do bicho (prêmio de motivação pago durante a partida): uma bilheteria de jogo em casa.
@@ -145,8 +226,10 @@ interface Store {
   setCustomFormation: (custom: CustomFormation) => void;
   setDefaultTactics: (t: Partial<Tactics>) => void;
   setPlayerTraining: (id: string, i: TrainingIntensity) => void;
+  setAllTraining: (i: TrainingIntensity) => void;
   setPlayerNumber: (id: string, number: number) => void;
   payBicho: (level: BichoLevel) => boolean;
+  upgradeStadium: () => boolean;
   sellPlayer: (id: string) => { ok: boolean; amount?: number };
   buyPlayer: (id: string, offer: number) => { ok: boolean; message: string };
   renewContract: (id: string) => { ok: boolean; message: string };
@@ -608,6 +691,8 @@ export const useStore = create<Store>()(
             isUserTeam(f.awayId) ? g.formation : undefined,
             isUserTeam(f.homeId) ? g.customFormation : undefined,
             isUserTeam(f.awayId) ? g.customFormation : undefined,
+            isUserTeam(f.homeId) ? (g.morale ?? 60) / 100 : undefined,
+            isUserTeam(f.awayId) ? (g.morale ?? 60) / 100 : undefined,
           ),
         );
         // público de cada estádio definido na abertura da rodada (e exibido nela)
@@ -735,6 +820,18 @@ export const useStore = create<Store>()(
         });
       },
 
+      // Comprar arquibancada: débito à vista, +8% de público em todos os jogos
+      // em casa dali em diante. Nível máximo 5 (+40%).
+      upgradeStadium: () => {
+        const g = get().game;
+        if (!g || g.fired) return false;
+        const level = g.stadiumLevel ?? 0;
+        const cost = stadiumUpgradeCost(g);
+        if (level >= STADIUM_MAX_LEVEL || g.budget < cost) return false;
+        set({ game: { ...g, budget: g.budget - cost, stadiumLevel: level + 1 } });
+        return true;
+      },
+
       payBicho: (level) => {
         const g = get().game;
         if (!g || g.fired || g.defaultTactics.bicho) return false; // já pago para a próxima partida
@@ -756,6 +853,14 @@ export const useStore = create<Store>()(
         const g = get().game;
         if (!g) return;
         const players = g.players.map((p) => (p.id === id ? { ...p, training: i } : p));
+        set({ game: { ...g, players } });
+      },
+
+      // regime em massa: aplica a mesma intensidade a todo o elenco do usuário
+      setAllTraining: (i) => {
+        const g = get().game;
+        if (!g) return;
+        const players = g.players.map((p) => (p.clubId === g.userClubId ? { ...p, training: i } : p));
         set({ game: { ...g, players } });
       },
 
@@ -987,15 +1092,33 @@ export const useStore = create<Store>()(
             ))
             .map((p) => p.id),
         );
+        // lesões: rolagem determinística pós-rodada para quem entrou em campo —
+        // ~3% base, mais provável para veteranos (30+) e com desconto para Raçudo;
+        // quem já estava lesionado cumpre uma rodada de recuperação
+        const injuryRng = mulberry32((game.seed ^ (game.week * 15485863)) >>> 0);
+        const newlyInjured: { name: string; weeks: number }[] = [];
         const players = game.players.map((p) => {
           // regime individual do jogador afeta ganho de XP e recuperação; IA treina em regime normal
           const intensity: TrainingIntensity =
             p.clubId === game.userClubId ? (p.training ?? "normal") : "normal";
           const base = played.get(p.id) ?? p.energy;
           const recovered = base + (100 - base) * RECOVERY[intensity];
+          let injuryWeeks = p.injuryWeeks ?? 0;
+          if (injuryWeeks > 0) {
+            injuryWeeks -= 1;
+          } else if (enteredField.has(p.id)) {
+            const pInjury =
+              (0.03 + Math.max(0, p.age - 30) * 0.005) * (p.traits.includes("Raçudo") ? 0.5 : 1);
+            if (injuryRng() < pInjury) {
+              injuryWeeks = 1 + Math.floor(injuryRng() * 4); // 1 a 4 rodadas fora
+              if (p.clubId === game.userClubId) newlyInjured.push({ name: p.name, weeks: injuryWeeks });
+            }
+          }
           const next = {
             ...p,
             energy: Math.min(100, Math.round(recovered)),
+            apps: (p.apps ?? 0) + (enteredField.has(p.id) ? 1 : 0),
+            injuryWeeks,
             suspendedLeague: isLeague && suspendedIds.has(p.id) ? false : p.suspendedLeague,
             suspendedCup: isCupNac && suspendedIds.has(p.id) ? false : p.suspendedCup,
             suspendedContinental: isCont && suspendedIds.has(p.id) ? false : p.suspendedContinental,
@@ -1008,10 +1131,10 @@ export const useStore = create<Store>()(
         // rodada — a renda é o público real do estádio × preço do ingresso da divisão
         const userClub = game.clubs.find((c) => c.id === game.userClubId)!;
         const userHomeMatch = live.find((m) => m.homeId === game.userClubId);
-        const revenue = !game.fired && userHomeMatch
-          ? (userHomeMatch.attendance ?? stadiumAttendance(game, game.userClubId, game.week)) *
-            ticketPrice(userClub.division)
+        const attendance = !game.fired && userHomeMatch
+          ? (userHomeMatch.attendance ?? stadiumAttendance(game, game.userClubId, game.week))
           : 0;
+        const revenue = attendance * ticketPrice(userClub.division);
         // cota de TV/patrocínio: entra toda rodada, jogando em casa ou fora
         const tv = game.fired ? 0 : tvQuota(userClub.division);
         // folha salarial: paga toda rodada, jogando em casa ou fora. Demitido não
@@ -1023,6 +1146,17 @@ export const useStore = create<Store>()(
         // BANKRUPTCY_WEEKS rodadas no vermelho antes de decretar falência e demitir
         const debtWeeks = game.fired ? game.debtWeeks : budget < 0 ? (game.debtWeeks ?? 0) + 1 : 0;
         const fired = game.fired || (debtWeeks ?? 0) >= BANKRUPTCY_WEEKS;
+        // moral do time: reage ao resultado do usuário na rodada
+        const userMatchM = live.find(
+          (m) => m.homeId === game.userClubId || m.awayId === game.userClubId,
+        );
+        const morale = !game.fired && userMatchM
+          ? nextMorale(
+              game.morale ?? 60,
+              userMatchM.homeId === game.userClubId ? userMatchM.homeScore : userMatchM.awayScore,
+              userMatchM.homeId === game.userClubId ? userMatchM.awayScore : userMatchM.homeScore,
+            )
+          : (game.morale ?? 60);
         // vitórias da rodada por técnico: acumuladas por divisão do clube na hora
         // da vitória (Série A pesa mais que B no ranking de técnicos)
         const managers = game.managers?.map((m) => {
@@ -1041,7 +1175,8 @@ export const useStore = create<Store>()(
         });
         set({
           game: {
-            ...game, fixtures, tables, players, cup, continental, managers,
+            ...game, fixtures, tables, players, cup, continental, managers, morale,
+            prevMorale: game.morale ?? 60,
             week: game.week + 1,
             budget,
             debtWeeks,
@@ -1050,7 +1185,8 @@ export const useStore = create<Store>()(
             // proposta antiga expira ao fim da rodada; nova pode chegar no lugar
             incomingOffer: fired ? undefined : maybeIncomingOffer(game),
             // balanço da rodada para a tela do clube: bilheteria, prêmios, folha e o bicho pago
-            lastFinance: { revenue, tv, prize, wages, bicho: game.pendingBicho ?? 0 },
+            lastFinance: { revenue, tv, prize, wages, attendance, bicho: game.pendingBicho ?? 0 },
+            lastNews: buildRoundNews(game, live, newlyInjured),
             pendingBicho: undefined,
             // bicho vale só para a partida da rodada: pago, consumido, resetado
             defaultTactics: { ...game.defaultTactics, bicho: false, bichoPct: undefined },

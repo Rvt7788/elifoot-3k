@@ -654,12 +654,18 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
           const inLp = lineup.find((l) => l.playerId === suggestion.in);
           const outEnergy = outLp ? Math.round(outLp.energy) : outP.energy;
           const inEnergy = inLp ? Math.round(inLp.energy) : inP.energy;
+          // só o primeiro nome: a posição é informação obrigatória e nunca pode
+          // ser cortada pelo truncate quando o nome é comprido
+          const firstName = (n: string) => n.split(" ")[0];
           return (
             <div className="mb-3 flex flex-col gap-2.5 rounded-lg border border-amber-700/60 bg-amber-950/30 px-3 py-2 text-sm">
               <div className="flex items-center justify-between gap-4">
                 {/* Quem sai */}
                 <div className="flex flex-1 flex-col text-left min-w-0">
-                  <span className="font-semibold text-zinc-200 truncate">{outP.name} <span className="text-[10px] text-zinc-500 font-normal">({outP.pos})</span></span>
+                  <span className="flex min-w-0 items-baseline gap-1 font-semibold text-zinc-200">
+                    <span className="truncate">{firstName(outP.name)}</span>
+                    <span className="shrink-0 text-[10px] text-zinc-500 font-normal">({outP.pos})</span>
+                  </span>
                   <div className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-400">
                     <span className="text-red-400 font-bold">▼</span>
                     <span className="font-mono">F-{outP.strength}</span>
@@ -672,7 +678,10 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
 
                 {/* Quem entra */}
                 <div className="flex flex-1 flex-col text-right items-end min-w-0">
-                  <span className="font-semibold text-zinc-200 truncate"><span className="text-[10px] text-zinc-500 font-normal">({inP.pos})</span> {inP.name}</span>
+                  <span className="flex min-w-0 items-baseline justify-end gap-1 font-semibold text-zinc-200">
+                    <span className="shrink-0 text-[10px] text-zinc-500 font-normal">({inP.pos})</span>
+                    <span className="truncate">{firstName(inP.name)}</span>
+                  </span>
                   <div className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-400">
                     <EnergyBar value={inEnergy} className="scale-75 origin-right" />
                     <span className="font-mono">F-{inP.strength}</span>

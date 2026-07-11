@@ -8,6 +8,7 @@ import TacticsBoard from "./TacticsBoard";
 import { leagueName, cupName, continentalName } from "../data/leagues";
 import { IconPlay } from "./icons";
 import ClubModal from "./ClubModal";
+import FinanceModal from "./FinanceModal";
 import { readableOn } from "../game/color";
 import { formatMatchDate } from "../game/calendar";
 
@@ -154,11 +155,12 @@ function OpponentModal({
   );
 }
 
-export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => void }) {
+export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatchday?: () => void; onOpenTable?: () => void }) {
   const game = useStore((s) => s.game);
   const skipMatchday = useStore((s) => s.skipMatchday);
   const [analyzing, setAnalyzing] = useState(false);
   const [viewClub, setViewClub] = useState<Club | null>(null);
+  const [financeOpen, setFinanceOpen] = useState(false);
   // feedback do "Pular rodada": a simulação trava a UI por um instante — marca o
   // clique na hora (botão desabilitado + rótulo) e roda a simulação no frame seguinte
   const [skipping, setSkipping] = useState(false);
@@ -179,6 +181,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
   const row = table[pos - 1];
 
   // próximo compromisso do clube: rodada da liga, copa ou continental, o que vier antes
+  const morale = game.morale ?? 60;
   const week = nextPlayableWeek(game);
   const info = week !== null ? weekInfo(week) : null;
   const isCupNext = info?.type === "cup" || info?.type === "continental" || info?.type === "contgroup";
@@ -333,24 +336,32 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
         {/* Estatísticas (Posição, Orçamento) + Botão Jogar ao lado */}
         <div className="flex flex-row items-stretch justify-between gap-3 text-left w-full sm:w-auto sm:justify-start sm:gap-6">
           <div className="flex-1 rounded-lg border-2 border-[#cfa717] bg-[#e5be30] px-4 shadow-lg shadow-yellow-950/15 flex flex-row items-center justify-start gap-4 h-[88px] sm:h-28 sm:mx-0 sm:flex-initial sm:w-auto sm:max-w-none sm:gap-10 sm:px-8">
-            <div>
+            {/* três blocos com a mesma grade de linhas (rótulo / valor / duas
+                sublinhas), para rótulos e números ficarem sempre alinhados */}
+            <button onClick={onOpenTable} className="text-left hover:opacity-70" title="Ver a tabela">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1">Posição</p>
-              <p className="text-3xl sm:text-4xl font-black leading-none text-white mb-0.5">{pos}º</p>
-              <p className="text-[10px] font-semibold leading-snug text-[#3c320d]">
-                {row ? `${row.pts} pts · ${row.p} jogos` : ""}
-              </p>
-            </div>
-            <div>
+              <p className="flex h-8 items-end sm:h-9 text-3xl sm:text-4xl font-black leading-none text-white mb-0.5">{pos}º</p>
+              <div className="h-7 sm:h-8" />
+            </button>
+            <button onClick={() => setFinanceOpen(true)} className="text-left hover:opacity-70" title="Ver as finanças">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1">Orçamento</p>
-              <p className={`text-lg sm:text-xl font-black leading-none mb-0.5 ${game.budget < 0 ? "text-red-950" : "text-white"}`}>
+              <p className={`flex h-8 items-end sm:h-9 text-lg sm:text-xl font-black leading-none mb-0.5 ${game.budget < 0 ? "text-red-950" : "text-white"}`}>
                 ${(game.budget / 1e6).toFixed(1)}M
               </p>
-              <p className="text-[10px] font-semibold leading-snug text-[#3c320d]">
-                Elenco ${(squadValue / 1e6).toFixed(1)}M
+              <div className="h-7 sm:h-8" />
+            </button>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1">Moral</p>
+              <p className="flex h-8 items-end gap-1 sm:h-9 text-lg sm:text-xl font-black leading-none text-white mb-0.5">
+                {morale}%
+                {morale > (game.prevMorale ?? morale) && <span className="text-sm text-red-600">▲</span>}
+                {morale < (game.prevMorale ?? morale) && <span className="text-sm text-teal-800">▼</span>}
               </p>
-              <p className="text-[10px] font-semibold leading-snug text-[#3c320d]">
-                Folha ${(wageBill / 1e3).toFixed(0)}k/rodada
-              </p>
+              <div className="h-7 sm:h-8">
+                <p className="text-[10px] font-semibold leading-snug text-[#3c320d]">
+                  {morale >= 75 ? "Empolgado" : morale >= 55 ? "Confiante" : morale >= 40 ? "Instável" : "Em crise"}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -488,26 +499,40 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
         )}
         </div>
 
-        {/* Caixa da última rodada: bilheteria e prêmios arrecadados, bicho gasto */}
+        {/* Caixa da última rodada: bilheteria e prêmios arrecadados, bicho gasto.
+            Clicar no título abre o detalhamento financeiro completo. */}
         {game.lastFinance && (
           <div className="md:shrink-0 pr-4 md:pr-0">
-            <SectionLabel>Caixa</SectionLabel>
+            <button
+              onClick={() => setFinanceOpen(true)}
+              className="hover:opacity-70"
+              title="Ver o detalhamento financeiro completo"
+            >
+              <SectionLabel>Caixa ›</SectionLabel>
+            </button>
+            {/* whitespace-nowrap: valor e rótulo nunca quebram de linha no mobile */}
             <div className="flex flex-col gap-0.5 text-sm">
-              <p className="text-emerald-400">
+              <p className="whitespace-nowrap text-emerald-400">
                 + ${((game.lastFinance.revenue + game.lastFinance.prize) / 1e6).toFixed(2)}M
                 <span className="ml-1 text-xs text-zinc-500">
                   {game.lastFinance.prize > 0 ? "bilheteria + prêmio" : "bilheteria"}
                 </span>
               </p>
-              <p className={(game.lastFinance.tv ?? 0) > 0 ? "text-emerald-400" : "text-zinc-500"}>
+              {(game.lastFinance.attendance ?? 0) > 0 && (
+                <p className="whitespace-nowrap text-xs text-zinc-400">
+                  🏟 {(game.lastFinance.attendance ?? 0).toLocaleString("pt-BR")}
+                  <span className="ml-1 text-zinc-500">torcedores</span>
+                </p>
+              )}
+              <p className={`whitespace-nowrap ${(game.lastFinance.tv ?? 0) > 0 ? "text-emerald-400" : "text-zinc-500"}`}>
                 + ${((game.lastFinance.tv ?? 0) / 1e6).toFixed(2)}M
                 <span className="ml-1 text-xs text-zinc-500">TV e patrocínio</span>
               </p>
-              <p className={(game.lastFinance.wages ?? 0) > 0 ? "text-red-400" : "text-zinc-500"}>
+              <p className={`whitespace-nowrap ${(game.lastFinance.wages ?? 0) > 0 ? "text-red-400" : "text-zinc-500"}`}>
                 − ${((game.lastFinance.wages ?? 0) / 1e6).toFixed(2)}M
                 <span className="ml-1 text-xs text-zinc-500">salários</span>
               </p>
-              <p className={game.lastFinance.bicho > 0 ? "text-red-400" : "text-zinc-500"}>
+              <p className={`whitespace-nowrap ${game.lastFinance.bicho > 0 ? "text-red-400" : "text-zinc-500"}`}>
                 − ${(game.lastFinance.bicho / 1e6).toFixed(2)}M
                 <span className="ml-1 text-xs text-zinc-500">bicho</span>
               </p>
@@ -565,6 +590,18 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
       <hr className="mt-8 border-t border-[rgba(30,42,56,0.8)]" />
 
       {/* Formação e titulares logo abaixo */}
+      {/* Caderno de notícias: destaques da rodada na divisão do usuário */}
+      {(game.lastNews?.length ?? 0) > 0 && (
+        <div className="mt-6">
+          <SectionLabel>📰 Notícias da rodada</SectionLabel>
+          <div className="flex flex-col gap-1 text-sm text-zinc-300">
+            {game.lastNews!.map((n, i) => (
+              <p key={i}>{n}</p>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="mt-8">
         <TacticsBoard />
       </div>
@@ -575,6 +612,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
       {viewClub && (
         <ClubModal game={game} club={viewClub} onClose={() => setViewClub(null)} />
       )}
+      {financeOpen && <FinanceModal onClose={() => setFinanceOpen(false)} />}
     </div>
   );
 }

@@ -29,6 +29,8 @@ export interface Player {
   tier: Tier;
   traits: Trait[];
   energy: number; // 0-100, entre partidas
+  injuryWeeks?: number; // rodadas restantes de recuperação de lesão (0/ausente = são)
+  apps?: number; // jogos disputados na temporada (zera na virada)
   goals: number; // da temporada atual (zera na virada)
   assists: number; // da temporada atual (zera na virada)
   careerGoals?: number; // acumulado das temporadas anteriores (não inclui a atual)
@@ -149,6 +151,8 @@ export interface LiveMatch {
   awayAggression: number;
   homeSlotOrder?: string[]; // ordem esquerda→direita dos titulares por linha (para o bônus de pé)
   awaySlotOrder?: string[];
+  homeMorale?: number; // moral do time (0..1): dá até ±5% de poder em campo
+  awayMorale?: number;
   attendance?: number; // público no estádio do mandante (define a renda da partida)
   stats?: { home: SideMatchStats; away: SideMatchStats }; // volume de jogo acumulado
 }
@@ -252,7 +256,11 @@ export interface GameState {
   continental?: CupState; // copa continental (Libertadores/Champions, 16 clubes históricos)
   jobOffer?: string; // convite de clube maior após temporada de sucesso (clubId)
   pendingBicho?: number; // valor do bicho pago para a próxima partida (vira gasto no fechamento)
-  lastFinance?: { revenue: number; prize: number; bicho: number; wages?: number; tv?: number }; // caixa da última rodada encerrada
+  lastFinance?: { revenue: number; prize: number; bicho: number; wages?: number; tv?: number; attendance?: number }; // caixa da última rodada encerrada
+  lastNews?: string[]; // manchetes da última rodada (divisão do usuário)
+  morale?: number; // moral do time do usuário (0-100): sobe com vitória, cai com derrota
+  prevMorale?: number; // moral antes da última rodada, para a seta de tendência na Home
+  stadiumLevel?: number; // arquibancadas comprou: cada nível = +8% de público em casa
   debtWeeks?: number; // rodadas consecutivas com o caixa negativo (rumo à falência)
   fired?: boolean; // faliu: técnico demitido — só observa os jogos, sem comandar nada
   pendingPromotions?: PendingPromotion[];

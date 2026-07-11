@@ -33,6 +33,11 @@ function PlayerDetails({ p }: { p: Player }) {
       <span>Assist.: <b>{p.assists}</b></span>
       <span>Amarelos: <b>{p.yellows}</b></span>
       <span>Vermelhos: <b>{p.reds}</b></span>
+      {(p.injuryWeeks ?? 0) > 0 && (
+        <span className="col-span-2 text-orange-400">
+          🚑 Lesionado: volta em {p.injuryWeeks} rodada{(p.injuryWeeks ?? 0) > 1 ? "s" : ""}
+        </span>
+      )}
       <span className="col-span-2">
         Características: {p.traits.length ? p.traits.join(", ") : "—"}
       </span>
@@ -47,6 +52,7 @@ function PlayerRow({
   p: Player; selected: boolean; selColor: string; onClick: () => void;
   expanded: boolean; onToggleExpand: () => void; suspendedNext: boolean;
 }) {
+  const injured = (p.injuryWeeks ?? 0) > 0;
   return (
     <div className="mb-0.5">
       <button
@@ -59,9 +65,11 @@ function PlayerRow({
         <span className="flex min-w-0 items-center gap-1">
           <span className={`w-4 shrink-0 text-right tabular-nums ${selected ? "opacity-70" : "text-zinc-500"}`}>{p.number}</span>
           <b className={`shrink-0 ${selected ? "opacity-70" : "text-zinc-400"}`}>{p.pos}</b>
-          <span className={`truncate ${suspendedNext ? "text-zinc-500 line-through" : ""}`}>{p.name}</span>
+          {/* nome corta seco (sem "…") para a estrelinha ao lado nunca sumir */}
+          <span className={`overflow-hidden whitespace-nowrap [text-overflow:clip] ${suspendedNext || injured ? "text-zinc-500 line-through" : ""}`}>{p.name}</span>
           <span className="shrink-0 text-amber-400">{TIER_BADGE[p.tier]}</span>
           {suspendedNext && <span className="shrink-0 text-[9px] font-bold text-red-400">SUSP</span>}
+          {injured && <span className="shrink-0 text-[9px] font-bold text-orange-400" title={`Lesionado: volta em ${p.injuryWeeks} rodada${(p.injuryWeeks ?? 0) > 1 ? "s" : ""}`}>LES</span>}
         </span>
         <span className="flex shrink-0 items-center gap-1.5">
           <EnergyBar value={p.energy} />
@@ -267,18 +275,33 @@ export default function TacticsBoard() {
 
   const toggleExpand = (id: string) => setExpanded(expanded === id ? null : id);
 
-  // Próximo confronto do usuário (liga, copa ou continental) — mesmo critério da Home
+  // Próximo confronto DO USUÁRIO: varre as semanas à frente até achar um jogo
+  // com o time do técnico — rodada de copa sem o clube não desativa o botão,
+  // ele passa a mirar o jogo seguinte que o usuário de fato vai disputar.
   const uid = game.userClubId;
-  const nextPair = (() => {
-    if (nextWeek === null || !nextInfo) return undefined;
-    if (nextInfo.type === "cup" && game.cup)
-      return tiesForLeg(game.cup, nextInfo.stage, nextInfo.leg).find((t) => t.homeId === uid || t.awayId === uid);
-    if (nextInfo.type === "contgroup" && game.continental)
-      return groupFixturesForMatchday(game.continental, nextInfo.matchday).find((f) => f.homeId === uid || f.awayId === uid);
-    if (nextInfo.type === "continental" && game.continental)
-      return tiesForLeg(game.continental, nextInfo.stage, nextInfo.leg).find((t) => t.homeId === uid || t.awayId === uid);
-    return game.fixtures.find((f) => f.week === nextWeek && !f.played && (f.homeId === uid || f.awayId === uid));
+  const nextUserMatch = (() => {
+    if (nextWeek === null) return undefined;
+    for (let w = nextWeek; w < nextWeek + 50; w++) {
+      const info = weekInfo(w);
+      const pair =
+        info.type === "cup" && game.cup
+          ? tiesForLeg(game.cup, info.stage, info.leg).find((t) => t.homeId === uid || t.awayId === uid)
+          : info.type === "contgroup" && game.continental
+            ? groupFixturesForMatchday(game.continental, info.matchday).find((f) => f.homeId === uid || f.awayId === uid)
+            : info.type === "continental" && game.continental
+              ? tiesForLeg(game.continental, info.stage, info.leg).find((t) => t.homeId === uid || t.awayId === uid)
+              : game.fixtures.find((f) => f.week === w && !f.played && (f.homeId === uid || f.awayId === uid));
+      if (pair) {
+        const competition: "league" | "cup" | "continental" =
+          info.type === "league" ? "league"
+          : (info.type === "continental" || info.type === "contgroup") ? "continental"
+          : "cup";
+        return { pair, competition };
+      }
+    }
+    return undefined;
   })();
+  const nextPair = nextUserMatch?.pair;
   const opponent = nextPair
     ? game.clubs.find((c) => c.id === (nextPair.homeId === uid ? nextPair.awayId : nextPair.homeId))
     : undefined;
@@ -311,7 +334,7 @@ export default function TacticsBoard() {
     // só usa formação que o elenco disponível (sem suspensos) consegue preencher
     const canFill = (f: Exclude<Formation, "custom">) => {
       const shape = FORMATIONS[f];
-      const count = (pos: Position) => squad.filter((p) => p.pos === pos && !isSuspendedNext(p)).length;
+      const count = (pos: Position) => squad.filter((p) => p.pos === pos && !isSuspendedNext(p) && !((p.injuryWeeks ?? 0) > 0)).length;
       return count("GOL") >= 1 && count("DEF") >= shape.DEF && count("MEI") >= shape.MEI && count("ATA") >= shape.ATA;
     };
     const chosen = prefs.find(canFill) ?? "4-4-2";
@@ -334,7 +357,7 @@ export default function TacticsBoard() {
 
     setFormation(chosen);
     setDefaultTactics({ mentality, marking });
-    setStarters(bestXI(squad, chosen, false, nextCompetition, undefined));
+    setStarters(bestXI(squad, chosen, false, nextUserMatch?.competition ?? nextCompetition, undefined));
     setManualMode(false);
     setSel(null);
     appAlert(
@@ -357,7 +380,7 @@ export default function TacticsBoard() {
       const need = layout[posKey].length - nextPosPlayers[posKey].length;
       if (need <= 0) return;
       const bench = squad
-        .filter((p) => p.pos === posKey && !starters.includes(p.id) && !addedIds.includes(p.id))
+        .filter((p) => p.pos === posKey && !starters.includes(p.id) && !addedIds.includes(p.id) && !((p.injuryWeeks ?? 0) > 0))
         .sort((a, b) => b.strength - a.strength)
         .slice(0, need);
       nextPosPlayers[posKey] = [...nextPosPlayers[posKey], ...bench];

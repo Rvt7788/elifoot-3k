@@ -465,6 +465,10 @@ export default function App() {
             startMatchday();
             goToRound();
           }}
+          onOpenTable={() => {
+            setTableView("liga");
+            setTab("tabela");
+          }}
         />
       )}
       {tab === "tabela" && (

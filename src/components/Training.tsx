@@ -53,7 +53,10 @@ export default function Training() {
   const game = useStore((s) => s.game);
   const lastResults = useStore((s) => s.lastResults);
   const setPlayerTraining = useStore((s) => s.setPlayerTraining);
+  const setAllTraining = useStore((s) => s.setAllTraining);
   const [helpOpen, setHelpOpen] = useState(false);
+  // último regime aplicado em massa: o clique no cabeçalho cicla leve→normal→pesada
+  const [allIntensity, setAllIntensity] = useState<TrainingIntensity>("normal");
   if (!game) return null;
 
   const order = { GOL: 0, DEF: 1, MEI: 2, ATA: 3 };
@@ -95,7 +98,20 @@ export default function Training() {
             <th className="px-1 text-center" title="Força ganha nesta temporada">Evol.</th>
             <th className="w-16 px-1 sm:w-28">Progresso</th>
             <th className="hidden px-1 text-center sm:table-cell" title="Ritmo de evolução pela idade">Ritmo</th>
-            <th className="px-1 text-center">Regime</th>
+            <th className="px-1 text-center">
+              {/* clicar cicla o regime de TODO o elenco: leve → normal → pesada */}
+              <button
+                onClick={() => {
+                  const next = INTENSITIES[(INTENSITIES.indexOf(allIntensity) + 1) % INTENSITIES.length];
+                  setAllIntensity(next);
+                  setAllTraining(next);
+                }}
+                className="uppercase tracking-wide text-zinc-400 hover:text-zinc-200"
+                title="Muda o regime de todos os jogadores de uma vez"
+              >
+                Regime ▾
+              </button>
+            </th>
           </tr>
         </thead>
         <tbody>

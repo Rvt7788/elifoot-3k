@@ -90,9 +90,16 @@ export default function Squad() {
                   <div className="w-[10%] sm:w-[7%] shrink-0 pl-1 text-center sm:text-left text-zinc-400">{p.pos}</div>
                   {/* Nome */}
                   <div className="flex-1 min-w-0 pr-1 flex flex-wrap items-center gap-x-1 gap-y-0.5">
-                    <span className="whitespace-nowrap truncate">
-                      {p.name} <span className="text-amber-400">{TIER_BADGE[p.tier]}</span>
+                    {/* nome corta seco (sem "…") e a estrelinha fica fora do corte, sempre visível */}
+                    <span className="flex min-w-0 items-center gap-1">
+                      <span className="overflow-hidden whitespace-nowrap [text-overflow:clip]">{p.name}</span>
+                      <span className="shrink-0 text-amber-400">{TIER_BADGE[p.tier]}</span>
                     </span>
+                    {(p.injuryWeeks ?? 0) > 0 && (
+                      <span className="whitespace-nowrap rounded bg-orange-950 px-1 text-[9px] sm:text-[10px] text-orange-400" title={`Lesionado: volta em ${p.injuryWeeks} rodada${(p.injuryWeeks ?? 0) > 1 ? "s" : ""}`}>
+                        🚑 lesão {p.injuryWeeks}r
+                      </span>
+                    )}
                     {p.suspendedLeague && (
                       <span className="whitespace-nowrap rounded bg-red-950 px-1 text-[9px] sm:text-[10px] text-red-400" title="Suspenso na liga: cumpre 1 rodada fora">
                         🟥 susp. liga

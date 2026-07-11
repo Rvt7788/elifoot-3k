@@ -510,6 +510,7 @@ export function processSeasonTransitions(
         careerAssists: (p.careerAssists ?? 0) + p.assists,
         goals: 0,
         assists: 0,
+        apps: 0,
         yellows: 0,
         reds: 0,
         yellowsLeague: 0,

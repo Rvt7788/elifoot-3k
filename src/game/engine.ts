@@ -69,6 +69,11 @@ function isSuspended(p: Player, competition: "league" | "cup" | "continental"): 
   return p.suspendedContinental ?? false;
 }
 
+// Lesionado fica fora de qualquer competição até cumprir as rodadas de recuperação.
+export function isInjured(p: Player): boolean {
+  return (p.injuryWeeks ?? 0) > 0;
+}
+
 // Melhor XI por posição, respeitando a formação (1 GOL + DEF/MEI/ATA da formação).
 // byEnergy=false ordena só pela força nominal (ignora cansaço); byEnergy=true usa a
 // força efetiva em campo, considerando o corte de energia do motor de simulação.
@@ -78,7 +83,7 @@ export function bestXI(
 ): string[] {
   const shape = shapeOf(formation, custom);
   const rank = byEnergy ? effectiveStrength : (p: Player) => p.strength;
-  const available = squad.filter((p) => !isSuspended(p, competition));
+  const available = squad.filter((p) => !isSuspended(p, competition) && !isInjured(p));
   const byPos = (pos: Player["pos"], count: number) =>
     available
       .filter((p) => p.pos === pos)
@@ -158,7 +163,7 @@ export function pickLineup(
   custom?: CustomFormation,
 ): LivePlayer[] {
   const valid = starterIds?.filter(
-    (id) => squad.some((p) => p.id === id && !isSuspended(p, competition)),
+    (id) => squad.some((p) => p.id === id && !isSuspended(p, competition) && !isInjured(p)),
   ) ?? [];
   const starters = new Set(valid.length === 11 ? valid : bestXI(squad, formation, false, competition, custom));
   return squad.map((p) => ({
@@ -208,8 +213,11 @@ export function createLiveMatch(
   awayFormation: Formation = "4-4-2",
   homeCustomFormation?: CustomFormation,
   awayCustomFormation?: CustomFormation,
+  homeMorale = 0.5,
+  awayMorale = 0.5,
 ): LiveMatch {
   return {
+    homeMorale, awayMorale,
     competition,
     homeId, awayId,
     minute: 0, homeScore: 0, awayScore: 0,
@@ -717,8 +725,10 @@ export function simulateMinute(
   // mas o ruído continua alto o bastante para permitir zebra e jogo imprevisível.
   const homeDef = defensePower(m.homeLineup, idx, m.homeTactics, m.homeSlotOrder);
   const awayDef = defensePower(m.awayLineup, idx, m.awayTactics, m.awaySlotOrder);
-  const hp = teamPower(m.homeLineup, idx, m.homeTactics, awayDef, m.homeSlotOrder) * 1.08; // fator casa
-  const ap = teamPower(m.awayLineup, idx, m.awayTactics, homeDef, m.awaySlotOrder);
+  // moral (0..1): time confiante rende até +5%, time em crise até -5%
+  const moraleBoost = (mor: number | undefined) => 1 + ((mor ?? 0.5) - 0.5) * 0.1;
+  const hp = teamPower(m.homeLineup, idx, m.homeTactics, awayDef, m.homeSlotOrder) * 1.08 * moraleBoost(m.homeMorale); // fator casa
+  const ap = teamPower(m.awayLineup, idx, m.awayTactics, homeDef, m.awaySlotOrder) * moraleBoost(m.awayMorale);
   let delta = ((hp - ap) / (hp + ap)) * 34 + (rng() - 0.5) * 18;
   // "cera" do lado que trava: barra tende ao zero e adversário ganha volume sutil
   if (m.homeTactics.cera) delta = delta * 0.5 - 1.5;
