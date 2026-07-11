@@ -27,14 +27,17 @@ function Flag({ code }: { code: string }) {
   );
 }
 
-// Todo técnico começa de baixo: o sorteio só considera os 10 clubes mais pobres
-// da Série B do país. Subir para um clube grande é conquista de carreira (convite
-// após temporada de sucesso), não escolha de tela inicial.
-function bottomOfSerieB(clubs: Club[], country?: string): Club[] {
+// Todo técnico começa de baixo: o sorteio considera os 10 clubes mais pobres da
+// Série B do país — com uma chance remota (5%) de sair um dos 10 melhores da
+// Série B, o "bilhete premiado" da carreira. A sorte é rolada uma única vez por
+// visita à tela (não por clique), para não dar para re-sortear até vir time bom.
+// Subir para um clube grande de verdade continua sendo conquista (convite após
+// temporada de sucesso).
+function serieBPool(clubs: Club[], lucky: boolean, country?: string): Club[] {
   const b = clubs
     .filter((c) => c.division === "Série B" && (!country || c.country === country))
     .sort((a, b2) => a.baseBudget - b2.baseBudget);
-  return b.slice(0, Math.min(10, b.length));
+  return lucky ? b.slice(-Math.min(10, b.length)) : b.slice(0, Math.min(10, b.length));
 }
 
 // Boas-vindas do presidente: 5 variações no mesmo tom, sorteadas a cada abertura
@@ -69,6 +72,9 @@ export default function NewGame() {
   // null = nenhum país selecionado: o sorteio é geral (qualquer país)
   const [country, setCountry] = useState<string | null>(null);
   const [club, setClub] = useState<Club | null>(null);
+  // bilhete premiado: rolado uma vez ao abrir a tela — clicar de novo no dado
+  // não rola a sorte de novo, só sorteia outro clube dentro do mesmo pool
+  const [lucky] = useState(() => Math.random() < 0.05);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [welcomeMsg, setWelcomeMsg] = useState(WELCOME_MESSAGES[0]);
 
@@ -144,7 +150,7 @@ export default function NewGame() {
 
       <div className="mb-6 flex justify-center">
         <button
-          onClick={() => drawRandom(bottomOfSerieB(clubs, country ?? undefined))}
+          onClick={() => drawRandom(serieBPool(clubs, lucky, country ?? undefined))}
           className="country-tab"
           title={country ? "Sorteia um clube pequeno da Série B do país selecionado" : "Sorteia um clube pequeno da Série B de qualquer país"}
         >
