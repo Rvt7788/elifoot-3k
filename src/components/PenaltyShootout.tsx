@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useStore } from "../store";
 import type { Player } from "../types";
+import { ScrollLock } from "./useLockBodyScroll";
 
 // Disputa de pênaltis interativa: uma cobrança por clique, alternando os times
 // (usuário bate primeiro). Melhor de 5 com morte súbita. A chance de gol depende
@@ -98,6 +99,7 @@ export default function PenaltyShootout({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+      <ScrollLock />
       <div className="w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-900 p-5">
         <h2 className="mb-1 text-center text-lg font-bold text-amber-400">🥅 Disputa de pênaltis</h2>
         <p className="mb-4 text-center text-xs text-zinc-500">

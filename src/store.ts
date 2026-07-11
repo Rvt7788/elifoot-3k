@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Club, CustomFormation, Fixture, Formation, GameState, LiveMatch, Player, Tactics, TrainingIntensity } from "./types";
+import type { Club, CustomFormation, Fixture, Formation, GameState, LiveMatch, Player, Position, Tactics, TrainingIntensity } from "./types";
 import { shapeOf } from "./types";
 import { applyWeeklyGain, RECOVERY } from "./game/training";
 import {
@@ -222,6 +222,7 @@ interface Store {
   setPaused: (p: boolean) => void;
   setStarters: (ids: string[]) => void;
   setSlotOrder: (ids: string[]) => void;
+  setPosOverrides: (m: Record<string, Position> | undefined) => void;
   setFormation: (f: Formation, custom?: CustomFormation) => void;
   setCustomFormation: (custom: CustomFormation) => void;
   setDefaultTactics: (t: Partial<Tactics>) => void;
@@ -693,6 +694,8 @@ export const useStore = create<Store>()(
             isUserTeam(f.awayId) ? g.customFormation : undefined,
             isUserTeam(f.homeId) ? (g.morale ?? 60) / 100 : undefined,
             isUserTeam(f.awayId) ? (g.morale ?? 60) / 100 : undefined,
+            isUserTeam(f.homeId) ? g.posOverrides : undefined,
+            isUserTeam(f.awayId) ? g.posOverrides : undefined,
           ),
         );
         // público de cada estádio definido na abertura da rodada (e exibido nela)
@@ -726,6 +729,13 @@ export const useStore = create<Store>()(
       },
 
       setPaused: (p) => set({ paused: p }),
+
+      // titular escalado fora da posição natural (MEI no ataque etc.); undefined limpa tudo
+      setPosOverrides: (m) => {
+        const g = get().game;
+        if (!g) return;
+        set({ game: { ...g, posOverrides: m && Object.keys(m).length ? m : undefined } });
+      },
 
       setStarters: (ids) => {
         const g = get().game;

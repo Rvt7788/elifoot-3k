@@ -3,6 +3,7 @@ import { useStore } from "../store";
 import { appAlert, appConfirm } from "./AppDialog";
 import { listSlots, saveToSlot, loadFromSlot, deleteSlot, type SlotMeta } from "../game/saveSlots";
 import type { GameState } from "../types";
+import { ScrollLock } from "./useLockBodyScroll";
 
 const SPEEDS = [
   { v: 0.5, label: "0.5×" },
@@ -106,6 +107,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+      <ScrollLock />
       <div
         className="w-full max-w-sm max-h-[85vh] overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 p-5"
         onClick={(e) => e.stopPropagation()}

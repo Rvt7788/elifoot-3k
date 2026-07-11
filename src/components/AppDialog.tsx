@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { ScrollLock } from "./useLockBodyScroll";
 
 // Modal padrão de alerta/confirmação do app, no lugar de alert()/confirm() do
 // navegador. Uso: `await appAlert("msg")` ou `if (await appConfirm("msg?")) ...`
@@ -45,6 +46,7 @@ export function AppDialogHost() {
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-6"
       onClick={() => close(false)}
     >
+      <ScrollLock />
       <div
         className="w-full max-w-sm rounded-xl border border-zinc-700 bg-zinc-900 p-5"
         onClick={(e) => e.stopPropagation()}

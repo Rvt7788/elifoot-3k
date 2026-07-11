@@ -7,6 +7,7 @@ import EnergyBar from "./EnergyBar";
 import type { Marking, Mentality, Player, Position, LivePlayer, Formation } from "../types";
 import { shapeOf } from "../types";
 import { pitchLayout, PlayerPin, EmptySlot, PitchBackground } from "./PitchField";
+import { useLockBodyScroll } from "./useLockBodyScroll";
 
 export default function TacticsModal({ onClose }: { onClose: () => void }) {
   const { game, live, updateLive } = useStore();
@@ -23,6 +24,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
     tactics: unknown; lineup: unknown; subsLeft: number; events: unknown;
     liveSlotOrder?: string[]; formation: unknown; gameSlotOrder?: string[];
   } | null>(null);
+  useLockBodyScroll(!!game && !!live);
   if (!game || !live) return null;
 
   const mi = live.findIndex(
@@ -540,17 +542,28 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Intervenção tática — {match.minute}&#39;</h2>
-          <div className="flex items-center gap-4">
-            {/* confirmar/desfaz e retoma o jogo, igual ao botão de baixo */}
-            <button
-              onClick={closeAndResume}
-              disabled={!hasKeeperOnField}
-              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              title={hasKeeperOnField ? "Voltar ao jogo" : "Você precisa escalar um goleiro ou jogador de linha no gol!"}
-            >
-              <span className="text-[10px]">▶</span> Jogar
-            </button>
+          <h2 className="text-lg font-bold">Parada tática — {match.minute}&#39;</h2>
+          <div className="flex items-start gap-4">
+            <div className="flex flex-col gap-1.5">
+              {/* confirmar/desfaz e retoma o jogo, igual ao botão de baixo */}
+              <button
+                onClick={closeAndResume}
+                disabled={!hasKeeperOnField}
+                className="flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                title={hasKeeperOnField ? "Voltar ao jogo" : "Você precisa escalar um goleiro ou jogador de linha no gol!"}
+              >
+                <span className="text-[10px]">▶</span> Jogar
+              </button>
+              {/* desfaz TODAS as alterações da parada e permanece no modal */}
+              <button
+                onClick={revertToSnapshot}
+                disabled={!hasChanges()}
+                className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                title="Desfaz todas as alterações feitas nesta parada"
+              >
+                Desfazer
+              </button>
+            </div>
             {/* ✕: mesmo fluxo — sem alteração sai direto; com alteração pede confirmação */}
             <button
               onClick={closeAndResume}

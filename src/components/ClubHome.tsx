@@ -11,6 +11,7 @@ import ClubModal from "./ClubModal";
 import FinanceModal from "./FinanceModal";
 import { readableOn } from "../game/color";
 import { formatMatchDate } from "../game/calendar";
+import { ScrollLock } from "./useLockBodyScroll";
 
 const sectorAvg = (squad: Player[], poss: string[]) => {
   const ps = squad.filter((p) => poss.includes(p.pos));
@@ -57,6 +58,7 @@ function OpponentModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
+      <ScrollLock />
       <div
         className="max-h-[85vh] w-full max-w-lg overflow-y-auto border border-zinc-700 bg-[#0a0f16] p-5"
         onClick={(e) => e.stopPropagation()}
@@ -354,8 +356,8 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1">Moral</p>
               <p className="flex h-8 items-end gap-1 sm:h-9 text-lg sm:text-xl font-black leading-none text-white mb-0.5">
                 {morale}%
-                {morale > (game.prevMorale ?? morale) && <span className="text-sm text-red-600">▲</span>}
-                {morale < (game.prevMorale ?? morale) && <span className="text-sm text-teal-800">▼</span>}
+                {morale > (game.prevMorale ?? morale) && <span className="text-sm text-[#00e676]">▲</span>}
+                {morale < (game.prevMorale ?? morale) && <span className="text-sm text-[#e50914]">▼</span>}
               </p>
               <div className="h-7 sm:h-8">
                 <p className="text-[10px] font-semibold leading-snug text-[#3c320d]">

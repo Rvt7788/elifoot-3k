@@ -247,6 +247,7 @@ export interface GameState {
   players: Player[];
   starters: string[]; // 11 titulares escolhidos pelo usuário
   slotOrder?: string[]; // ordem manual dos titulares no campo (lado esquerdo/direito por linha)
+  posOverrides?: Record<string, Position>; // titular escalado fora da posição natural (ex.: MEI jogando de ATA)
   formation: Formation;
   customFormation?: CustomFormation; // desenhada no editor, usada quando formation === "custom"
   defaultTactics: Tactics; // como o time entra em campo (ajustável na prancheta pré-jogo)

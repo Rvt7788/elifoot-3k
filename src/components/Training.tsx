@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useStore } from "../store";
 import type { TrainingIntensity } from "../types";
 import { ageFactor, weeklyXp, xpNeeded, RECOVERY, XP_MATCH, XP_TRAINING } from "../game/training";
+import { ScrollLock } from "./useLockBodyScroll";
 
 const TIER_BADGE: Record<string, string> = {
   bagre: "", bom: "★", craque: "★★", extra: "💎",
@@ -12,6 +13,7 @@ const INTENSITIES: TrainingIntensity[] = ["leve", "normal", "pesada"];
 function HelpModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+      <ScrollLock />
       <div
         className="w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-900 p-5 text-sm"
         onClick={(e) => e.stopPropagation()}

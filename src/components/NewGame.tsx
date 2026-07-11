@@ -2,6 +2,7 @@ import { useState } from "react";
 import clubsData from "../data/clubs.json";
 import type { Club } from "../types";
 import { useStore } from "../store";
+import { ScrollLock } from "./useLockBodyScroll";
 
 // bandeiras em mini PNG (public/flags): emoji de bandeira não renderiza em
 // todo sistema (Windows/Chrome mostra só as letras do código do país)
@@ -189,6 +190,7 @@ export default function NewGame() {
       {/* boas-vindas do presidente: o jogo só começa de fato ao assumir o comando */}
       {welcomeOpen && club && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
+          <ScrollLock />
           {/* o modal veste as cores do clube: fundo primário, texto secundário;
               só o botão de ação mantém o visual do app */}
           <div

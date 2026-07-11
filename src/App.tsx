@@ -11,6 +11,7 @@ import Squad from "./components/Squad";
 import Market from "./components/Market";
 import Training from "./components/Training";
 import { IconClub, IconTable, IconSquad, IconMarket, IconTraining, IconTrophy, IconGear, IconPlay, IconLive } from "./components/icons";
+import { ScrollLock } from "./components/useLockBodyScroll";
 
 type Tab = "clube" | "tabela" | "elenco" | "treino" | "mercado" | "ranking";
 
@@ -24,6 +25,7 @@ function JobOfferModal() {
   if (!club) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <ScrollLock />
       <div className="w-full max-w-md rounded-xl border border-amber-600/60 bg-zinc-900 p-5">
         <h2 className="mb-2 font-display text-lg font-bold text-amber-400">📞 Convite recebido</h2>
         <p className="mb-2 text-pretty text-sm leading-relaxed text-zinc-300">
@@ -85,6 +87,7 @@ function IncomingOfferModal({ onOpenSquad }: { onOpenSquad: () => void }) {
     );
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <ScrollLock />
       <div className="w-full max-w-md rounded-xl border border-sky-700/60 bg-zinc-900 p-5">
         <h2 className="mb-2 font-display text-lg font-bold text-sky-400">📠 Proposta recebida</h2>
         <p className="mb-2 text-pretty text-sm leading-relaxed text-zinc-300">
@@ -143,6 +146,7 @@ function ContractWarningModal() {
   if (expiring.length === 0) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <ScrollLock />
       <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-xl border border-amber-700/60 bg-zinc-900 p-5">
         <h2 className="mb-2 font-display text-lg font-bold text-amber-400">📝 Contratos a vencer</h2>
         <p className="mb-3 text-pretty text-sm leading-relaxed text-zinc-300">
@@ -205,6 +209,7 @@ function PendingPromotionsModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
+      <ScrollLock />
       <div className="w-full max-w-2xl rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/80 md:p-8 animate-in fade-in zoom-in duration-205">
         <div className="mb-4 flex items-center justify-between border-b border-zinc-900 pb-3">
           <div>

@@ -1,5 +1,6 @@
 import { useStore, squadWageBill, stadiumUpgradeCost, tvQuota, stadiumCapacity, STADIUM_MAX_LEVEL, STADIUM_SEATS_PER_LEVEL } from "../store";
 import { appAlert } from "./AppDialog";
+import { ScrollLock } from "./useLockBodyScroll";
 
 const fmtM = (v: number) => `$${(v / 1e6).toFixed(2)}M`;
 const fmtK = (v: number) => (v >= 1e6 ? fmtM(v) : `$${Math.round(v / 1e3)}k`);
@@ -27,6 +28,7 @@ export default function FinanceModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+      <ScrollLock />
       <div
         className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 p-5"
         onClick={(e) => e.stopPropagation()}

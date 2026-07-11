@@ -4,6 +4,7 @@ import { aiAcceptChance, askingPrice, filterMarket, type MarketFilters } from ".
 import { appConfirm } from "./AppDialog";
 import FinanceModal from "./FinanceModal";
 import type { Player, Position, Trait } from "../types";
+import { ScrollLock } from "./useLockBodyScroll";
 
 const POSITIONS: (Position | "ALL")[] = ["ALL", "GOL", "DEF", "MEI", "ATA"];
 const TRAITS: (Trait | "ALL")[] = ["ALL", "Goleador", "Paredão", "Veloz", "Criativo", "Raçudo"];
@@ -62,6 +63,7 @@ function OfferResultModal({
 }: { result: { ok: boolean; message: string }; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+      <ScrollLock />
       <div
         className="w-full max-w-sm rounded-xl border border-zinc-700 bg-zinc-900 p-5 text-center"
         onClick={(e) => e.stopPropagation()}

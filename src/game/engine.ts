@@ -161,6 +161,7 @@ export function pickLineup(
   competition: "league" | "cup" | "continental" = "league",
   formation: Formation = "4-4-2",
   custom?: CustomFormation,
+  posOverrides?: Record<string, Position>,
 ): LivePlayer[] {
   const valid = starterIds?.filter(
     (id) => squad.some((p) => p.id === id && !isSuspended(p, competition) && !isInjured(p)),
@@ -173,6 +174,8 @@ export function pickLineup(
     sentOff: false,
     subbedOut: false,
     onField: starters.has(p.id),
+    // escalação fora de posição definida na prancheta pré-jogo (MEI de ATA etc.)
+    posOverride: starters.has(p.id) ? posOverrides?.[p.id] : undefined,
   }));
 }
 
@@ -215,6 +218,8 @@ export function createLiveMatch(
   awayCustomFormation?: CustomFormation,
   homeMorale = 0.5,
   awayMorale = 0.5,
+  homePosOverrides?: Record<string, Position>,
+  awayPosOverrides?: Record<string, Position>,
 ): LiveMatch {
   return {
     homeMorale, awayMorale,
@@ -230,8 +235,8 @@ export function createLiveMatch(
     awayTactics: awayDefaultTactics
       ? { ...DEFAULT_TACTICS, ...awayDefaultTactics }
       : aiPregameTactics(awaySquad, homeSquad, awayAggression),
-    homeLineup: pickLineup(homeSquad, homeStarters, competition, homeFormation, homeCustomFormation),
-    awayLineup: pickLineup(awaySquad, awayStarters, competition, awayFormation, awayCustomFormation),
+    homeLineup: pickLineup(homeSquad, homeStarters, competition, homeFormation, homeCustomFormation, homePosOverrides),
+    awayLineup: pickLineup(awaySquad, awayStarters, competition, awayFormation, awayCustomFormation, awayPosOverrides),
     homeSubsLeft: 5, awaySubsLeft: 5,
     finished: false,
     lastAiCheck: 0,

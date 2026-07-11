@@ -73,7 +73,8 @@ function PlayerRow({
         </span>
         <span className="flex shrink-0 items-center gap-1.5">
           <EnergyBar value={p.energy} />
-          <b>{p.strength}</b>
+          {/* largura fixa: a barra de energia não desloca com 1 ou 2 dígitos de força */}
+          <b className="w-5 text-right tabular-nums">{p.strength}</b>
           <span
             onClick={(e) => { e.stopPropagation(); onToggleExpand(); }}
             className={`cursor-pointer ${selected ? "opacity-70" : "text-zinc-500"} hover:text-white`}
@@ -122,6 +123,7 @@ export default function TacticsBoard() {
   const game = useStore((s) => s.game);
   const setStarters = useStore((s) => s.setStarters);
   const setSlotOrder = useStore((s) => s.setSlotOrder);
+  const setPosOverrides = useStore((s) => s.setPosOverrides);
   const setFormation = useStore((s) => s.setFormation);
   const setCustomFormation = useStore((s) => s.setCustomFormation);
   const setDefaultTactics = useStore((s) => s.setDefaultTactics);
@@ -183,6 +185,11 @@ export default function TacticsBoard() {
   const savedStarters = game.starters ?? [];
   const hasFullXI = savedStarters.length >= 11;
   const starters = savedStarters;
+  // posição EM CAMPO do titular: a natural, ou o setor escolhido na prancheta
+  // (MEI escalado no ataque joga — e é desenhado — como ATA)
+  const posOverrides = game.posOverrides ?? {};
+  const effPos = (p: Player): Position =>
+    starters.includes(p.id) ? (posOverrides[p.id] ?? p.pos) : p.pos;
   const titulares = squad
     .filter((p) => starters.includes(p.id))
     .sort((a, b) => POS_ORDER[a.pos] - POS_ORDER[b.pos] || b.strength - a.strength);
@@ -196,11 +203,11 @@ export default function TacticsBoard() {
   const posPlayers: Record<Position, Player[]> = { GOL: [], DEF: [], MEI: [], ATA: [] };
   POS_KEYS.forEach((posKey) => {
     const byForce = titulares
-      .filter((p) => p.pos === posKey)
+      .filter((p) => effPos(p) === posKey)
       .sort((a, b) => b.strength - a.strength);
     const manual = (game.slotOrder ?? [])
       .map((id) => titulares.find((p) => p.id === id))
-      .filter((p): p is Player => !!p && p.pos === posKey);
+      .filter((p): p is Player => !!p && effPos(p) === posKey);
     posPlayers[posKey] =
       manual.length === byForce.length &&
       manual.every((p) => byForce.some((b) => b.id === p.id))
@@ -228,31 +235,46 @@ export default function TacticsBoard() {
   const flatOrder = (pp: Record<Position, Player[]>) =>
     POS_KEYS.flatMap((k) => pp[k].map((p) => p.id));
 
-  // Clique em jogador (pin do campo ou linha da lista). Regra única:
-  // troca só entre jogadores da MESMA posição; quem entra assume exatamente
-  // o slot de quem sai. Clique em posição diferente apenas move a seleção.
+  // Clique em jogador (pin do campo ou linha da lista). Mesmo setor em campo:
+  // trocam de slot (ou titular↔reserva). Setores diferentes: dois TITULARES de
+  // linha trocam de setor no desenho (MEI vai pro ataque, ATA vem pro meio).
   const clickPlayer = (id: string) => {
     if (!sel) { setSel(id); return; }
     if (sel === id) { setSel(null); return; }
     const a = squad.find((p) => p.id === sel);
     const b = squad.find((p) => p.id === id);
-    if (!a || !b || a.pos !== b.pos) { setSel(id); return; }
+    if (!a || !b) { setSel(id); return; }
     const aStarter = starters.includes(a.id);
     const bStarter = starters.includes(b.id);
+    const pa = effPos(a);
+    const pb = effPos(b);
+    if (pa !== pb) {
+      // setores diferentes: só titulares de linha trocam (goleiro fica de fora)
+      if (aStarter && bStarter && pa !== "GOL" && pb !== "GOL" && a.pos !== "GOL" && b.pos !== "GOL") {
+        const next = { ...posOverrides };
+        if (pb === a.pos) delete next[a.id]; else next[a.id] = pb;
+        if (pa === b.pos) delete next[b.id]; else next[b.id] = pa;
+        setPosOverrides(next);
+        setSel(null);
+        return;
+      }
+      setSel(id);
+      return;
+    }
     if (aStarter && bStarter) {
-      // dois titulares: trocam de lugar no desenho
-      const arr = posPlayers[a.pos].map((p) => p.id);
+      // dois titulares do mesmo setor: trocam de lugar no desenho
+      const arr = posPlayers[pa].map((p) => p.id);
       const ia = arr.indexOf(a.id);
       const ib = arr.indexOf(b.id);
       [arr[ia], arr[ib]] = [arr[ib], arr[ia]];
-      setSlotOrder(flatOrder({ ...posPlayers, [a.pos]: arr.map((x) => squad.find((p) => p.id === x)!) }));
+      setSlotOrder(flatOrder({ ...posPlayers, [pa]: arr.map((x) => squad.find((p) => p.id === x)!) }));
     } else if (aStarter !== bStarter) {
       // titular ↔ reserva: o reserva entra no slot exato do titular
       const starterId = aStarter ? a.id : b.id;
       const benchId = aStarter ? b.id : a.id;
-      const arr = posPlayers[a.pos].map((p) => p.id === starterId ? benchId : p.id);
+      const arr = posPlayers[pa].map((p) => p.id === starterId ? benchId : p.id);
       setStarters(starters.map((s) => (s === starterId ? benchId : s)));
-      setSlotOrder(flatOrder({ ...posPlayers, [a.pos]: arr.map((x) => squad.find((p) => p.id === x)!) }));
+      setSlotOrder(flatOrder({ ...posPlayers, [pa]: arr.map((x) => squad.find((p) => p.id === x)!) }));
     } else {
       // dois reservas: nada a trocar, move a seleção
       setSel(id);
@@ -261,13 +283,23 @@ export default function TacticsBoard() {
     setSel(null);
   };
 
-  // Slot vazio: o reserva selecionado (da posição certa) entra exatamente ali.
+  // Slot vazio: reserva da posição certa entra ali; TITULAR de linha selecionado
+  // muda de setor para a vaga vazia (o gol nunca entra nessa dança).
   const clickEmptySlot = (posKey: Position, slotIdx: number) => {
-    if (!sel || starters.includes(sel)) { setSel(null); return; }
-    const benchPlayer = squad.find((p) => p.id === sel);
-    if (!benchPlayer || benchPlayer.pos !== posKey) return;
+    if (!sel) { setSel(null); return; }
+    const player = squad.find((p) => p.id === sel);
+    if (!player) { setSel(null); return; }
+    if (starters.includes(sel)) {
+      if (posKey === "GOL" || player.pos === "GOL" || effPos(player) === posKey) { setSel(null); return; }
+      const next = { ...posOverrides };
+      if (posKey === player.pos) delete next[player.id]; else next[player.id] = posKey;
+      setPosOverrides(next);
+      setSel(null);
+      return;
+    }
+    if (player.pos !== posKey) return;
     const arr = [...posPlayers[posKey]];
-    arr.splice(Math.min(slotIdx, arr.length), 0, benchPlayer);
+    arr.splice(Math.min(slotIdx, arr.length), 0, player);
     setStarters([...starters, sel]);
     setSlotOrder(flatOrder({ ...posPlayers, [posKey]: arr }));
     setSel(null);
@@ -358,6 +390,7 @@ export default function TacticsBoard() {
     setFormation(chosen);
     setDefaultTactics({ mentality, marking });
     setStarters(bestXI(squad, chosen, false, nextUserMatch?.competition ?? nextCompetition, undefined));
+    setPosOverrides(undefined);
     setManualMode(false);
     setSel(null);
     appAlert(
@@ -453,7 +486,13 @@ export default function TacticsBoard() {
                 y={s.y}
                 label={s.pos}
                 compact
-                pulse={!!sel && !starters.includes(sel) && squad.find((p) => p.id === sel)?.pos === s.pos}
+                pulse={!!sel && (
+                  !starters.includes(sel)
+                    ? squad.find((p) => p.id === sel)?.pos === s.pos
+                    : s.pos !== "GOL" &&
+                      squad.find((p) => p.id === sel)?.pos !== "GOL" &&
+                      effPos(squad.find((p) => p.id === sel)!) !== s.pos
+                )}
                 onClick={() => clickEmptySlot(s.pos, s.slotIdx)}
               />
             ),
@@ -482,7 +521,7 @@ export default function TacticsBoard() {
             {formation === "custom" ? "Editar" : "+ Criar"}
           </button>
           <button
-            onClick={() => { setStarters([]); setSel(null); setManualMode(true); }}
+            onClick={() => { setStarters([]); setSel(null); setPosOverrides(undefined); setManualMode(true); }}
             title="Esvazia a escalação para montar o time manualmente"
             className="whitespace-nowrap rounded bg-zinc-800 px-1 py-1 text-[11px] text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
           >
@@ -509,6 +548,7 @@ export default function TacticsBoard() {
               onClick={() => {
                 setScaleBy("forca");
                 setStarters(bestXI(squad, formation, false, "league", custom));
+                setPosOverrides(undefined);
                 setManualMode(false);
               }}
               className={`flex-1 whitespace-nowrap rounded px-1 py-1 text-[11px] ${
@@ -523,6 +563,7 @@ export default function TacticsBoard() {
                 const { starters, slotOrder } = bestXIByPosition(squad, formation, "league", custom);
                 setStarters(starters);
                 setSlotOrder(slotOrder);
+                setPosOverrides(undefined);
                 setManualMode(false);
               }}
               className={`flex-1 whitespace-nowrap rounded px-1 py-1 text-[11px] ${
@@ -535,6 +576,7 @@ export default function TacticsBoard() {
               onClick={() => {
                 setScaleBy("energia");
                 setStarters(bestXI(squad, formation, true, "league", custom));
+                setPosOverrides(undefined);
                 setManualMode(false);
               }}
               className={`flex-1 whitespace-nowrap rounded px-1 py-1 text-[11px] ${
@@ -568,7 +610,7 @@ export default function TacticsBoard() {
             {POS_KEYS.map((s) => (
               <div key={s} className="flex items-center justify-between rounded bg-zinc-800 px-2 py-1 text-[11px]">
                 <span className="text-zinc-400">{s}</span>
-                <b className="text-amber-400">{sectorAvg(titulares, s)}</b>
+                <b className="text-amber-400">{sectorAvg(titulares.map((p) => ({ ...p, pos: effPos(p) })), s)}</b>
               </div>
             ))}
           </div>

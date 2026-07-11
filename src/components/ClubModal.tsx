@@ -1,5 +1,6 @@
 import { sortTable } from "../game/schedule";
 import type { Club, GameState, Player } from "../types";
+import { ScrollLock } from "./useLockBodyScroll";
 
 const TIER_BADGE: Record<string, string> = {
   bagre: "", bom: "★", craque: "★★", extra: "💎",
@@ -32,6 +33,7 @@ export default function ClubModal({ game, club, onClose }: { game: GameState; cl
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
+      <ScrollLock />
       <div
         className="max-h-[85vh] w-full max-w-lg overflow-y-auto border border-zinc-700 bg-[#0a0f16] p-5"
         onClick={(e) => e.stopPropagation()}

@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type { CustomFormation, Position } from "../types";
 import { PitchBackground } from "./PitchField";
+import { ScrollLock } from "./useLockBodyScroll";
 
 const POS_CYCLE: Position[] = ["DEF", "MEI", "ATA"];
 
@@ -74,6 +75,7 @@ export default function FormationEditorModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+      <ScrollLock />
       <div
         className="w-full max-w-sm rounded-xl border border-zinc-700 bg-zinc-900 p-4"
         onClick={(e) => e.stopPropagation()}

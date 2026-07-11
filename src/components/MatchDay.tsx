@@ -8,6 +8,7 @@ import { weekInfo, tiesForLeg, groupFixturesForMatchday, CUP_STAGE_NAMES, CONT_S
 import { formatMatchDateLong } from "../game/calendar";
 import { cupName, continentalName } from "../data/leagues";
 import ClubModal from "./ClubModal";
+import { ScrollLock } from "./useLockBodyScroll";
 
 const ORDINAL_ROUNDS = [
   "",
@@ -315,6 +316,7 @@ function MatchDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+      <ScrollLock />
       <div
         className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 p-5"
         onClick={(e) => e.stopPropagation()}
