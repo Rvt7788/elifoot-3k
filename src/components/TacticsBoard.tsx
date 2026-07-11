@@ -317,10 +317,20 @@ export default function TacticsBoard() {
     const chosen = prefs.find(canFill) ?? "4-4-2";
 
     const mentality: Mentality = diff >= 3 ? "ofensivo" : diff > -2 ? "equilibrado" : "defensivo";
+    // Marcação pré-jogo nunca é "extrema": ela drena 1,9× de energia e é
+    // insustentável por 90 minutos — é arma de reta final, não de escalação.
+    // "apertada" (1,3×) só quando o ataque deles ameaça de verdade E o elenco
+    // tem perna (energia média alta); dominando o jogo, "leve" poupa o time.
+    const avgEnergy = (() => {
+      const xi = bestXI(squad, chosen, false, nextCompetition, undefined)
+        .map((id) => squad.find((p) => p.id === id)!)
+        .filter(Boolean);
+      return xi.length ? xi.reduce((s, p) => s + p.energy, 0) / xi.length : 100;
+    })();
     const marking: Marking =
-      oppAtk - myDef >= 3 ? "extrema"
-      : oppAtk - myDef >= 1 ? "apertada"
-      : diff >= 2 ? "leve" : "frouxa";
+      diff >= 2 ? "leve"
+      : oppAtk - myDef >= 2 && diff < 0 && avgEnergy >= 70 ? "apertada"
+      : "frouxa";
 
     setFormation(chosen);
     setDefaultTactics({ mentality, marking });
