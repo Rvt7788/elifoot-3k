@@ -4,6 +4,7 @@ import { weekInfo, tiesForLeg, groupFixturesForMatchday, CUP_STAGE_NAMES, CONT_S
 import { sortTable } from "../game/schedule";
 import { aiPregameTactics } from "../game/engine";
 import { autoTacticsForOpponent } from "../game/autoTactics";
+import { appAlert } from "./AppDialog";
 import type { Club, GameState, Player } from "../types";
 import TacticsBoard from "./TacticsBoard";
 import { leagueName, cupName, continentalName } from "../data/leagues";
@@ -230,6 +231,22 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
       )
     : null;
   const eliminated = isCupEliminated(game);
+
+  // Formação automática contra o próximo adversário: resultado pré-calculado para
+  // marcar o botão de verde quando a configuração atual já é exatamente essa.
+  const nextCompetition =
+    info?.type === "cup" ? ("cup" as const)
+    : info?.type === "continental" || info?.type === "contgroup" ? ("continental" as const)
+    : ("league" as const);
+  const autoR = nextOpp && next && !game.fired
+    ? autoTacticsForOpponent(game, nextOpp.id, next.homeId === club.id, nextCompetition)
+    : null;
+  const autoActive = !!autoR &&
+    (game.formation ?? "4-4-2") === autoR.formation &&
+    (game.starters?.length ?? 0) === autoR.starters.length &&
+    autoR.starters.every((id) => game.starters!.includes(id)) &&
+    game.defaultTactics?.mentality === autoR.mentality &&
+    game.defaultTactics?.marking === autoR.marking;
 
   const lastResults = game.fixtures
     .filter((f) => f.played && (f.homeId === club.id || f.awayId === club.id))
@@ -466,21 +483,22 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
             >
               Analisar
             </button>
-            {!game.fired && (
+            {autoR && (
               <button
                 onClick={() => {
-                  const competition =
-                    info?.type === "cup" ? "cup" as const
-                    : info?.type === "continental" || info?.type === "contgroup" ? "continental" as const
-                    : "league" as const;
-                  const r = autoTacticsForOpponent(game, nextOpp.id, next.homeId === club.id, competition);
-                  setFormation(r.formation);
-                  setDefaultTactics({ mentality: r.mentality, marking: r.marking });
-                  setStarters(r.starters);
+                  setFormation(autoR.formation);
+                  setDefaultTactics({ mentality: autoR.mentality, marking: autoR.marking });
+                  setStarters(autoR.starters);
                   setPosOverrides(undefined);
+                  appAlert(
+                    `Contra ${nextOpp!.name} (${next!.homeId === club.id ? "em casa" : "fora"}): ` +
+                    `${autoR.formation}, ${autoR.mentality.replace(/_/g, " ")}, marcação ${autoR.marking}.`,
+                  );
                 }}
                 title="Aplica formação, escalação, mentalidade e marcação ideais contra este adversário"
-                className="mt-2 block rounded bg-zinc-800 px-4 py-1.5 text-xs text-zinc-200 hover:bg-zinc-700"
+                className={`mt-2 block rounded px-4 py-1.5 text-xs ${
+                  autoActive ? "bg-emerald-600 text-white" : "bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
+                }`}
               >
                 Formação automática
               </button>
