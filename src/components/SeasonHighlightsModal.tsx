@@ -117,17 +117,6 @@ export default function SeasonHighlightsModal() {
         // STAGE 1: MANAGER EVALUATION
         <div className={`my-auto w-full max-w-lg rounded-2xl border p-6 shadow-2xl transition-all duration-300 md:p-8 animate-in fade-in zoom-in-95 duration-200 ${evalBg}`}>
           <div className="mb-4 text-center">
-            {/* faixa com as cores do clube do técnico */}
-            <div
-              className="mx-auto mb-4 w-fit rounded-full px-5 py-1.5 text-xs font-bold uppercase tracking-widest"
-              style={{
-                background: userClub.primaryColor,
-                color: readableOn(userClub.primaryColor),
-                border: `2px solid ${userClub.secondaryColor}`,
-              }}
-            >
-              {userClub.name}
-            </div>
             <span className="text-5xl" role="img" aria-label="emoji">
               {evalEmoji}
             </span>
@@ -148,6 +137,17 @@ export default function SeasonHighlightsModal() {
           </div>
 
           <div className="mt-4 flex flex-col gap-3">
+            {/* faixa do clube nas cores do time, ocupando o container inteiro */}
+            <div
+              className="w-full rounded-lg px-4 py-2.5 text-center text-sm font-bold uppercase tracking-widest"
+              style={{
+                background: userClub.primaryColor,
+                color: readableOn(userClub.primaryColor),
+                border: `2px solid ${userClub.secondaryColor}`,
+              }}
+            >
+              {userClub.name}
+            </div>
             <div className="flex justify-between items-center rounded-lg bg-zinc-900/40 border border-zinc-900 px-4 py-2.5 text-xs text-zinc-400">
               <span>Posição na Liga:</span>
               <span className="font-bold text-zinc-200">{userPos}º lugar ({userClub.division})</span>
