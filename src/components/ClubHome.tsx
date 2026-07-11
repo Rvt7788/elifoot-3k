@@ -291,7 +291,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
         {/* Bandeira do clube - preenche toda a linha no mobile */}
         <div className="w-full sm:flex-1">
           <div
-            className="relative overflow-hidden rounded-md border border-black/40 shadow-inner sm:h-28"
+            className="relative overflow-hidden rounded-md border border-black/40 shadow-inner h-[88px] sm:h-28"
             style={{ background: club.primaryColor }}
           >
             {/* faixa vertical na cor secundária, como o mastro de uma bandeira */}
@@ -332,7 +332,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
 
         {/* Estatísticas (Posição, Orçamento) + Botão Jogar ao lado */}
         <div className="flex flex-row items-stretch justify-between gap-3 text-left w-full sm:w-auto sm:justify-start sm:gap-6">
-          <div className="flex-1 rounded-lg border-2 border-[#cfa717] bg-[#e5be30] px-4 py-3 shadow-lg shadow-yellow-950/15 items-start gap-4 flex justify-start sm:mx-0 sm:flex-initial sm:w-auto sm:max-w-none sm:justify-start sm:gap-12 sm:h-28 sm:px-10 sm:py-5 sm:items-start">
+          <div className="flex-1 rounded-lg border-2 border-[#cfa717] bg-[#e5be30] px-4 py-2.5 shadow-lg shadow-yellow-950/15 items-center gap-4 flex justify-start h-[88px] sm:h-28 sm:mx-0 sm:flex-initial sm:w-auto sm:max-w-none sm:justify-start sm:gap-12 sm:px-10 sm:py-5 sm:items-start">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1 sm:mb-2">Posição</p>
               <p className="text-2xl font-black leading-none text-black sm:mb-0.5">{pos}º</p>
@@ -358,7 +358,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
             nextOpp && next && !game.fired ? (
               <button
                 onClick={onStartMatchday}
-                className="btn-play flex flex-col justify-center items-center gap-1 px-4 py-2 sm:px-5 sm:py-2.5 text-sm sm:text-xs self-stretch w-24 sm:w-28 shrink-0"
+                className="btn-play flex flex-col justify-center items-center gap-1 px-4 py-2 sm:px-5 sm:py-2.5 text-sm sm:text-xs w-24 sm:w-28 h-[88px] sm:h-28 shrink-0"
               >
                 <IconPlay className="h-6 w-6 sm:h-8 sm:w-8" />
                 <span>Jogar</span>
@@ -366,11 +366,11 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
             ) : (
               // rodada sem o time do usuário (copa etc.): assiste ao vivo ou resolve na hora
               // mobile: os dois botões ocupam a faixa horizontal inteira
-              <div className="flex flex-col gap-1.5 w-24 sm:w-auto sm:shrink-0 self-stretch justify-center">
+              <div className="flex flex-col gap-1.5 w-24 sm:w-28 shrink-0 h-[88px] sm:h-28 justify-center">
                 <button
                   onClick={onStartMatchday}
                   disabled={skipping}
-                  className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-zinc-800 border-2 border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-700 disabled:opacity-50"
+                  className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-zinc-800 border-2 border-zinc-700 px-3 py-1 text-xs font-semibold text-zinc-300 hover:bg-zinc-700 disabled:opacity-50"
                   title="Acompanha os jogos da rodada ao vivo"
                 >
                   <IconPlay className="h-5 w-5" />
@@ -379,7 +379,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
                 <button
                   onClick={handleSkip}
                   disabled={skipping}
-                  className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-zinc-800 border-2 border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-700 disabled:cursor-wait disabled:opacity-60"
+                  className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-zinc-800 border-2 border-zinc-700 px-3 py-1 text-xs font-semibold text-zinc-300 hover:bg-zinc-700 disabled:cursor-wait disabled:opacity-60"
                   title="Simula todos os jogos da rodada instantaneamente"
                 >
                   {skipping ? "Simulando…" : "Pular »"}
