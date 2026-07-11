@@ -137,6 +137,12 @@ export default function Squad() {
                       <p>Nível: <span className="text-zinc-200">{TIER_NAME[p.tier]}</span></p>
                       <p>Pé: <span className="text-zinc-200 capitalize">{p.foot}</span></p>
                       <p className="col-span-2">Nascimento: <span className="text-zinc-200">{playerBirthDate(p.id, p.age, game.season)}</span></p>
+                      <p className="col-span-2 sm:col-span-4">
+                        Características:{" "}
+                        <span className="text-amber-400">
+                          {p.traits.length ? p.traits.join(", ") : "nenhuma"}
+                        </span>
+                      </p>
                       <p>Gols: <span className="text-zinc-200">{p.goals}</span></p>
                       <p>Assistências: <span className="text-zinc-200">{p.assists}</span></p>
                       <p>Cartões: <span className="text-zinc-200">🟨 {p.yellows} · 🟥 {p.reds}</span></p>
@@ -167,15 +173,6 @@ export default function Squad() {
                             Renovar +2 (${(renewalCost(p) / 1e3).toFixed(0)}k)
                           </button>
                         )}
-                      </p>
-                      <p className="col-span-2 sm:col-span-4">
-                        Características:{" "}
-                        <span className="text-amber-400">
-                          {p.traits.length ? p.traits.join(", ") : "nenhuma"}
-                        </span>
-                      </p>
-                      <p className="col-span-2 sm:col-span-4" title="Amarelos acumulados por competição (3 = suspensão)">
-                        Amarelos: <span className="text-zinc-200">Liga {p.yellowsLeague} · Copa {p.yellowsCup} · Cont {p.yellowsContinental}</span>
                       </p>
                       <p className="col-span-2 sm:col-span-4 flex flex-wrap gap-2">
                         <button
