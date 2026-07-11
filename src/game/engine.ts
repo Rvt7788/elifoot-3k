@@ -167,7 +167,8 @@ export function pickLineup(
     (id) => squad.some((p) => p.id === id && !isSuspended(p, competition) && !isInjured(p)),
   ) ?? [];
   const starters = new Set(valid.length === 11 ? valid : bestXI(squad, formation, false, competition, custom));
-  return squad.map((p) => ({
+  const availableSquad = squad.filter((p) => !isInjured(p) && !isSuspended(p, competition));
+  return availableSquad.map((p) => ({
     playerId: p.id,
     energy: p.energy,
     yellowsMatch: 0,
@@ -570,6 +571,8 @@ export function makeSub(
   out.subbedOut = true;
   inn.onField = true;
   inn.subbedIn = true;
+  inn.slotIdx = out.slotIdx;
+  inn.posOverride = out.posOverride;
   // quem entra herda o lugar (lado do campo) de quem saiu no bônus de pé
   const order = side === "home" ? m.homeSlotOrder : m.awaySlotOrder;
   if (order) {

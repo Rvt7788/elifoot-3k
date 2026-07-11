@@ -123,8 +123,22 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
     updateLive((ms) => fn(side === "home" ? ms[mi].homeTactics : ms[mi].awayTactics));
 
   const POS_ORDER: Record<Position, number> = { GOL: 0, DEF: 1, MEI: 2, ATA: 3 };
-  const byPos = (a: { playerId: string }, b: { playerId: string }) =>
-    POS_ORDER[pById[a.playerId].pos] - POS_ORDER[pById[b.playerId].pos];
+  const currentSlotOrder = slotOrder || (side === "home" ? match.homeSlotOrder : match.awaySlotOrder) || [];
+  const byPos = (a: { playerId: string }, b: { playerId: string }) => {
+    const lpA = lineup.find(l => l.playerId === a.playerId);
+    const lpB = lineup.find(l => l.playerId === b.playerId);
+    const posA = lpA?.posOverride ?? pById[a.playerId].pos;
+    const posB = lpB?.posOverride ?? pById[b.playerId].pos;
+    const posDiff = POS_ORDER[posA] - POS_ORDER[posB];
+    if (posDiff !== 0) return posDiff;
+
+    const idxA = currentSlotOrder.indexOf(a.playerId);
+    const idxB = currentSlotOrder.indexOf(b.playerId);
+    if (idxA !== -1 && idxB !== -1) {
+      return idxA - idxB;
+    }
+    return 0;
+  };
   const onField = lineup.filter((l) => l.onField && !l.sentOff).sort(byPos);
   const bench = lineup.filter((l) => !l.onField && !l.subbedOut && !l.sentOff).sort(byPos);
   const hasKeeperOnField = onField.some((l) => (l.posOverride ?? pById[l.playerId].pos) === "GOL");
@@ -263,21 +277,45 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
     if (selectedOutId && selectedOutId !== id) {
       const a = pById[selectedOutId];
       const b = pById[id];
-      if (a.pos === b.pos) {
+      const lpA = lineup.find((l) => l.playerId === selectedOutId);
+      const lpB = lineup.find((l) => l.playerId === id);
+      const effPosA = lpA?.posOverride ?? a.pos;
+      const effPosB = lpB?.posOverride ?? b.pos;
+
+      if (effPosA === effPosB) {
+        // Mesma posição efetiva (mesmo setor): troca os slots visuais no campo
+        const sa = slots.find((s) => s.player?.id === selectedOutId);
+        const sb = slots.find((s) => s.player?.id === id);
+        if (sa && sb) {
+          updateLive((ms) => {
+            const lu = side === "home" ? ms[mi].homeLineup : ms[mi].awayLineup;
+            const l1 = lu.find((l) => l.playerId === selectedOutId);
+            const l2 = lu.find((l) => l.playerId === id);
+            if (!l1 || !l2) return;
+            const tempIdx = l1.slotIdx ?? sa.slotIdx;
+            l1.slotIdx = l2.slotIdx ?? sb.slotIdx;
+            l2.slotIdx = tempIdx;
+          });
+        }
+
+        // Também troca no slotOrder para manter coerência do bônus de pé e simulação
         const order = onField.map((l) => l.playerId);
         const ia = order.indexOf(selectedOutId);
         const ib = order.indexOf(id);
-        [order[ia], order[ib]] = [order[ib], order[ia]];
-        setSlotOrder(order);
-        // persiste a troca de lado no jogo em andamento (afeta o bônus de pé) e no save
-        updateLive((ms) => {
-          if (side === "home") ms[mi].homeSlotOrder = order;
-          else ms[mi].awaySlotOrder = order;
-        });
-        setStoreSlotOrder(order);
+        if (ia !== -1 && ib !== -1) {
+          [order[ia], order[ib]] = [order[ib], order[ia]];
+          setSlotOrder(order);
+          updateLive((ms) => {
+            if (side === "home") ms[mi].homeSlotOrder = order;
+            else ms[mi].awaySlotOrder = order;
+          });
+          setStoreSlotOrder(order);
+        }
+
         setSelectedOutId(null);
         return;
       }
+
       // posições diferentes: os dois trocam de setor/slot no desenho do campo.
       // Só o gol fica de fora — goleiro não vira jogador de linha e vice-versa.
       const sa = slots.find((s) => s.player?.id === selectedOutId);
@@ -543,36 +581,38 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold">Parada tática — {match.minute}&#39;</h2>
-          <div className="flex items-start gap-4">
-            <div className="flex flex-col gap-1.5">
-              {/* confirmar/desfaz e retoma o jogo, igual ao botão de baixo */}
-              <button
-                onClick={closeAndResume}
-                disabled={!hasKeeperOnField}
-                className="flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                title={hasKeeperOnField ? "Voltar ao jogo" : "Você precisa escalar um goleiro ou jogador de linha no gol!"}
-              >
-                <span className="text-[10px]">▶</span> Jogar
-              </button>
-              {/* desfaz TODAS as alterações da parada e permanece no modal */}
-              <button
-                onClick={revertToSnapshot}
-                disabled={!hasChanges()}
-                className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                title="Desfaz todas as alterações feitas nesta parada"
-              >
-                Desfazer
-              </button>
-            </div>
-            {/* ✕: mesmo fluxo — sem alteração sai direto; com alteração pede confirmação */}
+          <div className="flex items-center gap-3">
+            {/* confirmar e retoma o jogo */}
             <button
               onClick={closeAndResume}
               disabled={!hasKeeperOnField}
-              className="text-zinc-400 hover:text-white text-lg font-bold px-1 disabled:opacity-45 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-6 py-3.5 text-sm font-bold text-white hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               title={hasKeeperOnField ? "Voltar ao jogo" : "Você precisa escalar um goleiro ou jogador de linha no gol!"}
             >
-              ✕
+              <span className="text-[12px]">▶</span> Jogar
             </button>
+            
+            {/* Coluna para controle de fechar (✕) e desfazer (↺) */}
+            <div className="flex flex-col items-center gap-2">
+              {/* ✕: mesmo fluxo — sem alteração sai direto; com alteração pede confirmação */}
+              <button
+                onClick={closeAndResume}
+                disabled={!hasKeeperOnField}
+                className="text-zinc-400 hover:text-white text-lg font-bold px-1 disabled:opacity-45 disabled:cursor-not-allowed leading-none"
+                title={hasKeeperOnField ? "Voltar ao jogo" : "Você precisa escalar um goleiro ou jogador de linha no gol!"}
+              >
+                ✕
+              </button>
+              {/* ↺: desfaz todas as alterações */}
+              <button
+                onClick={revertToSnapshot}
+                disabled={!hasChanges()}
+                className="text-zinc-450 hover:text-white text-lg font-bold px-1 disabled:opacity-25 disabled:cursor-not-allowed leading-none"
+                title="Desfaz todas as alterações feitas nesta parada"
+              >
+                ↺
+              </button>
+            </div>
           </div>
         </div>
 

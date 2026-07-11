@@ -272,6 +272,17 @@ export default function TacticsBoard() {
       // titular ↔ reserva: o reserva entra no slot exato do titular
       const starterId = aStarter ? a.id : b.id;
       const benchId = aStarter ? b.id : a.id;
+      const benchPlayer = aStarter ? b : a;
+      if ((benchPlayer.injuryWeeks ?? 0) > 0) {
+        appAlert(`${benchPlayer.name} está lesionado e não pode jogar.`);
+        setSel(null);
+        return;
+      }
+      if (isSuspendedNext(benchPlayer)) {
+        appAlert(`${benchPlayer.name} está suspenso nesta competição e não pode jogar.`);
+        setSel(null);
+        return;
+      }
       const arr = posPlayers[pa].map((p) => p.id === starterId ? benchId : p.id);
       setStarters(starters.map((s) => (s === starterId ? benchId : s)));
       setSlotOrder(flatOrder({ ...posPlayers, [pa]: arr.map((x) => squad.find((p) => p.id === x)!) }));
@@ -298,6 +309,16 @@ export default function TacticsBoard() {
       return;
     }
     if (player.pos !== posKey) return;
+    if ((player.injuryWeeks ?? 0) > 0) {
+      appAlert(`${player.name} está lesionado e não pode jogar.`);
+      setSel(null);
+      return;
+    }
+    if (isSuspendedNext(player)) {
+      appAlert(`${player.name} está suspenso nesta competição e não pode jogar.`);
+      setSel(null);
+      return;
+    }
     const arr = [...posPlayers[posKey]];
     arr.splice(Math.min(slotIdx, arr.length), 0, player);
     setStarters([...starters, sel]);
@@ -413,7 +434,7 @@ export default function TacticsBoard() {
       const need = layout[posKey].length - nextPosPlayers[posKey].length;
       if (need <= 0) return;
       const bench = squad
-        .filter((p) => p.pos === posKey && !starters.includes(p.id) && !addedIds.includes(p.id) && !((p.injuryWeeks ?? 0) > 0))
+        .filter((p) => p.pos === posKey && !starters.includes(p.id) && !addedIds.includes(p.id) && !((p.injuryWeeks ?? 0) > 0) && !isSuspendedNext(p))
         .sort((a, b) => b.strength - a.strength)
         .slice(0, need);
       nextPosPlayers[posKey] = [...nextPosPlayers[posKey], ...bench];
@@ -424,7 +445,7 @@ export default function TacticsBoard() {
     const missing = slots.length - starters.length - addedIds.length;
     if (missing > 0) {
       const extras = squad
-        .filter((p) => !starters.includes(p.id) && !addedIds.includes(p.id))
+        .filter((p) => !starters.includes(p.id) && !addedIds.includes(p.id) && !((p.injuryWeeks ?? 0) > 0) && !isSuspendedNext(p))
         .sort((a, b) => b.strength - a.strength)
         .slice(0, missing);
       addedIds.push(...extras.map((p) => p.id));

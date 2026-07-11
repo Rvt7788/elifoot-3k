@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useStore, needsUserShootout, renewalCost } from "./store";
 import { appAlert } from "./components/AppDialog";
 import PenaltyShootout from "./components/PenaltyShootout";
+import SeasonHighlightsModal from "./components/SeasonHighlightsModal";
 import SettingsModal from "./components/SettingsModal";
 import { AppDialogHost } from "./components/AppDialog";
 import NewGame from "./components/NewGame";
@@ -454,6 +455,7 @@ export default function App() {
       {!liveRunning && <PendingPromotionsModal />}
       {!liveRunning && <IncomingOfferModal onOpenSquad={() => setTab("elenco")} />}
       {!liveRunning && <ContractWarningModal />}
+      {!liveRunning && <SeasonHighlightsModal />}
       {shootoutOpen && (
         <PenaltyShootout
           onDone={(winnerId) => {

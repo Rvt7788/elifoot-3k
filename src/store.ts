@@ -587,6 +587,14 @@ export const useStore = create<Store>()(
             mgrRes.userWonAward && !g.fired
               ? Math.round(seasonRevenue(userClub.baseBudget) * 0.25)
               : 0;
+          let leagueChampionBonus = 0;
+          if (!g.fired) {
+            if (finalA[0]?.clubId === g.userClubId) {
+              leagueChampionBonus = Math.round(seasonRevenue(userClub.baseBudget) * 2.5);
+            } else if (finalB[0]?.clubId === g.userClubId) {
+              leagueChampionBonus = Math.round(seasonRevenue(userClub.baseBudget) * 1.0);
+            }
+          }
           g = {
             ...g,
             jobOffer,
@@ -612,7 +620,7 @@ export const useStore = create<Store>()(
             ),
             // clube falido não recebe aporte: o caixa fica congelado onde parou
             // (prêmio de Melhor Técnico rende um bônus extra da diretoria)
-            budget: g.fired ? g.budget : g.budget + seasonRevenue(userClub.baseBudget) + awardBonus,
+            budget: g.fired ? g.budget : g.budget + seasonRevenue(userClub.baseBudget) + awardBonus + leagueChampionBonus,
             players: transitions.updatedPlayers,
             pendingPromotions:
               transitions.pendingPromotions.length > 0 ? transitions.pendingPromotions : undefined,
@@ -646,6 +654,7 @@ export const useStore = create<Store>()(
             ),
           };
           set({ game: g });
+          return;
         }
         const week = nextPlayableWeek(g);
         if (week === null) return;

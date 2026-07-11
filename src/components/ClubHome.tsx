@@ -160,6 +160,7 @@ function OpponentModal({
 export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatchday?: () => void; onOpenTable?: () => void }) {
   const game = useStore((s) => s.game);
   const skipMatchday = useStore((s) => s.skipMatchday);
+  const startMatchday = useStore((s) => s.startMatchday);
   const [analyzing, setAnalyzing] = useState(false);
   const [viewClub, setViewClub] = useState<Club | null>(null);
   const [financeOpen, setFinanceOpen] = useState(false);
@@ -367,8 +368,17 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
             </div>
           </div>
 
-          {onStartMatchday && week !== null && (
-            nextOpp && next && !game.fired ? (
+          {onStartMatchday && (
+            week === null ? (
+              <button
+                onClick={() => startMatchday()}
+                className="btn-play flex flex-col justify-center items-center gap-1 px-4 sm:px-5 text-xs w-24 sm:w-28 self-stretch shrink-0 bg-amber-600 border-2 border-amber-500 hover:bg-amber-500"
+                title="Começar nova temporada"
+              >
+                <IconPlay className="h-6 w-6 sm:h-8 sm:w-8" />
+                <span className="text-center font-bold">Nova Temp.</span>
+              </button>
+            ) : nextOpp && next && !game.fired ? (
               <button
                 onClick={onStartMatchday}
                 className="btn-play flex flex-col justify-center items-center gap-1 px-4 sm:px-5 text-sm sm:text-xs w-24 sm:w-28 self-stretch shrink-0"
