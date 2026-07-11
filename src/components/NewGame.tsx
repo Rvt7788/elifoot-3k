@@ -45,24 +45,24 @@ function serieBPool(clubs: Club[], lucky: boolean, country?: string): Club[] {
 // do modal para a recepção nunca ser igual. {name} vira o nome do técnico.
 const WELCOME_MESSAGES: { p1: string; p2: string }[] = [
   {
-    p1: "{name}, a diretoria apostou em você. O clube é pequeno, o orçamento é curto e a torcida é desconfiada. Mas todo gigante já esteve onde estamos hoje.",
-    p2: "Prove que estávamos certos. O vestiário é seu, técnico.",
+    p1: "Professor {name}, as luzes do estádio já estão se apagando e a diretoria acaba de assinar a sua papelada. Sabemos que o orçamento é curto, o elenco é limitado e as arquibancadas andam meio vazias ultimamente. Mas o futebol é feito de superação, e todo gigante começou exatamente onde estamos hoje.",
+    p2: "O vestiário é todo seu, técnico. Nós acreditamos na sua mentalidade. Mostre a eles do que você é capaz.",
   },
   {
-    p1: "{name}, aqui não tem estrutura de ponta nem folha salarial gorda. Tem um grupo disposto, uma cidade inteira de olho e uma diretoria que escolheu você a dedo.",
-    p2: "Faça esse time jogar. O resto a gente constrói junto.",
+    p1: "Técnico {name}, não vamos te vender ilusões: aqui você não vai encontrar estruturas de ponta nem salários astronômicos. Mas há um grupo sedento por vencer, uma cidade inteira de olho em cada rodada e uma diretoria que escolheu você a dedo para liderar esse projeto.",
+    p2: "Faça esses garotos jogarem com o coração. O resto a gente constrói no dia a dia, lado a lado.",
   },
   {
-    p1: "{name}, muita gente recusou essa cadeira antes de você. Acharam o desafio grande demais. Nós achamos que é exatamente do seu tamanho.",
-    p2: "Agora é com você. Nos faça engolir cada dúvida.",
+    p1: "Professor {name}, para ser sincero, outros recusaram este cargo antes de você chegar. Acharam o desafio pesado demais e o elenco muito curto. Mas nós sabíamos exatamente quem queríamos no comando. Acreditamos que este desafio tem o tamanho exato da sua capacidade.",
+    p2: "A prancheta está nas suas mãos. Vá lá fora e transforme toda essa desconfiança em orgulho para a torcida.",
   },
   {
-    p1: "{name}, este clube já viu dias melhores, e a torcida não esquece isso. O que ela quer é simples: um time que sue a camisa e um técnico que acredite.",
-    p2: "Devolva o orgulho a essa gente. Bem-vindo ao desafio.",
+    p1: "Técnico {name}, a nossa torcida não esquece as glórias do passado e sente falta de ver o time brigando no topo. O que eles pedem é simples: um time com alma, que divida cada bola e um comandante que acredite no projeto tanto quanto eles.",
+    p2: "Devolva o brilho nos olhos e o orgulho a essa gente. Seja muito bem-vindo ao desafio da sua carreira.",
   },
   {
-    p1: "{name}, o dinheiro é pouco e o elenco é limitado — ninguém aqui vai te esconder isso. Mas time pequeno com ideia grande já derrubou muito gigante.",
-    p2: "Mostre a sua ideia. A prancheta agora é sua.",
+    p1: "Professor {name}, os cofres do clube estão quase vazios e nosso banco de reservas é enxuto — não há mistério nisso. No entanto, o futebol nos ensina toda semana que ideias grandes e corajosas valem muito mais do que folhas salariais astronômicas.",
+    p2: "Coloque a sua identidade em campo. A prancheta agora é sua, e nós daremos todo o suporte.",
   },
 ];
 
