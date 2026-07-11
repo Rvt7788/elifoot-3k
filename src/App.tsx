@@ -61,16 +61,28 @@ function JobOfferModal() {
 
 // Proposta de um clube da IA por um jogador do usuário: aceitar vende na hora;
 // recusar descarta (a proposta expira sozinha na próxima rodada).
-function IncomingOfferModal() {
+function IncomingOfferModal({ onOpenSquad }: { onOpenSquad: () => void }) {
   const game = useStore((s) => s.game);
   const acceptIncomingOffer = useStore((s) => s.acceptIncomingOffer);
   const declineIncomingOffer = useStore((s) => s.declineIncomingOffer);
+  // minimizado para consultar o elenco antes de decidir — guarda o id do jogador
+  // da proposta para reabrir automaticamente se chegar uma proposta nova
+  const [hiddenFor, setHiddenFor] = useState<string | null>(null);
   if (!game?.incomingOffer) return null;
   const offer = game.incomingOffer;
   const buyer = game.clubs.find((c) => c.id === offer.clubId);
   const player = game.players.find((p) => p.id === offer.playerId);
   if (!buyer || !player || player.clubId !== game.userClubId) return null;
   const isStarter = game.starters.includes(player.id);
+  if (hiddenFor === player.id)
+    return (
+      <button
+        onClick={() => setHiddenFor(null)}
+        className="fixed bottom-4 right-4 z-50 rounded-lg border border-sky-700/60 bg-zinc-900 px-4 py-2 text-sm font-semibold text-sky-300 shadow-lg hover:bg-zinc-800"
+      >
+        📠 Responder proposta
+      </button>
+    );
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <div className="w-full max-w-md rounded-xl border border-sky-700/60 bg-zinc-900 p-5">
@@ -88,9 +100,19 @@ function IncomingOfferModal() {
           temporada{(player.contract ?? 1) > 1 ? "s" : ""}. Se não responder, a proposta expira na
           próxima rodada.
         </p>
+        <button
+          onClick={() => { setHiddenFor(player.id); onOpenSquad(); }}
+          className="mb-2 w-full rounded bg-zinc-800 py-2 text-sm text-sky-300 hover:bg-zinc-700"
+          title="Consulta o elenco e as informações do jogador antes de decidir — a proposta fica esperando"
+        >
+          Ver elenco antes de decidir
+        </button>
         <div className="flex gap-2">
-          <button onClick={acceptIncomingOffer} className="btn-cta flex-1 py-2">
-            Aceitar e vender
+          <button
+            onClick={acceptIncomingOffer}
+            className="flex-1 rounded bg-emerald-600 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
+          >
+            Aceitar
           </button>
           <button
             onClick={declineIncomingOffer}
@@ -418,7 +440,7 @@ export default function App() {
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
       {!liveRunning && <JobOfferModal />}
       {!liveRunning && <PendingPromotionsModal />}
-      {!liveRunning && <IncomingOfferModal />}
+      {!liveRunning && <IncomingOfferModal onOpenSquad={() => setTab("elenco")} />}
       {!liveRunning && <ContractWarningModal />}
       {shootoutOpen && (
         <PenaltyShootout
