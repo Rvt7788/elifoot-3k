@@ -424,6 +424,13 @@ function countSector(lineup: LivePlayer[], idx: PlayersIndex, pos: Position): nu
   ).length;
 }
 
+// Jogadores a menos em campo (expulsões): base de todas as penalidades de
+// inferioridade numérica — 9 homens não cobrem o campo de 11.
+function menDown(lineup: LivePlayer[]): number {
+  const n = lineup.filter((lp) => lp.onField && !lp.sentOff).length;
+  return Math.max(0, 11 - n);
+}
+
 function tryShot(
   rng: Rng, m: LiveMatch, idx: PlayersIndex, side: "home" | "away",
   counter = false,
@@ -486,6 +493,9 @@ function tryShot(
     const nAtk = countSector(atkLineup, idx, "ATA");
     gk *= 1 + Math.max(-0.21, Math.min(0.3, 0.08 * (nDef - nAtk)));
   }
+  // time desfalcado defende com espaços abertos: cada expulso facilita a
+  // conclusão do rival (a linha não fecha, o goleiro fica mais exposto)
+  gk *= Math.max(0.7, 1 - 0.08 * menDown(defLineup));
   // marcação dura estraga a finalização; leve dá espaço
   if (defTactics.marking === "extrema") gk *= 1.12;
   else if (defTactics.marking === "apertada") gk *= 1.05;
@@ -750,7 +760,9 @@ export function simulateMinute(
       0.55 *
       (t.mentality === "ofensivo" ? 1.2 : t.mentality === "tudo_ou_nada" ? 1.35 : 1) *
       (t.truculencia ? 1.15 : 1) *
-      MARKING_DRAIN[t.marking];
+      MARKING_DRAIN[t.marking] *
+      // com 10 corre-se pelos 11; com 9, ainda mais — o time desfalcado se esgota
+      (1 + 0.15 * menDown(lineup));
     for (const lp of lineup) {
       if (lp.onField && !lp.sentOff) {
         let playerDrain = drain;
@@ -766,8 +778,13 @@ export function simulateMinute(
   // A diferença de poder (formação, tática, escalação, energia) agora pesa mais que o
   // ruído aleatório — decisões do jogador e da IA se refletem de verdade no placar,
   // mas o ruído continua alto o bastante para permitir zebra e jogo imprevisível.
-  const homeDef = defensePower(m.homeLineup, idx, m.homeTactics, m.homeSlotOrder);
-  const awayDef = defensePower(m.awayLineup, idx, m.awayTactics, m.awaySlotOrder);
+  // penalidade global de inferioridade numérica: além de perder a força do
+  // expulso nas somas de setor, o time a menos perde organização/cobertura —
+  // ~15% do poder total (ataque e defesa) por jogador a menos.
+  const homeShort = Math.max(0.55, 1 - 0.15 * menDown(m.homeLineup));
+  const awayShort = Math.max(0.55, 1 - 0.15 * menDown(m.awayLineup));
+  const homeDef = defensePower(m.homeLineup, idx, m.homeTactics, m.homeSlotOrder) * homeShort;
+  const awayDef = defensePower(m.awayLineup, idx, m.awayTactics, m.awaySlotOrder) * awayShort;
   // moral (0..1): neutra entre 40% e 60%; melhora gradualmente acima de 60% (até +10%);
   // piora gradualmente abaixo de 40% (até -10%).
   const moraleBoost = (mor: number | undefined) => {
@@ -791,8 +808,8 @@ export function simulateMinute(
     (homeMoraleN > 0.6 ? 0.16 * Math.min(1, (homeMoraleN - 0.6) / 0.35)
       : homeMoraleN < 0.4 ? -0.16 * Math.min(1, (0.4 - homeMoraleN) / 0.3)
       : 0);
-  const hp = teamPower(m.homeLineup, idx, m.homeTactics, awayDef, m.homeSlotOrder) * homeAdv * moraleBoost(m.homeMorale);
-  const ap = teamPower(m.awayLineup, idx, m.awayTactics, homeDef, m.awaySlotOrder) * moraleBoost(m.awayMorale);
+  const hp = teamPower(m.homeLineup, idx, m.homeTactics, awayDef, m.homeSlotOrder) * homeAdv * moraleBoost(m.homeMorale) * homeShort;
+  const ap = teamPower(m.awayLineup, idx, m.awayTactics, homeDef, m.awaySlotOrder) * moraleBoost(m.awayMorale) * awayShort;
   let delta = ((hp - ap) / (hp + ap)) * 34 + (rng() - 0.5) * 18;
   // "cera" do lado que trava: barra tende ao zero e adversário ganha volume sutil
   if (m.homeTactics.cera) delta = delta * 0.5 - 1.5;
@@ -907,6 +924,8 @@ export function simulateMinute(
     // do domínio cedido — jogo só levemente desequilibrado quase não gera contra
     // (ser um pouco melhor não pode ser punido).
     pCounter *= Math.min(1, (0.42 - share) / 0.05);
+    // com 10 ou 9 homens não sobra perna nem gente para sair no contragolpe
+    pCounter *= Math.pow(0.6, menDown(lineup));
     if (chance(rng, pCounter)) tryShot(rng, m, idx, side, true);
   }
   m.dangerTime = Math.abs(m.momentum) >= 70 ? m.dangerTime + 1 : 0;
