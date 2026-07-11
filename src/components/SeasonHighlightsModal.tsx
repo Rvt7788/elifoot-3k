@@ -3,6 +3,7 @@ import { useStore, nextPlayableWeek, seasonRevenue } from "../store";
 import { weekInfo, cupChampion, CONT_STAGES } from "../game/cup";
 import { sortTable } from "../game/schedule";
 import { ScrollLock } from "./useLockBodyScroll";
+import { readableOn } from "../game/color";
 import type { Club, Player, Position } from "../types";
 
 export default function SeasonHighlightsModal() {
@@ -58,7 +59,7 @@ export default function SeasonHighlightsModal() {
   if (wonAnyTitle) {
     evalTitle = "👑 Glória Eterna!";
     evalEmoji = "🏆";
-    evalBg = "border-amber-500/60 bg-zinc-950 shadow-amber-950/20";
+    evalBg = "border-amber-500/70 bg-gradient-to-b from-amber-900/40 via-amber-950/20 to-zinc-950";
     const titlesWon: string[] = [];
     if (wonSerieA) titlesWon.push("Campeonato Brasileiro (Série A)");
     if (wonSerieB) titlesWon.push("Campeonato Brasileiro (Série B)");
@@ -69,7 +70,7 @@ export default function SeasonHighlightsModal() {
   } else if (promoted) {
     evalTitle = "🚀 Acesso Garantido!";
     evalEmoji = "📈";
-    evalBg = "border-emerald-600/60 bg-zinc-950 shadow-emerald-950/20";
+    evalBg = "border-emerald-500/70 bg-gradient-to-b from-emerald-900/40 via-emerald-950/20 to-zinc-950";
     evalMsg = `Objetivo cumprido com maestria, Técnico! O **${userClub.name}** carimbou o passaporte de volta para a Série A. Você organizou a equipe nos momentos difíceis e garantiu o acesso na ${userPos}ª colocação. Prepare-se, pois o desafio na elite do futebol nacional exige ainda mais!`;
   } else if (relegated) {
     evalTitle = "💔 Queda Dolorosa";
@@ -79,7 +80,7 @@ export default function SeasonHighlightsModal() {
   } else if (survived) {
     evalTitle = "🛡️ Permanência na Elite!";
     evalEmoji = "✅";
-    evalBg = "border-sky-600/60 bg-zinc-950 shadow-sky-950/20";
+    evalBg = "border-sky-500/60 bg-gradient-to-b from-sky-900/30 via-zinc-950 to-zinc-950";
     evalMsg = `Missão cumprida na elite, Professor! Manter o **${userClub.name}** na Série A era de suma importância para a estabilidade do clube. Enfrentamos gigantes de igual para igual e garantimos nossa permanência na ${userPos}ª colocação. Agora, a diretoria confia em você para montar um elenco capaz de brigar mais acima no próximo ano!`;
   }
 
@@ -116,6 +117,17 @@ export default function SeasonHighlightsModal() {
         // STAGE 1: MANAGER EVALUATION
         <div className={`my-auto w-full max-w-lg rounded-2xl border p-6 shadow-2xl transition-all duration-300 md:p-8 animate-in fade-in zoom-in-95 duration-200 ${evalBg}`}>
           <div className="mb-4 text-center">
+            {/* faixa com as cores do clube do técnico */}
+            <div
+              className="mx-auto mb-4 w-fit rounded-full px-5 py-1.5 text-xs font-bold uppercase tracking-widest"
+              style={{
+                background: userClub.primaryColor,
+                color: readableOn(userClub.primaryColor),
+                border: `2px solid ${userClub.secondaryColor}`,
+              }}
+            >
+              {userClub.name}
+            </div>
             <span className="text-5xl" role="img" aria-label="emoji">
               {evalEmoji}
             </span>
@@ -123,7 +135,7 @@ export default function SeasonHighlightsModal() {
               {evalTitle}
             </h2>
             <p className="mt-1 text-xs text-zinc-500 font-semibold tracking-wider uppercase">
-              Relatório da Diretoria · {userClub.name}
+              Relatório da Diretoria
             </p>
           </div>
 
@@ -150,9 +162,9 @@ export default function SeasonHighlightsModal() {
 
           <button
             onClick={() => setStep(2)}
-            className="btn-cta mt-6 w-full py-3 text-sm font-bold uppercase tracking-wider transition-all hover:scale-[1.01]"
+            className="btn-cta mx-auto mt-6 block w-fit px-8 py-2.5 text-sm font-bold uppercase tracking-wider"
           >
-            Ver Destaques da Temporada →
+            Ver destaques
           </button>
         </div>
       ) : (
@@ -270,10 +282,10 @@ export default function SeasonHighlightsModal() {
             </div>
           </div>
 
-          <div className="mt-8 flex justify-end gap-3 border-t border-zinc-900 pt-5">
+          <div className="mt-8 flex justify-center border-t border-zinc-900 pt-5">
             <button
               onClick={() => startMatchday()}
-              className="btn-play flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold uppercase tracking-wider w-full md:w-auto"
+              className="btn-play flex w-fit items-center justify-center gap-2 px-8 py-2.5 text-sm font-bold uppercase tracking-wider"
             >
               Iniciar Nova Temporada ⚽
             </button>

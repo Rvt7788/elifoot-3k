@@ -254,6 +254,7 @@ interface Store {
   acceptIncomingOffer: () => void;
   declineIncomingOffer: () => void;
   dismissContractWarning: () => void;
+  dismissNews: () => void;
   finishMatchday: (userTieWinnerId?: string) => void;
   skipMatchday: () => void;
   acceptJobOffer: () => void;
@@ -490,6 +491,13 @@ export const useStore = create<Store>()(
         const g = get().game;
         if (!g) return;
         set({ game: { ...g, contractWarningSeason: g.season } });
+      },
+
+      // Fecha o modal de notícias da rodada (as manchetes só vivem nele).
+      dismissNews: () => {
+        const g = get().game;
+        if (!g) return;
+        set({ game: { ...g, lastNews: undefined } });
       },
 
       buyPlayer: (id, offer) => {

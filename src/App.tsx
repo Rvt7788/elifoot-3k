@@ -130,8 +130,35 @@ function IncomingOfferModal({ onOpenSquad }: { onOpenSquad: () => void }) {
   );
 }
 
+// Notícias da rodada: modal que surge uma vez após encerrar a rodada, com as
+// manchetes da divisão do usuário — fechar dispensa (nada fica preso na home).
+function RoundNewsModal() {
+  const game = useStore((s) => s.game);
+  const dismissNews = useStore((s) => s.dismissNews);
+  if (!game || !game.lastNews || game.lastNews.length === 0) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex justify-center overflow-y-auto bg-black/70 p-4">
+      <ScrollLock />
+      <div className="my-auto w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-900 p-5">
+        <h2 className="mb-3 font-display text-lg font-bold text-zinc-100">📰 Notícias da rodada</h2>
+        <div className="mb-5 flex flex-col gap-2 text-sm leading-relaxed text-zinc-300">
+          {game.lastNews.map((n, i) => (
+            <p key={i}>{n}</p>
+          ))}
+        </div>
+        <button
+          onClick={dismissNews}
+          className="btn-cta mx-auto block w-fit px-8 py-2 text-sm font-bold"
+        >
+          Fechar
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // Aviso de fim de temporada: jogadores no último ano de contrato saem de graça
-// na virada — o modal aparece uma vez por temporada, nas 5 rodadas finais da
+// na virada — o modal aparece uma vez por temporada, nas 3 rodadas finais da
 // liga, com renovação direta dali mesmo.
 function ContractWarningModal() {
   const game = useStore((s) => s.game);
@@ -140,7 +167,7 @@ function ContractWarningModal() {
   if (!game || game.fired) return null;
   if (game.contractWarningSeason === game.season) return null;
   const roundsLeft = new Set(game.fixtures.filter((f) => !f.played).map((f) => f.round)).size;
-  if (roundsLeft === 0 || roundsLeft > 5) return null;
+  if (roundsLeft === 0 || roundsLeft > 3) return null;
   const expiring = game.players
     .filter((p) => p.clubId === game.userClubId && (p.contract ?? 1) <= 1)
     .sort((a, b) => b.strength - a.strength);
@@ -226,14 +253,16 @@ function PendingPromotionsModal() {
           </span>
         </div>
 
-        {userRetirements.length > 0 && (
-          <div className="mb-4 rounded-lg bg-red-950/20 border border-red-900/30 px-3 py-2 text-xs text-red-400">
-            ⚠️ <b>Aposentado(s) do clube:</b> {userRetirements.map((r) => `${r.name} (${r.age} anos)`).join(", ")}
-          </div>
-        )}
-
         <p className="mb-6 text-sm text-zinc-400 leading-relaxed">
-          Com a saída de atletas veteranos do elenco, a comissão da base selecionou estas 4 promessas para subir ao time profissional. Avalie as características e assine com um deles:
+          {userRetirements.length > 0 && (
+            <>
+              <b className="text-zinc-300">
+                {userRetirements.map((r) => `${r.name} (${r.age} anos)`).join(", ")}
+              </b>{" "}
+              {userRetirements.length > 1 ? "se aposentaram" : "se aposentou"}.{" "}
+            </>
+          )}
+          Substitua por um destes jogadores da base:
         </p>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -454,6 +483,7 @@ export default function App() {
       {!liveRunning && <JobOfferModal />}
       {!liveRunning && <PendingPromotionsModal />}
       {!liveRunning && <IncomingOfferModal onOpenSquad={() => setTab("elenco")} />}
+      {!liveRunning && <RoundNewsModal />}
       {!liveRunning && <ContractWarningModal />}
       {!liveRunning && <SeasonHighlightsModal />}
       {shootoutOpen && (

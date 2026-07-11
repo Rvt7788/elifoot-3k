@@ -249,32 +249,16 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
           </p>
         </div>
       )}
-      {/* Notícias da virada de temporada: prêmio de Melhor Técnico e contratos expirados */}
-      {game.seasonNews && game.seasonNews.season === game.season && game.week <= 2 && (
+      {/* Virada de temporada: só as saídas de graça, nas 2 primeiras rodadas */}
+      {game.seasonNews && game.seasonNews.season === game.season && game.week <= 2 &&
+        game.seasonNews.contractLosses.length > 0 && (
         <div className="mb-4 rounded-lg border border-zinc-700 bg-zinc-900/70 px-4 py-3">
-          <p className="text-sm font-bold uppercase tracking-wide text-amber-400">
-            🎖 Melhor Técnico da temporada passada
+          <p className="text-sm font-bold uppercase tracking-wide text-red-400">
+            📝 Saídas de graça
           </p>
           <p className="mt-1 text-xs text-zinc-400">
-            {game.seasonNews.userWonAward ? (
-              <>
-                <span className="font-semibold text-emerald-400">Você venceu o prêmio!</span>{" "}
-                A diretoria depositou um bônus extra no caixa como reconhecimento.
-              </>
-            ) : (
-              <>
-                {game.seasonNews.bestManager} ({game.seasonNews.bestManagerClub}) levou o
-                prêmio. Veja o ranking completo na aba Tabela.
-              </>
-            )}
+            Saíram com contrato expirado: {game.seasonNews.contractLosses.join(", ")}.
           </p>
-          {game.seasonNews.contractLosses.length > 0 && (
-            <p className="mt-2 text-xs text-red-400">
-              📝 Saíram de graça com contrato expirado:{" "}
-              {game.seasonNews.contractLosses.join(", ")}. Renove contratos na aba Elenco
-              para não perder mais ninguém.
-            </p>
-          )}
         </div>
       )}
       {/* Alerta de dívida: contagem regressiva até a diretoria perder a paciência */}
@@ -595,18 +579,6 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
       <hr className="mt-8 border-t border-[rgba(30,42,56,0.8)]" />
 
       {/* Formação e titulares logo abaixo */}
-      {/* Caderno de notícias: destaques da rodada na divisão do usuário */}
-      {(game.lastNews?.length ?? 0) > 0 && (
-        <div className="mt-6">
-          <SectionLabel>📰 Notícias da rodada</SectionLabel>
-          <div className="flex flex-col gap-1 text-sm text-zinc-300">
-            {game.lastNews!.map((n, i) => (
-              <p key={i}>{n}</p>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div className="mt-8">
         <TacticsBoard />
       </div>
