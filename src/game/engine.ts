@@ -447,7 +447,9 @@ function tryShot(
     if (atkStats) atkStats.onTarget++; // gol conta como chute no alvo
     if (side === "home") m.homeScore++;
     else m.awayScore++;
-    striker.goals++;
+    // pickStriker retorna uma cópia (pos ajustada pelo posOverride) — o gol tem
+    // que ser gravado no jogador real do índice, senão o contador se perde
+    idx[striker.id].goals++;
     m.events.push({ minute: m.minute, type: "goal", side, playerName: striker.name });
     if (assistantLp) {
       idx[assistantLp.playerId].assists++;
