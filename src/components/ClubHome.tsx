@@ -3,6 +3,7 @@ import { useStore, nextPlayableWeek, clubAggression, isCupEliminated, squadWageB
 import { weekInfo, tiesForLeg, groupFixturesForMatchday, CUP_STAGE_NAMES, CONT_STAGE_NAMES } from "../game/cup";
 import { sortTable } from "../game/schedule";
 import { aiPregameTactics } from "../game/engine";
+import { autoTacticsForOpponent } from "../game/autoTactics";
 import type { Club, GameState, Player } from "../types";
 import TacticsBoard from "./TacticsBoard";
 import { leagueName, cupName, continentalName } from "../data/leagues";
@@ -161,6 +162,10 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
   const game = useStore((s) => s.game);
   const skipMatchday = useStore((s) => s.skipMatchday);
   const startMatchday = useStore((s) => s.startMatchday);
+  const setFormation = useStore((s) => s.setFormation);
+  const setDefaultTactics = useStore((s) => s.setDefaultTactics);
+  const setStarters = useStore((s) => s.setStarters);
+  const setPosOverrides = useStore((s) => s.setPosOverrides);
   const [analyzing, setAnalyzing] = useState(false);
   const [viewClub, setViewClub] = useState<Club | null>(null);
   const [financeOpen, setFinanceOpen] = useState(false);
@@ -461,6 +466,25 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
             >
               Analisar
             </button>
+            {!game.fired && (
+              <button
+                onClick={() => {
+                  const competition =
+                    info?.type === "cup" ? "cup" as const
+                    : info?.type === "continental" || info?.type === "contgroup" ? "continental" as const
+                    : "league" as const;
+                  const r = autoTacticsForOpponent(game, nextOpp.id, next.homeId === club.id, competition);
+                  setFormation(r.formation);
+                  setDefaultTactics({ mentality: r.mentality, marking: r.marking });
+                  setStarters(r.starters);
+                  setPosOverrides(undefined);
+                }}
+                title="Aplica formação, escalação, mentalidade e marcação ideais contra este adversário"
+                className="country-tab mt-1.5 block !text-[10px]"
+              >
+                Formação automática
+              </button>
+            )}
           </div>
         ) : isCupNext && week !== null ? (
           // semana de mata-mata sem jogo do clube (fora ou eliminado): rodada corre sem você

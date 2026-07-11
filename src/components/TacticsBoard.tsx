@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useStore, bichoCost, BICHO_LEVELS, nextPlayableWeek } from "../store";
 import { bestXI, bestXIByPosition, DEFAULT_TACTICS } from "../game/engine";
+import { autoTacticsForOpponent } from "../game/autoTactics";
 import { groupFixturesForMatchday, tiesForLeg, weekInfo } from "../game/cup";
 import type { Formation, Marking, Mentality, Player, Position } from "../types";
 import { FORMATIONS } from "../types";
@@ -360,63 +361,22 @@ export default function TacticsBoard() {
     : undefined;
   const isHome = nextPair?.homeId === uid;
 
-  // Monta tudo (formação, escalação, mentalidade e marcação) a partir das
-  // informações públicas do adversário: força do top-11, médias por setor e mando.
+  // Formação/escalação/táticas automáticas contra o próximo adversário —
+  // lógica compartilhada em game/autoTactics.ts (também usada no Próximo jogo).
   const scaleForOpponent = () => {
     if (!opponent) { appAlert("Sem próximo adversário definido."); return; }
-    const oppSquad = game.players.filter((p) => p.clubId === opponent.id);
-    const top11Avg = (ps: Player[]) => {
-      const top = [...ps].sort((a, b) => b.strength - a.strength).slice(0, 11);
-      return top.length ? top.reduce((s, p) => s + p.strength, 0) / top.length : 0;
-    };
-    const num = (s: string) => (s === "-" ? 0 : Number(s));
-    // diferença de força com bônus/pênalti de mando de campo
-    const diff = top11Avg(squad) - top11Avg(oppSquad) + (isHome ? 1.5 : -1.5);
-    const oppAtk = num(sectorAvg(oppSquad, "ATA"));
-    const oppMid = num(sectorAvg(oppSquad, "MEI"));
-    const myDef = num(sectorAvg(squad, "DEF"));
-
-    // formação: vantagem clara ataca, desvantagem clara fecha; no equilíbrio,
-    // reforça o setor onde o adversário é mais forte
-    const prefs: Exclude<Formation, "custom">[] =
-      diff >= 3 ? ["4-3-3", "3-4-3", "4-4-2"]
-      : diff >= 1 ? ["4-3-3", "4-4-2", "4-5-1"]
-      : diff > -1 ? (oppMid > oppAtk ? ["3-5-2", "4-4-2", "4-5-1"] : ["4-4-2", "4-5-1", "5-3-2"])
-      : diff > -3 ? ["4-5-1", "5-3-2", "4-4-2"]
-      : ["5-3-2", "4-5-1", "4-4-2"];
-    // só usa formação que o elenco disponível (sem suspensos) consegue preencher
-    const canFill = (f: Exclude<Formation, "custom">) => {
-      const shape = FORMATIONS[f];
-      const count = (pos: Position) => squad.filter((p) => p.pos === pos && !isSuspendedNext(p) && !((p.injuryWeeks ?? 0) > 0)).length;
-      return count("GOL") >= 1 && count("DEF") >= shape.DEF && count("MEI") >= shape.MEI && count("ATA") >= shape.ATA;
-    };
-    const chosen = prefs.find(canFill) ?? "4-4-2";
-
-    const mentality: Mentality = diff >= 3 ? "ofensivo" : diff > -2 ? "equilibrado" : "defensivo";
-    // Marcação pré-jogo nunca é "extrema": ela drena 1,9× de energia e é
-    // insustentável por 90 minutos — é arma de reta final, não de escalação.
-    // "apertada" (1,3×) só quando o ataque deles ameaça de verdade E o elenco
-    // tem perna (energia média alta); dominando o jogo, "leve" poupa o time.
-    const avgEnergy = (() => {
-      const xi = bestXI(squad, chosen, false, nextCompetition, undefined)
-        .map((id) => squad.find((p) => p.id === id)!)
-        .filter(Boolean);
-      return xi.length ? xi.reduce((s, p) => s + p.energy, 0) / xi.length : 100;
-    })();
-    const marking: Marking =
-      diff >= 2 ? "leve"
-      : oppAtk - myDef >= 2 && diff < 0 && avgEnergy >= 70 ? "apertada"
-      : "frouxa";
-
-    setFormation(chosen);
-    setDefaultTactics({ mentality, marking });
-    setStarters(bestXI(squad, chosen, false, nextUserMatch?.competition ?? nextCompetition, undefined));
+    const r = autoTacticsForOpponent(
+      game, opponent.id, isHome, nextUserMatch?.competition ?? nextCompetition,
+    );
+    setFormation(r.formation);
+    setDefaultTactics({ mentality: r.mentality, marking: r.marking });
+    setStarters(r.starters);
     setPosOverrides(undefined);
     setManualMode(false);
     setSel(null);
     appAlert(
-      `Contra ${opponent.name} (${isHome ? "em casa" : "fora"}): ${chosen}, ` +
-      `${MENT.find((m) => m.key === mentality)!.label.toLowerCase()}, marcação ${MARK.find((m) => m.key === marking)!.label.toLowerCase()}.`,
+      `Contra ${opponent.name} (${isHome ? "em casa" : "fora"}): ${r.formation}, ` +
+      `${MENT.find((m) => m.key === r.mentality)!.label.toLowerCase()}, marcação ${MARK.find((m) => m.key === r.marking)!.label.toLowerCase()}.`,
     );
   };
 
