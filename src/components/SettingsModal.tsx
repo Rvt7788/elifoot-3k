@@ -23,12 +23,12 @@ function formatDate(iso: string): string {
 export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const { game, settings, setSettings, loadGame, resetGame } = useStore();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [slots, setSlots] = useState<(SlotMeta | null)[]>(() => listSlots());
+  const [slots, setSlots] = useState<(SlotMeta | null)[]>([]);
 
-  // Refresh slots when modal opens
-  useEffect(() => setSlots(listSlots()), []);
+  // Refresh slots when modal opens (IndexedDB é assíncrono)
+  useEffect(() => { listSlots().then(setSlots); }, []);
 
-  const refreshSlots = () => setSlots(listSlots());
+  const refreshSlots = () => listSlots().then(setSlots);
 
   /* ── file export/import (unchanged) ── */
   const saveToFile = () => {
@@ -62,7 +62,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
       const ok = await appConfirm("Sobrescrever save existente?");
       if (!ok) return;
     }
-    const ok = saveToSlot(i, game);
+    const ok = await saveToSlot(i, game);
     if (!ok) {
       appAlert(
         "Não foi possível salvar: o armazenamento do navegador está cheio. Apague um slot antigo e tente novamente.",
@@ -74,7 +74,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const handleLoadSlot = async (i: number) => {
     const ok = await appConfirm("Carregar este save? O progresso atual não salvo será perdido.");
     if (!ok) return;
-    const g = loadFromSlot(i);
+    const g = await loadFromSlot(i);
     if (!g) { appAlert("Save corrompido ou vazio."); return; }
     loadGame(g);
     onClose();
@@ -83,7 +83,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const handleDeleteSlot = async (i: number) => {
     const ok = await appConfirm(`Apagar o save do Slot ${i + 1}?`);
     if (!ok) return;
-    deleteSlot(i);
+    await deleteSlot(i);
     refreshSlots();
   };
 
