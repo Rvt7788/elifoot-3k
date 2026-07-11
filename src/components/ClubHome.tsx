@@ -499,6 +499,10 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
                   {game.lastFinance.prize > 0 ? "bilheteria + prêmio" : "bilheteria"}
                 </span>
               </p>
+              <p className={(game.lastFinance.tv ?? 0) > 0 ? "text-emerald-400" : "text-zinc-500"}>
+                + ${((game.lastFinance.tv ?? 0) / 1e6).toFixed(2)}M
+                <span className="ml-1 text-xs text-zinc-500">TV e patrocínio</span>
+              </p>
               <p className={(game.lastFinance.wages ?? 0) > 0 ? "text-red-400" : "text-zinc-500"}>
                 − ${((game.lastFinance.wages ?? 0) / 1e6).toFixed(2)}M
                 <span className="ml-1 text-xs text-zinc-500">salários</span>

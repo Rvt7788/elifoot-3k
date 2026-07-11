@@ -43,6 +43,13 @@ export function matchdayRevenue(baseBudget: number): number {
   return Math.round(baseBudget * 0.015);
 }
 
+// Cota de TV e patrocínio por rodada: receita fixa da divisão, paga jogando em
+// casa ou fora. É o que permite a um clube pequeno bancar a folha entre os jogos
+// em casa — a bilheteria vira o diferencial, não a única fonte de sobrevivência.
+export function tvQuota(division: string): number {
+  return division === "Série A" ? 120_000 : 35_000;
+}
+
 // Preço médio do ingresso por divisão: multiplica o público para dar a renda do mandante.
 export function ticketPrice(division: string): number {
   return division === "Série A" ? 10 : 5;
@@ -1005,11 +1012,13 @@ export const useStore = create<Store>()(
           ? (userHomeMatch.attendance ?? stadiumAttendance(game, game.userClubId, game.week)) *
             ticketPrice(userClub.division)
           : 0;
+        // cota de TV/patrocínio: entra toda rodada, jogando em casa ou fora
+        const tv = game.fired ? 0 : tvQuota(userClub.division);
         // folha salarial: paga toda rodada, jogando em casa ou fora. Demitido não
         // administra mais nada — receitas, prêmios e folha deixam de existir para ele.
         const wages = game.fired ? 0 : squadWageBill(game);
         const prize = game.fired ? 0 : cupPrize;
-        const budget = game.budget + revenue + prize - wages;
+        const budget = game.budget + revenue + tv + prize - wages;
         // caixa negativo acumula semanas de dívida; a diretoria tolera até
         // BANKRUPTCY_WEEKS rodadas no vermelho antes de decretar falência e demitir
         const debtWeeks = game.fired ? game.debtWeeks : budget < 0 ? (game.debtWeeks ?? 0) + 1 : 0;
@@ -1025,7 +1034,7 @@ export const useStore = create<Store>()(
             // proposta antiga expira ao fim da rodada; nova pode chegar no lugar
             incomingOffer: fired ? undefined : maybeIncomingOffer(game),
             // balanço da rodada para a tela do clube: bilheteria, prêmios, folha e o bicho pago
-            lastFinance: { revenue, prize, wages, bicho: game.pendingBicho ?? 0 },
+            lastFinance: { revenue, tv, prize, wages, bicho: game.pendingBicho ?? 0 },
             pendingBicho: undefined,
             // bicho vale só para a partida da rodada: pago, consumido, resetado
             defaultTactics: { ...game.defaultTactics, bicho: false, bichoPct: undefined },

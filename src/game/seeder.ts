@@ -117,7 +117,7 @@ export function playerValue(p: { strength: number; age: number }): number {
 // mais para manter). É a principal despesa do clube — elenco caro demais para a
 // receita da divisão leva o caixa ao vermelho e, insistindo, à falência.
 export function playerSalary(p: { strength: number; age: number }): number {
-  return Math.max(300, Math.round((playerValue(p) * 0.008) / 100) * 100);
+  return Math.max(300, Math.round((playerValue(p) * 0.006) / 100) * 100);
 }
 
 export function makePlayer(
