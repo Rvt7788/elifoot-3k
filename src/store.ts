@@ -120,10 +120,17 @@ function crowdMorale(g: GameState): number {
   return (g.morale ?? 60) / 100;
 }
 
-// Atualiza a moral após a rodada: vitória +8, empate +2, derrota -8, com piso
-// 10 (nunca zerada de vez) e teto 95 (sempre há o que conquistar).
-export function nextMorale(current: number, my: number, op: number): number {
-  const delta = my > op ? 8 : my === op ? 2 : -8;
+// Atualiza a moral após a rodada: vitória em casa +6, fora +10; empate em casa -4, fora +2;
+// derrota em casa -10, fora -6. Com piso de 10 e teto de 95.
+export function nextMorale(current: number, my: number, op: number, isHome: boolean): number {
+  let delta = 0;
+  if (my > op) {
+    delta = isHome ? 6 : 10;
+  } else if (my === op) {
+    delta = isHome ? -4 : 2;
+  } else {
+    delta = isHome ? -10 : -6;
+  }
   return Math.max(10, Math.min(95, current + delta));
 }
 
@@ -1174,6 +1181,7 @@ export const useStore = create<Store>()(
               game.morale ?? 60,
               userMatchM.homeId === game.userClubId ? userMatchM.homeScore : userMatchM.awayScore,
               userMatchM.homeId === game.userClubId ? userMatchM.awayScore : userMatchM.homeScore,
+              userMatchM.homeId === game.userClubId,
             )
           : (game.morale ?? 60);
         // vitórias da rodada por técnico: acumuladas por divisão do clube na hora

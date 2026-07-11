@@ -344,14 +344,12 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
             <button onClick={onOpenTable} className="text-left hover:opacity-70" title="Ver a tabela">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1">Posição</p>
               <p className="flex h-8 items-end sm:h-9 text-3xl sm:text-4xl font-black leading-none text-white mb-0.5">{pos}º</p>
-              <div className="h-5 sm:h-6" />
             </button>
             <button onClick={() => setFinanceOpen(true)} className="text-left hover:opacity-70" title="Ver as finanças">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1">Orçamento</p>
               <p className={`flex h-8 items-end sm:h-9 text-lg sm:text-xl font-black leading-none mb-0.5 ${game.budget < 0 ? "text-red-950" : "text-white"}`}>
                 ${(game.budget / 1e6).toFixed(1)}M
               </p>
-              <div className="h-5 sm:h-6" />
             </button>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1">Moral</p>
@@ -360,11 +358,6 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
                 {morale > (game.prevMorale ?? morale) && <span className="text-sm text-[#00e676]">▲</span>}
                 {morale < (game.prevMorale ?? morale) && <span className="text-sm text-[#e50914]">▼</span>}
               </p>
-              <div className="h-5 sm:h-6">
-                <p className="text-[10px] font-semibold leading-snug text-[#3c320d]">
-                  {morale >= 75 ? "Empolgado" : morale >= 55 ? "Confiante" : morale >= 40 ? "Instável" : "Em crise"}
-                </p>
-              </div>
             </div>
           </div>
 
