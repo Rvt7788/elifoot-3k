@@ -152,7 +152,7 @@ h1, h2, h3, .font-display {
   text-transform: uppercase;
   color: #fff;
   background: #059669; /* emerald-600 */
-  border: 2px solid #022c22; /* borda escura e grossa retro */
+  border: 2px solid #047857; /* emerald-700: visível no fundo escuro, sem brilho */
   border-radius: 8px;
   transition: background-color 0.15s, transform 0.1s;
 }

@@ -332,17 +332,17 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
 
         {/* Estatísticas (Posição, Orçamento) + Botão Jogar ao lado */}
         <div className="flex flex-row items-stretch justify-between gap-3 text-left w-full sm:w-auto sm:justify-start sm:gap-6">
-          <div className="flex-1 rounded-lg border-2 border-[#cfa717] bg-[#e5be30] px-4 py-2.5 shadow-lg shadow-yellow-950/15 items-center gap-4 flex justify-start h-[88px] sm:h-28 sm:mx-0 sm:flex-initial sm:w-auto sm:max-w-none sm:justify-start sm:gap-12 sm:px-10 sm:py-5 sm:items-start">
+          <div className="flex-1 rounded-lg border-2 border-[#cfa717] bg-[#e5be30] px-4 shadow-lg shadow-yellow-950/15 flex flex-row items-center justify-start gap-4 h-[88px] sm:h-28 sm:mx-0 sm:flex-initial sm:w-auto sm:max-w-none sm:gap-10 sm:px-8">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1 sm:mb-2">Posição</p>
-              <p className="text-2xl font-black leading-none text-black sm:mb-0.5">{pos}º</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1">Posição</p>
+              <p className="text-3xl sm:text-4xl font-black leading-none text-white mb-0.5">{pos}º</p>
               <p className="text-[10px] font-semibold leading-snug text-[#3c320d]">
                 {row ? `${row.pts} pts · ${row.p} jogos` : ""}
               </p>
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1 sm:mb-2">Orçamento</p>
-              <p className={`text-2xl font-black leading-none text-black sm:mb-0.5 ${game.budget < 0 ? "text-red-950" : ""}`}>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1">Orçamento</p>
+              <p className={`text-lg sm:text-xl font-black leading-none mb-0.5 ${game.budget < 0 ? "text-red-950" : "text-white"}`}>
                 ${(game.budget / 1e6).toFixed(1)}M
               </p>
               <p className="text-[10px] font-semibold leading-snug text-[#3c320d]">
@@ -358,7 +358,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
             nextOpp && next && !game.fired ? (
               <button
                 onClick={onStartMatchday}
-                className="btn-play flex flex-col justify-center items-center gap-1 px-4 py-2 sm:px-5 sm:py-2.5 text-sm sm:text-xs w-24 sm:w-28 h-[88px] sm:h-28 shrink-0"
+                className="btn-play flex flex-col justify-center items-center gap-1 px-4 sm:px-5 text-sm sm:text-xs w-24 sm:w-28 self-stretch shrink-0"
               >
                 <IconPlay className="h-6 w-6 sm:h-8 sm:w-8" />
                 <span>Jogar</span>
@@ -366,7 +366,7 @@ export default function ClubHome({ onStartMatchday }: { onStartMatchday?: () => 
             ) : (
               // rodada sem o time do usuário (copa etc.): assiste ao vivo ou resolve na hora
               // mobile: os dois botões ocupam a faixa horizontal inteira
-              <div className="flex flex-col gap-1.5 w-24 sm:w-28 shrink-0 h-[88px] sm:h-28 justify-center">
+              <div className="flex flex-col gap-1.5 w-24 sm:w-28 shrink-0 self-stretch justify-center">
                 <button
                   onClick={onStartMatchday}
                   disabled={skipping}
