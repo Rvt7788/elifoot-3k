@@ -201,7 +201,6 @@ function RankSection({
 export function HallOfFame() {
   const game = useStore((s) => s.game)!;
   const [clubLimit, setClubLimit] = useState<number>(RANK_LIMITS[0]);
-  const [playerLimit, setPlayerLimit] = useState<number>(RANK_LIMITS[0]);
   const [scorerLimit, setScorerLimit] = useState<number>(RANK_LIMITS[0]);
   const [assisterLimit, setAssisterLimit] = useState<number>(RANK_LIMITS[0]);
   const [scorerScope, setScorerScope] = useState<RankScope>("temporada");
@@ -226,9 +225,6 @@ export function HallOfFame() {
   const clubs = game.clubs
     .filter((c) => countryClubIds.has(c.id) && (c.titles ?? 0) > 0)
     .sort((a, b) => (b.titles ?? 0) - (a.titles ?? 0) || b.baseBudget - a.baseBudget);
-  const players = game.players
-    .filter((p) => countryClubIds.has(p.clubId) && (p.titles ?? 0) > 0)
-    .sort((a, b) => (b.titles ?? 0) - (a.titles ?? 0) || b.strength - a.strength);
   // gols/assistências: "temporada" usa o contador corrente; "geral" soma o
   // acumulado de temporadas anteriores (careerGoals) com a temporada atual
   const goalsOf = (p: Player) =>
@@ -300,45 +296,6 @@ export function HallOfFame() {
                 </td>
                 <td className="text-zinc-400">{c.division}</td>
                 <td className="text-center font-mono tabular-nums">{c.titles ?? 0}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </RankSection>
-    ) },
-    { key: "jogadores", count: players.length, node: (
-      <RankSection
-        title="⚽ Jogadores vitoriosos"
-        count={players.length}
-        limit={playerLimit}
-        setLimit={setPlayerLimit}
-      >
-        <table className="w-full text-xs sm:text-sm">
-          <thead>
-            <tr className={thCls}>
-              <th className="py-1 pl-2 pr-1 w-6 text-center">#</th>
-              <th>Jogador</th>
-              <th>Clube</th>
-              <th className="w-10 text-center">Pos</th>
-              <th className="w-14 text-center">Títulos</th>
-            </tr>
-          </thead>
-          <tbody>
-            {players.slice(0, playerLimit).map((p, i) => (
-              <tr
-                key={p.id}
-                className={`border-b border-zinc-800 ${p.clubId === game.userClubId ? "font-bold text-emerald-400" : "text-zinc-200"}`}
-              >
-                <td className="py-1 text-center font-mono tabular-nums opacity-70">{i + 1}</td>
-                <td className="truncate max-w-[120px] sm:max-w-none">{p.name}</td>
-                <td
-                  onClick={() => selectClub(p.clubId)}
-                  className="cursor-pointer truncate max-w-[100px] text-zinc-400 hover:underline sm:max-w-none"
-                >
-                  {clubName(p.clubId)}
-                </td>
-                <td className="text-center text-zinc-400">{p.pos}</td>
-                <td className="text-center font-mono tabular-nums">{p.titles ?? 0}</td>
               </tr>
             ))}
           </tbody>

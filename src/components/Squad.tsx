@@ -140,9 +140,6 @@ export default function Squad() {
                       <p>Gols: <span className="text-zinc-200">{p.goals}</span></p>
                       <p>Assistências: <span className="text-zinc-200">{p.assists}</span></p>
                       <p>Cartões: <span className="text-zinc-200">🟨 {p.yellows} · 🟥 {p.reds}</span></p>
-                      <p title="Amarelos acumulados por competição (3 = suspensão)">
-                        Amarelos: <span className="text-zinc-200">Liga {p.yellowsLeague} · Copa {p.yellowsCup} · Cont {p.yellowsContinental}</span>
-                      </p>
                       <p>Evolução no ano: <span className={p.gained > 0 ? "text-emerald-400" : "text-zinc-200"}>{p.gained > 0 ? `+${p.gained}` : p.gained}</span></p>
                       <p>Treino: <span className="text-zinc-200 capitalize">{p.training}</span></p>
                       <p>Títulos: <span className="text-amber-400">{p.titles ?? 0} 🏆</span></p>
@@ -176,6 +173,9 @@ export default function Squad() {
                         <span className="text-amber-400">
                           {p.traits.length ? p.traits.join(", ") : "nenhuma"}
                         </span>
+                      </p>
+                      <p className="col-span-2 sm:col-span-4" title="Amarelos acumulados por competição (3 = suspensão)">
+                        Amarelos: <span className="text-zinc-200">Liga {p.yellowsLeague} · Copa {p.yellowsCup} · Cont {p.yellowsContinental}</span>
                       </p>
                       <p className="col-span-2 sm:col-span-4 flex flex-wrap gap-2">
                         <button
