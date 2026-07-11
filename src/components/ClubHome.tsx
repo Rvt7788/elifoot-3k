@@ -297,7 +297,7 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
         {/* Bandeira do clube - preenche toda a linha no mobile */}
         <div className="w-full sm:flex-1">
           <div
-            className="relative overflow-hidden rounded-md border border-black/40 shadow-inner h-[88px] sm:h-28"
+            className="relative overflow-hidden rounded-md border border-black/40 shadow-inner h-24 sm:h-28"
             style={{ background: club.primaryColor }}
           >
             {/* faixa vertical na cor secundária, como o mastro de uma bandeira */}
@@ -338,20 +338,20 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
 
         {/* Estatísticas (Posição, Orçamento) + Botão Jogar ao lado */}
         <div className="flex flex-row items-stretch justify-between gap-3 text-left w-full sm:w-auto sm:justify-start sm:gap-6">
-          <div className="flex-1 rounded-lg border-2 border-[#cfa717] bg-[#e5be30] px-4 shadow-lg shadow-yellow-950/15 flex flex-row items-center justify-start gap-4 h-[88px] sm:h-28 sm:mx-0 sm:flex-initial sm:w-auto sm:max-w-none sm:gap-10 sm:px-8">
+          <div className="flex-1 rounded-lg border-2 border-[#cfa717] bg-[#e5be30] px-4 shadow-lg shadow-yellow-950/15 flex flex-row items-center justify-start gap-4 h-24 sm:h-28 sm:mx-0 sm:flex-initial sm:w-auto sm:max-w-none sm:gap-10 sm:px-8">
             {/* três blocos com a mesma grade de linhas (rótulo / valor / duas
                 sublinhas), para rótulos e números ficarem sempre alinhados */}
             <button onClick={onOpenTable} className="text-left hover:opacity-70" title="Ver a tabela">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1">Posição</p>
               <p className="flex h-8 items-end sm:h-9 text-3xl sm:text-4xl font-black leading-none text-white mb-0.5">{pos}º</p>
-              <div className="h-7 sm:h-8" />
+              <div className="h-5 sm:h-6" />
             </button>
             <button onClick={() => setFinanceOpen(true)} className="text-left hover:opacity-70" title="Ver as finanças">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1">Orçamento</p>
               <p className={`flex h-8 items-end sm:h-9 text-lg sm:text-xl font-black leading-none mb-0.5 ${game.budget < 0 ? "text-red-950" : "text-white"}`}>
                 ${(game.budget / 1e6).toFixed(1)}M
               </p>
-              <div className="h-7 sm:h-8" />
+              <div className="h-5 sm:h-6" />
             </button>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1">Moral</p>
@@ -360,7 +360,7 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
                 {morale > (game.prevMorale ?? morale) && <span className="text-sm text-[#00e676]">▲</span>}
                 {morale < (game.prevMorale ?? morale) && <span className="text-sm text-[#e50914]">▼</span>}
               </p>
-              <div className="h-7 sm:h-8">
+              <div className="h-5 sm:h-6">
                 <p className="text-[10px] font-semibold leading-snug text-[#3c320d]">
                   {morale >= 75 ? "Empolgado" : morale >= 55 ? "Confiante" : morale >= 40 ? "Instável" : "Em crise"}
                 </p>
