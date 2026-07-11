@@ -47,6 +47,14 @@ body {
   overscroll-behavior-y: contain;
 }
 
+/* Pull-to-refresh liberado só na Home (classe posta pelo App quando a aba é
+   "clube" e não há jogo ao vivo): dá para forçar a atualização do app sem o
+   risco de resetar uma rodada em andamento nas outras telas. */
+html.allow-ptr,
+html.allow-ptr body {
+  overscroll-behavior-y: auto;
+}
+
 h1, h2, h3, .font-display {
   font-family: var(--font-display);
   letter-spacing: 0.01em;

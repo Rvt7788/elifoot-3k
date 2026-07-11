@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useStore, needsUserShootout, renewalCost } from "./store";
 import { appAlert } from "./components/AppDialog";
 import PenaltyShootout from "./components/PenaltyShootout";
@@ -315,6 +315,13 @@ export default function App() {
     setTab("tabela");
   };
   const onRoundTab = tab === "tabela" && tableView === "rodada";
+
+  // pull-to-refresh só na Home (e na tela inicial), nunca com jogo ao vivo:
+  // permite forçar a atualização do app sem arriscar resetar uma rodada
+  useEffect(() => {
+    const allow = !game || (tab === "clube" && live === null);
+    document.documentElement.classList.toggle("allow-ptr", allow);
+  }, [tab, live, game]);
 
   if (!game)
     return (
