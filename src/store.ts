@@ -1210,6 +1210,58 @@ export const useStore = create<Store>()(
             ? { ...m, winsA: (m.winsA ?? 0) + wins, seasonWinsA: (m.seasonWinsA ?? 0) + wins }
             : { ...m, winsB: (m.winsB ?? 0) + wins, seasonWinsB: (m.seasonWinsB ?? 0) + wins };
         });
+        // Auto-replace injured starters with healthy reserves
+        let starters = game.starters ? [...game.starters] : [];
+        let slotOrder = game.slotOrder ? [...game.slotOrder] : undefined;
+        const posOverrides = game.posOverrides ? { ...game.posOverrides } : undefined;
+        const userClubId = game.userClubId;
+
+        const getHealthyReserves = (pos?: string, excludeIds: string[] = []) => {
+          return players.filter((p) => 
+            p.clubId === userClubId &&
+            !starters.includes(p.id) &&
+            !excludeIds.includes(p.id) &&
+            !((p.injuryWeeks ?? 0) > 0) &&
+            (pos ? p.pos === pos : true)
+          ).sort((a, b) => b.strength - a.strength);
+        };
+
+        const replacedStarters = new Set<string>();
+        starters = starters.map((sId) => {
+          const p = players.find((x) => x.id === sId);
+          if (p && (p.injuryWeeks ?? 0) > 0) {
+            const samePos = getHealthyReserves(p.pos, Array.from(replacedStarters));
+            if (samePos.length > 0) {
+              const rep = samePos[0];
+              replacedStarters.add(rep.id);
+              if (slotOrder) {
+                const idx = slotOrder.indexOf(sId);
+                if (idx !== -1) slotOrder[idx] = rep.id;
+              }
+              if (posOverrides && posOverrides[sId]) {
+                posOverrides[rep.id] = posOverrides[sId];
+                delete posOverrides[sId];
+              }
+              return rep.id;
+            }
+            const anyPos = getHealthyReserves(undefined, Array.from(replacedStarters));
+            if (anyPos.length > 0) {
+              const rep = anyPos[0];
+              replacedStarters.add(rep.id);
+              if (slotOrder) {
+                const idx = slotOrder.indexOf(sId);
+                if (idx !== -1) slotOrder[idx] = rep.id;
+              }
+              if (posOverrides && posOverrides[sId]) {
+                posOverrides[rep.id] = posOverrides[sId];
+                delete posOverrides[sId];
+              }
+              return rep.id;
+            }
+          }
+          return sId;
+        });
+
         set({
           game: {
             ...game, fixtures, tables, players, cup, continental, managers, morale,
@@ -1218,6 +1270,9 @@ export const useStore = create<Store>()(
             budget,
             debtWeeks,
             fired,
+            starters,
+            slotOrder,
+            posOverrides,
             jobOffer: fired ? undefined : game.jobOffer,
             // proposta antiga expira ao fim da rodada; nova pode chegar no lugar
             incomingOffer: fired ? undefined : maybeIncomingOffer(game),
