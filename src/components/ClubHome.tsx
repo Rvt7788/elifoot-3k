@@ -480,7 +480,7 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
                   setPosOverrides(undefined);
                 }}
                 title="Aplica formação, escalação, mentalidade e marcação ideais contra este adversário"
-                className="country-tab mt-1.5 block !text-[10px]"
+                className="mt-2 block rounded bg-zinc-800 px-4 py-1.5 text-xs text-zinc-200 hover:bg-zinc-700"
               >
                 Formação automática
               </button>
