@@ -276,6 +276,24 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
         setSelectedOutId(null);
         return;
       }
+      // posições diferentes: os dois trocam de setor/slot no desenho do campo.
+      // Só o gol fica de fora — goleiro não vira jogador de linha e vice-versa.
+      const sa = slots.find((s) => s.player?.id === selectedOutId);
+      const sb = slots.find((s) => s.player?.id === id);
+      if (sa && sb && sa.pos !== "GOL" && sb.pos !== "GOL" && a.pos !== "GOL" && b.pos !== "GOL") {
+        updateLive((ms) => {
+          const lu = side === "home" ? ms[mi].homeLineup : ms[mi].awayLineup;
+          const l1 = lu.find((l) => l.playerId === selectedOutId);
+          const l2 = lu.find((l) => l.playerId === id);
+          if (!l1 || !l2) return;
+          l1.posOverride = sb.pos;
+          l1.slotIdx = sb.slotIdx;
+          l2.posOverride = sa.pos;
+          l2.slotIdx = sa.slotIdx;
+        });
+        setSelectedOutId(null);
+        return;
+      }
     }
     setSelectedOutId(selectedOutId === id ? null : id);
   };
