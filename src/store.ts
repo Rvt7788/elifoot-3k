@@ -88,7 +88,7 @@ export function stadiumAttendance(g: GameState, homeId: string, week: number): n
     // clube do usuário: o estádio tem capacidade fixa (lugares); a ocupação vem
     // da moral da torcida (resultados recentes), não do tamanho da arquibancada
     const cap = stadiumCapacity(g);
-    const occupancy = 0.45 + 0.5 * crowdMorale(g); // 45% em crise .. 95% empolgada
+    const occupancy = crowdMorale(g);
     return Math.min(cap, Math.round(cap * occupancy * importance * variation));
   }
   return Math.min(70000, Math.round(base * importance * variation));
@@ -114,10 +114,20 @@ export function stadiumCapacity(g: GameState): number {
   return Math.round(base) + (g.stadiumLevel ?? 0) * STADIUM_SEATS_PER_LEVEL;
 }
 
-// Moral do time (0..1 para os consumidores): variável persistente do save que
-// sobe com vitória e cai com derrota — lota o estádio e dá gás em campo.
+// Retorna a taxa de ocupação do estádio com base na moral do time (torcida):
+// Neutra (70%) entre 40% e 60%; melhora gradualmente acima de 60% (até 95%);
+// piora gradualmente abaixo de 40% (até 40%).
 function crowdMorale(g: GameState): number {
-  return (g.morale ?? 60) / 100;
+  const morale = g.morale ?? 60;
+  if (morale > 60) {
+    const pct = (morale - 60) / 35; // 0..1 de 60 a 95
+    return 0.70 + 0.25 * pct;
+  } else if (morale < 40) {
+    const pct = (40 - morale) / 30; // 0..1 de 40 a 10
+    return 0.70 - 0.30 * pct;
+  } else {
+    return 0.70;
+  }
 }
 
 // Atualiza a moral após a rodada: vitória em casa +6, fora +10; empate em casa -4, fora +2;
