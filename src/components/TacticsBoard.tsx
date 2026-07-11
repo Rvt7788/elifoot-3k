@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useStore, bichoCost, BICHO_LEVELS, nextPlayableWeek } from "../store";
 import { bestXI, bestXIByPosition, DEFAULT_TACTICS } from "../game/engine";
-import { weekInfo } from "../game/cup";
+import { groupFixturesForMatchday, tiesForLeg, weekInfo } from "../game/cup";
 import type { Formation, Marking, Mentality, Player, Position } from "../types";
 import { FORMATIONS } from "../types";
 import { pitchLayout, PlayerPin, EmptySlot, PitchBackground } from "./PitchField";
@@ -267,6 +267,72 @@ export default function TacticsBoard() {
 
   const toggleExpand = (id: string) => setExpanded(expanded === id ? null : id);
 
+  // Próximo confronto do usuário (liga, copa ou continental) — mesmo critério da Home
+  const uid = game.userClubId;
+  const nextPair = (() => {
+    if (nextWeek === null || !nextInfo) return undefined;
+    if (nextInfo.type === "cup" && game.cup)
+      return tiesForLeg(game.cup, nextInfo.stage, nextInfo.leg).find((t) => t.homeId === uid || t.awayId === uid);
+    if (nextInfo.type === "contgroup" && game.continental)
+      return groupFixturesForMatchday(game.continental, nextInfo.matchday).find((f) => f.homeId === uid || f.awayId === uid);
+    if (nextInfo.type === "continental" && game.continental)
+      return tiesForLeg(game.continental, nextInfo.stage, nextInfo.leg).find((t) => t.homeId === uid || t.awayId === uid);
+    return game.fixtures.find((f) => f.week === nextWeek && !f.played && (f.homeId === uid || f.awayId === uid));
+  })();
+  const opponent = nextPair
+    ? game.clubs.find((c) => c.id === (nextPair.homeId === uid ? nextPair.awayId : nextPair.homeId))
+    : undefined;
+  const isHome = nextPair?.homeId === uid;
+
+  // Monta tudo (formação, escalação, mentalidade e marcação) a partir das
+  // informações públicas do adversário: força do top-11, médias por setor e mando.
+  const scaleForOpponent = () => {
+    if (!opponent) { appAlert("Sem próximo adversário definido."); return; }
+    const oppSquad = game.players.filter((p) => p.clubId === opponent.id);
+    const top11Avg = (ps: Player[]) => {
+      const top = [...ps].sort((a, b) => b.strength - a.strength).slice(0, 11);
+      return top.length ? top.reduce((s, p) => s + p.strength, 0) / top.length : 0;
+    };
+    const num = (s: string) => (s === "-" ? 0 : Number(s));
+    // diferença de força com bônus/pênalti de mando de campo
+    const diff = top11Avg(squad) - top11Avg(oppSquad) + (isHome ? 1.5 : -1.5);
+    const oppAtk = num(sectorAvg(oppSquad, "ATA"));
+    const oppMid = num(sectorAvg(oppSquad, "MEI"));
+    const myDef = num(sectorAvg(squad, "DEF"));
+
+    // formação: vantagem clara ataca, desvantagem clara fecha; no equilíbrio,
+    // reforça o setor onde o adversário é mais forte
+    const prefs: Exclude<Formation, "custom">[] =
+      diff >= 3 ? ["4-3-3", "3-4-3", "4-4-2"]
+      : diff >= 1 ? ["4-3-3", "4-4-2", "4-5-1"]
+      : diff > -1 ? (oppMid > oppAtk ? ["3-5-2", "4-4-2", "4-5-1"] : ["4-4-2", "4-5-1", "5-3-2"])
+      : diff > -3 ? ["4-5-1", "5-3-2", "4-4-2"]
+      : ["5-3-2", "4-5-1", "4-4-2"];
+    // só usa formação que o elenco disponível (sem suspensos) consegue preencher
+    const canFill = (f: Exclude<Formation, "custom">) => {
+      const shape = FORMATIONS[f];
+      const count = (pos: Position) => squad.filter((p) => p.pos === pos && !isSuspendedNext(p)).length;
+      return count("GOL") >= 1 && count("DEF") >= shape.DEF && count("MEI") >= shape.MEI && count("ATA") >= shape.ATA;
+    };
+    const chosen = prefs.find(canFill) ?? "4-4-2";
+
+    const mentality: Mentality = diff >= 3 ? "ofensivo" : diff > -2 ? "equilibrado" : "defensivo";
+    const marking: Marking =
+      oppAtk - myDef >= 3 ? "extrema"
+      : oppAtk - myDef >= 1 ? "apertada"
+      : diff >= 2 ? "leve" : "frouxa";
+
+    setFormation(chosen);
+    setDefaultTactics({ mentality, marking });
+    setStarters(bestXI(squad, chosen, false, nextCompetition, undefined));
+    setManualMode(false);
+    setSel(null);
+    appAlert(
+      `Contra ${opponent.name} (${isHome ? "em casa" : "fora"}): ${chosen}, ` +
+      `${MENT.find((m) => m.key === mentality)!.label.toLowerCase()}, marcação ${MARK.find((m) => m.key === marking)!.label.toLowerCase()}.`,
+    );
+  };
+
   const ideal = bestXI(squad, formation, byEnergy, "league", custom);
   const isBestActive =
     starters.length === ideal.length && ideal.every((id) => starters.includes(id));
@@ -382,6 +448,13 @@ export default function TacticsBoard() {
           >
             {formation === "custom" ? "Editar" : "+ Criar"}
           </button>
+          <button
+            onClick={() => { setStarters([]); setSel(null); setManualMode(true); }}
+            title="Esvazia a escalação para montar o time manualmente"
+            className="whitespace-nowrap rounded bg-zinc-800 px-1 py-1 text-[11px] text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+          >
+            Resetar
+          </button>
         </div>
 
         {editorOpen && (
@@ -439,10 +512,12 @@ export default function TacticsBoard() {
             </button>
           </div>
           <button
-            onClick={() => { setStarters([]); setSel(null); setManualMode(true); }}
-            className="mt-1 w-full rounded bg-zinc-900 px-2 py-1 text-[11px] text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+            onClick={scaleForOpponent}
+            disabled={!opponent}
+            title="Escolhe formação, escalação, mentalidade e marcação com base na força pública do próximo adversário e no mando de campo"
+            className="mt-1 w-full rounded bg-zinc-900 px-2 py-1 text-[11px] text-sky-300 hover:bg-zinc-800 hover:text-sky-200 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Resetar escalação
+            Por adversário
           </button>
           {emptySlots.length > 0 && (
             <button
@@ -454,7 +529,7 @@ export default function TacticsBoard() {
           )}
         </div>
 
-        <div className="mt-4">
+        <div className="mt-2">
           <p className="ui-label mb-1">Força por setor</p>
           <div className="grid grid-cols-2 gap-1">
             {POS_KEYS.map((s) => (
@@ -472,7 +547,7 @@ export default function TacticsBoard() {
         <p className="mb-1 text-xs font-bold text-zinc-300">
           TITULARES ({titulares.length})
         </p>
-        <div ref={titularesListRef} className="mb-3">
+        <div ref={titularesListRef} className="mb-4">
           {titulares.map((p) => (
             <PlayerRow
               key={p.id}
@@ -504,7 +579,7 @@ export default function TacticsBoard() {
               ))}
             </div>
             
-            <p className="ui-label mb-1 mt-3">Extras</p>
+            <p className="ui-label mb-1 mt-5">Extras</p>
             <div className="flex flex-col gap-1">
               <ToggleBtn
                 checked={tactics.truculencia}
@@ -540,7 +615,7 @@ export default function TacticsBoard() {
               ))}
             </div>
 
-            <p className="ui-label mb-1 mt-3">Bicho</p>
+            <p className="ui-label mb-1 mt-5">Bicho</p>
             <div className="flex flex-col gap-1">
               {BICHO_LEVELS.map((lvl) => {
                 const cost = Math.round(bichoCost(userClub.baseBudget) * lvl.costMult);
