@@ -110,11 +110,11 @@ export default function SeasonHighlightsModal() {
     .slice(0, 3);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex justify-center bg-black/85 backdrop-blur-sm p-4 overflow-y-auto">
       <ScrollLock />
       {step === 1 ? (
         // STAGE 1: MANAGER EVALUATION
-        <div className={`w-full max-w-lg rounded-2xl border p-6 shadow-2xl transition-all duration-300 md:p-8 animate-in fade-in zoom-in-95 duration-200 ${evalBg}`}>
+        <div className={`my-auto w-full max-w-lg rounded-2xl border p-6 shadow-2xl transition-all duration-300 md:p-8 animate-in fade-in zoom-in-95 duration-200 ${evalBg}`}>
           <div className="mb-4 text-center">
             <span className="text-5xl" role="img" aria-label="emoji">
               {evalEmoji}
@@ -157,7 +157,7 @@ export default function SeasonHighlightsModal() {
         </div>
       ) : (
         // STAGE 2: SEASON HIGHLIGHTS
-        <div className="w-full max-w-2xl rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl transition-all duration-300 md:p-8 animate-in fade-in zoom-in-95 duration-200">
+        <div className="my-auto w-full max-w-2xl rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl transition-all duration-300 md:p-8 animate-in fade-in zoom-in-95 duration-200">
           <div className="mb-5 border-b border-zinc-900 pb-3 text-center">
             <span className="text-3xl" role="img" aria-label="trophy">🏆</span>
             <h2 className="mt-1 font-display text-2xl font-black text-zinc-100 uppercase tracking-wide">

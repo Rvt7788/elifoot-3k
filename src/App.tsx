@@ -209,9 +209,9 @@ function PendingPromotionsModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex justify-center bg-black/85 backdrop-blur-sm p-4 overflow-y-auto">
       <ScrollLock />
-      <div className="w-full max-w-2xl rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/80 md:p-8 animate-in fade-in zoom-in duration-205">
+      <div className="my-auto w-full max-w-2xl rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/80 md:p-8 animate-in fade-in zoom-in duration-205">
         <div className="mb-4 flex items-center justify-between border-b border-zinc-900 pb-3">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500">

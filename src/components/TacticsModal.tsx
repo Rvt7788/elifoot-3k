@@ -8,6 +8,8 @@ import type { Marking, Mentality, Player, Position, LivePlayer, Formation } from
 import { shapeOf } from "../types";
 import { pitchLayout, PlayerPin, EmptySlot, PitchBackground } from "./PitchField";
 import { useLockBodyScroll } from "./useLockBodyScroll";
+import ClubModal from "./ClubModal";
+import type { Club } from "../types";
 
 export default function TacticsModal({ onClose }: { onClose: () => void }) {
   const { game, live, updateLive } = useStore();
@@ -15,6 +17,8 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
   const [selectedOutId, setSelectedOutId] = useState<string | null>(null);
   const [selectedInId, setSelectedInId] = useState<string | null>(null);
   const [slotOrder, setSlotOrder] = useState<string[] | null>(null);
+  // informações de clube abertas POR CIMA da parada tática: fechar volta para cá
+  const [infoClub, setInfoClub] = useState<Club | null>(null);
   // sugestão da sub. rápida: par sai/entra aguardando confirmação do usuário
   const [suggestion, setSuggestion] = useState<{ out: string; in: string } | null>(null);
   const [rejectedSubs, setRejectedSubs] = useState<string[]>([]);
@@ -491,6 +495,10 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
   });
 
   // Match players to layout slots
+  // Jogador que não coube no próprio setor (formação com menos vagas que
+  // jogadores da posição) vai para qualquer vaga vazia de outra linha —
+  // o campo nunca esconde quem está jogando.
+  const overflow: { player: Player; energy: number }[] = [];
   (["GOL", "DEF", "MEI", "ATA"] as const).forEach((posKey) => {
     const coords = slotsByPos[posKey];
     const N = coords.length;
@@ -519,6 +527,8 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
       }
       if (emptyIdx < N) {
         assigned[emptyIdx] = { player: ap.player, energy: ap.energy };
+      } else {
+        overflow.push({ player: ap.player, energy: ap.energy });
       }
     });
 
@@ -533,6 +543,14 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
       });
     });
   });
+  // excedentes ocupam vagas vazias de outras linhas (nunca a do goleiro)
+  for (const s of slots) {
+    if (overflow.length === 0) break;
+    if (s.player || s.pos === "GOL") continue;
+    const ap = overflow.shift()!;
+    s.player = ap.player;
+    s.energy = ap.energy;
+  }
 
   const MENT: { key: Mentality; label: string }[] = [
     { key: "defensivo", label: "🛡 Defensivo" },
@@ -580,7 +598,27 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Parada tática — {match.minute}&#39;</h2>
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold">Parada tática — {match.minute}&#39;</h2>
+            {/* confronto com placar: nome do time abre as informações do clube */}
+            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-zinc-400">
+              <span
+                onClick={() => setInfoClub(homeClub)}
+                className="cursor-pointer truncate font-semibold text-zinc-300 hover:underline"
+              >
+                {homeClub.shortName}
+              </span>
+              <span className="shrink-0 rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-xs font-bold text-zinc-100">
+                {match.homeScore}-{match.awayScore}
+              </span>
+              <span
+                onClick={() => setInfoClub(awayClub)}
+                className="cursor-pointer truncate font-semibold text-zinc-300 hover:underline"
+              >
+                {awayClub.shortName}
+              </span>
+            </p>
+          </div>
           <div className="flex items-center gap-3">
             {/* confirmar e retoma o jogo */}
             <button
@@ -1004,6 +1042,12 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
         >
           ▶ Voltar ao jogo
         </button>
+
+        {/* informações do clube por cima da parada tática: fechar volta para cá,
+            com o jogo ainda pausado */}
+        {infoClub && (
+          <ClubModal game={game} club={infoClub} onClose={() => setInfoClub(null)} />
+        )}
       </div>
     </div>
   );

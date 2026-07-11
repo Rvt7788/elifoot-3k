@@ -331,7 +331,7 @@ h1, h2, h3, .font-display {
   color: var(--metal-100);
   background: linear-gradient(180deg, #17222f, #0b1219);
   border: 1px solid #0f766e; /* emerald-700 */
-  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  border-radius: 6px;
   transition: all 0.15s;
 }
 .btn-cta:not(:disabled):hover {

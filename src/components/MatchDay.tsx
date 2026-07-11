@@ -143,11 +143,12 @@ function MomentumBar({ m, homeColor, awayColor }: { m: LiveMatch; homeColor: str
 }
 
 function MatchRow({
-  m, home, away, isUser, highlight, onClick, onSelectClub,
+  m, home, away, isUser, highlight, onClick, onSelectClub, note,
 }: {
   m: LiveMatch; home: Club; away: Club; isUser: boolean; highlight?: boolean;
   onClick: () => void;
   onSelectClub?: (c: Club) => void;
+  note?: string;
 }) {
   const [homeColor, awayColor] = distinctPair(home.primaryColor, away.primaryColor);
   return (
@@ -183,6 +184,11 @@ function MatchRow({
           </div>
           <span className="shrink-0 rounded bg-zinc-800 px-1.5 sm:px-2 py-0.5 font-mono text-xs sm:text-sm font-bold">
             {m.homeScore}-{m.awayScore}
+            {note && (
+              <span className="ml-1 font-normal text-[10px] text-zinc-500" title="Resultado do jogo de ida">
+                ({note})
+              </span>
+            )}
           </span>
           <div className="flex flex-1 items-center gap-1 sm:gap-1.5 overflow-hidden min-w-0">
             <span
@@ -812,9 +818,12 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
         )}
 
         {(lastIsCup ? [null] : ["Série A", "Série B"]).map((div) => {
+          const others = lastResults.filter(
+            (m) => m.homeId !== game.userClubId && m.awayId !== game.userClubId,
+          );
           const matches = div === null
-            ? lastResults.filter((m) => m.homeId !== game.userClubId && m.awayId !== game.userClubId)
-            : lastResults.filter((m) => clubById(m.homeId).division === div);
+            ? others
+            : others.filter((m) => clubById(m.homeId).division === div);
           if (matches.length === 0) return null;
           return (
             <div key={div ?? "copa"} className="mb-4">
@@ -856,7 +865,21 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
     (m) => m.homeId === game.userClubId || m.awayId === game.userClubId,
   );
 
-  const liveIsCup = weekInfo(game.week).type !== "league";
+  const liveInfo = weekInfo(game.week);
+  const liveIsCup = liveInfo.type !== "league";
+
+  // Volta de mata-mata: resultado da ida entre parênteses ao lado do placar.
+  // Na volta o mando inverte: o mandante atual é o awayId do confronto sorteado.
+  const firstLegNote = (m: LiveMatch): string | undefined => {
+    if (liveInfo.type !== "cup" && liveInfo.type !== "continental") return undefined;
+    if (liveInfo.leg !== 2) return undefined;
+    const knockout = liveInfo.type === "cup" ? game.cup : game.continental;
+    const tie = knockout?.rounds[liveInfo.stage]?.find(
+      (t) => t.homeId === m.awayId && t.awayId === m.homeId,
+    );
+    if (!tie || tie.g1h == null || tie.g1a == null) return undefined;
+    return `${tie.g1a}-${tie.g1h}`;
+  };
 
 
 
@@ -900,13 +923,15 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
       {/* Confronto do usuário em destaque no topo */}
       {userMatch && (
         <div className="mb-4">
+          {/* jogo do usuário ao vivo: QUALQUER clique (nome de time incluso) abre a
+              parada tática — informações de clube ficam dentro dela */}
           <MatchRow
-              onSelectClub={handleSelectClub}
             m={userMatch}
             home={clubById(userMatch.homeId)}
             away={clubById(userMatch.awayId)}
             isUser
             highlight
+            note={firstLegNote(userMatch)}
             onClick={() => {
               if (!userMatch.finished && !game.fired) {
                 openTactics();
@@ -919,9 +944,12 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
       )}
 
       {(liveIsCup ? [null] : ["Série A", "Série B"]).map((div) => {
+        const others = live.filter(
+          (m) => m.homeId !== game.userClubId && m.awayId !== game.userClubId,
+        );
         const matches = div === null
-          ? live.filter((m) => m.homeId !== game.userClubId && m.awayId !== game.userClubId)
-          : live.filter((m) => clubById(m.homeId).division === div);
+          ? others
+          : others.filter((m) => clubById(m.homeId).division === div);
         if (matches.length === 0) return null;
         return (
           <div key={div ?? "copa"} className="mb-4">
@@ -940,6 +968,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
                     home={home}
                     away={away}
                     isUser={isUser}
+                    note={firstLegNote(m)}
                     onClick={() => {
                       if (isUser && !m.finished && !game.fired) {
                         openTactics();
