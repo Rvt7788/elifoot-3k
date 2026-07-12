@@ -158,7 +158,7 @@ function MatchRow({
         isUser
           ? "border-emerald-600 bg-emerald-950/30 hover:bg-emerald-950/50"
           : "border-zinc-800 bg-zinc-900/60 hover:bg-zinc-800/80"
-      } ${m.aiFlash ? "ai-flash" : ""} ${highlight ? "shadow-lg shadow-emerald-900/40" : ""}`}
+      } ${highlight ? "shadow-lg shadow-emerald-900/40" : ""}`}
     >
       <div className="flex items-center gap-2 sm:gap-3">
         {/* público no estádio — oculto no mobile para dar espaço ao momentum */}
@@ -459,27 +459,41 @@ function MatchDetailModal({
 }
 
 // =========================================================================
-// Modal de pênalti: cobrança automática, sem interação do usuário. Mostra quem
-// bateu e se converteu, tanto a favor quanto contra o time do jogador.
+// Modal de pênalti: cobrança 100% automática, sem interação. Sequência de
+// suspense — "Pênalti marcado, cobrança autorizada" + bola quicando — e só
+// depois o veredito (GOL ou DEFENDEU). Fecha sozinho e o jogo retoma.
 // =========================================================================
+const PENALTY_SUSPENSE_MS = 2600; // corrida + respiro antes da batida
+const PENALTY_RESULT_MS = 2200; // tempo do veredito na tela antes de retomar
+
 function PenaltyModal({
-  event, forUser, teamName, teamColor, onClose,
+  event, forUser, teamName, teamColor, soundOn, onDone,
 }: {
   event: MatchEvent;
   forUser: boolean;
   teamName: string;
   teamColor: string;
-  onClose: () => void;
+  soundOn: boolean;
+  onDone: () => void;
 }) {
+  const [revealed, setRevealed] = useState(false);
+  useEffect(() => {
+    const t1 = setTimeout(() => {
+      setRevealed(true);
+      // o som do gol toca junto com o veredito, não quando o evento foi gerado
+      if (event.scored && soundOn) (forUser ? playGoal : playGoalConceded)();
+    }, PENALTY_SUSPENSE_MS);
+    const t2 = setTimeout(onDone, PENALTY_SUSPENSE_MS + PENALTY_RESULT_MS);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, []);
   const scored = event.scored;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <ScrollLock />
-      <div
-        className="w-full max-w-xs rounded-xl border border-zinc-700 bg-zinc-900 p-6 text-center"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <p className="mb-1 text-4xl">🥅</p>
+      <div className="w-full max-w-xs rounded-xl border border-zinc-700 bg-zinc-900 p-6 text-center">
         <p className="mb-1 text-sm font-bold uppercase tracking-wide text-amber-400">
           Pênalti {forUser ? "a favor" : "contra"} · {event.minute}&#39;
         </p>
@@ -487,16 +501,22 @@ function PenaltyModal({
           <span className="inline-block h-3 w-3 rounded-full border border-white/30" style={{ background: teamColor }} />
           <span className="text-sm font-semibold text-zinc-300">{teamName}</span>
         </div>
-        <p className="mb-1 text-base font-bold text-zinc-100">{event.playerName}</p>
-        <p className={`mb-4 text-2xl font-black ${scored ? "text-emerald-400" : "text-red-500"}`}>
-          {scored ? "GOL! ⚽" : "PERDEU!"}
-        </p>
-        <button
-          onClick={onClose}
-          className="w-full rounded-lg btn-retro-amber py-2 font-bold"
-        >
-          Continuar
-        </button>
+        <p className="mb-3 text-base font-bold text-zinc-100">{event.playerName} na bola</p>
+        {!revealed ? (
+          <div className="flex flex-col items-center gap-2 py-2">
+            <span className="animate-bounce text-4xl">⚽</span>
+            <p className="text-xs uppercase tracking-widest text-zinc-500 animate-pulse">
+              Cobrança autorizada…
+            </p>
+          </div>
+        ) : (
+          <div className="py-2">
+            <p className="text-4xl">{scored ? "⚽" : "🧤"}</p>
+            <p className={`mt-1 text-3xl font-black ${scored ? "text-emerald-400" : "text-red-500"}`}>
+              {scored ? "GOL!" : "DEFENDEU!"}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1054,7 +1074,8 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
             forUser={pendingPenalty.forUser}
             teamName={penClub.shortName}
             teamColor={penClub.primaryColor}
-            onClose={() => {
+            soundOn={settings.soundGoal}
+            onDone={() => {
               setPendingPenalty(null);
               if (!userMatch.finished) setPaused(false);
             }}

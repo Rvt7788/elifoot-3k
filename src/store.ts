@@ -239,6 +239,7 @@ interface Store {
   setPaused: (p: boolean) => void;
   setStarters: (ids: string[]) => void;
   setSlotOrder: (ids: string[]) => void;
+  setPenaltyTaker: (id: string | undefined) => void;
   setPosOverrides: (m: Record<string, Position> | undefined) => void;
   setFormation: (f: Formation, custom?: CustomFormation) => void;
   setCustomFormation: (custom: CustomFormation) => void;
@@ -730,6 +731,8 @@ export const useStore = create<Store>()(
             isUserTeam(f.awayId) ? (g.morale ?? 60) / 100 : undefined,
             isUserTeam(f.homeId) ? g.posOverrides : undefined,
             isUserTeam(f.awayId) ? g.posOverrides : undefined,
+            isUserTeam(f.homeId) ? g.penaltyTakerId : undefined,
+            isUserTeam(f.awayId) ? g.penaltyTakerId : undefined,
           ),
         );
         // público de cada estádio definido na abertura da rodada (e exibido nela)
@@ -781,6 +784,13 @@ export const useStore = create<Store>()(
         const g = get().game;
         if (!g) return;
         set({ game: { ...g, slotOrder: ids } });
+      },
+
+      // cobrador de pênalti designado na prancheta (undefined volta ao automático)
+      setPenaltyTaker: (id) => {
+        const g = get().game;
+        if (!g) return;
+        set({ game: { ...g, penaltyTakerId: id } });
       },
 
       // paga o bicho na prancheta pré-jogo: desconta do orçamento na hora e o time entra

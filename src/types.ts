@@ -146,13 +146,15 @@ export interface LiveMatch {
   awaySubsLeft: number;
   finished: boolean;
   lastAiCheck: number;
-  aiFlash: boolean; // pisca 🔄 quando a IA mexeu
+  aiFlash: boolean; // a IA mexeu na tática/escalação neste minuto (sem efeito visual)
   swingSide: "home" | "away" | null; // time que acabou de sofrer gol: fica desorganizado por alguns minutos
   swingUntil: number; // minuto em que o efeito do swing termina
   homeAggression: number; // 0 (conservador) a 1 (agressivo) — personalidade tática da IA, por posição na tabela
   awayAggression: number;
   homeSlotOrder?: string[]; // ordem esquerda→direita dos titulares por linha (para o bônus de pé)
   awaySlotOrder?: string[];
+  homePenaltyTakerId?: string; // cobrador de pênalti designado (usuário); ausente = automático
+  awayPenaltyTakerId?: string;
   homeMorale?: number; // moral do time (0..1): dá até ±5% de poder em campo
   awayMorale?: number;
   attendance?: number; // público no estádio do mandante (define a renda da partida)
@@ -249,6 +251,7 @@ export interface GameState {
   players: Player[];
   starters: string[]; // 11 titulares escolhidos pelo usuário
   slotOrder?: string[]; // ordem manual dos titulares no campo (lado esquerdo/direito por linha)
+  penaltyTakerId?: string; // cobrador de pênalti escolhido na prancheta (padrão: ATA mais forte)
   posOverrides?: Record<string, Position>; // titular escalado fora da posição natural (ex.: MEI jogando de ATA)
   formation: Formation;
   customFormation?: CustomFormation; // desenhada no editor, usada quando formation === "custom"

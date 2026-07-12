@@ -221,9 +221,12 @@ export function createLiveMatch(
   awayMorale = 0.5,
   homePosOverrides?: Record<string, Position>,
   awayPosOverrides?: Record<string, Position>,
+  homePenaltyTakerId?: string,
+  awayPenaltyTakerId?: string,
 ): LiveMatch {
   return {
     homeMorale, awayMorale,
+    homePenaltyTakerId, awayPenaltyTakerId,
     competition,
     homeId, awayId,
     minute: 0, homeScore: 0, awayScore: 0,
@@ -431,21 +434,32 @@ function menDown(lineup: LivePlayer[]): number {
   return Math.max(0, 11 - n);
 }
 
-// Escolhe o cobrador de pênalti: o melhor batedor em campo. Goleador é o cobrador
-// natural; craque/extra também assumem a bola. Nunca o goleiro.
-function pickPenaltyTaker(lineup: LivePlayer[], idx: PlayersIndex): Player | null {
-  const cands = lineup
-    .filter((lp) => lp.onField && !lp.sentOff && (lp.posOverride ?? idx[lp.playerId].pos) !== "GOL")
-    .map((lp) => idx[lp.playerId]);
-  if (cands.length === 0) return null;
+// Escolhe o cobrador de pênalti. Prioridade: o designado na prancheta (se está em
+// campo); senão o ATA mais forte em campo (mesmo padrão exibido na prancheta);
+// sem atacante, o melhor batedor de linha. Nunca o goleiro.
+function pickPenaltyTaker(lineup: LivePlayer[], idx: PlayersIndex, takerId?: string): Player | null {
+  const onField = lineup.filter(
+    (lp) => lp.onField && !lp.sentOff && (lp.posOverride ?? idx[lp.playerId].pos) !== "GOL",
+  );
+  if (onField.length === 0) return null;
+  if (takerId) {
+    const chosen = onField.find((lp) => lp.playerId === takerId);
+    if (chosen) return idx[chosen.playerId];
+  }
+  const cands = onField.map((lp) => ({
+    p: idx[lp.playerId],
+    pos: lp.posOverride ?? idx[lp.playerId].pos,
+  }));
+  const atas = cands.filter((c) => c.pos === "ATA");
+  if (atas.length > 0) return atas.sort((a, b) => b.p.strength - a.p.strength)[0].p;
   const score = (p: Player) => {
     let s = p.strength;
-    if (p.traits.includes("Goleador")) s += 8; // artilheiro é o cobrador oficial
+    if (p.traits.includes("Goleador")) s += 8; // artilheiro é o cobrador natural
     if (p.tier === "extra") s += 4;
     else if (p.tier === "craque") s += 2;
     return s;
   };
-  return cands.sort((a, b) => score(b) - score(a))[0];
+  return cands.map((c) => c.p).sort((a, b) => score(b) - score(a))[0];
 }
 
 // Cobrança automática de pênalti: converte com probabilidade alta (~75% base),
@@ -453,7 +467,8 @@ function pickPenaltyTaker(lineup: LivePlayer[], idx: PlayersIndex): Player | nul
 function takePenalty(rng: Rng, m: LiveMatch, idx: PlayersIndex, side: "home" | "away") {
   const atkLineup = side === "home" ? m.homeLineup : m.awayLineup;
   const defLineup = side === "home" ? m.awayLineup : m.homeLineup;
-  const taker = pickPenaltyTaker(atkLineup, idx);
+  const takerId = side === "home" ? m.homePenaltyTakerId : m.awayPenaltyTakerId;
+  const taker = pickPenaltyTaker(atkLineup, idx, takerId);
   const keeper = bestOnField(defLineup, idx, "GOL");
   if (!taker) return;
   const atkStats = m.stats?.[side];
@@ -743,6 +758,9 @@ function aiThink(rng: Rng, m: LiveMatch, idx: PlayersIndex, side: "home" | "away
   const myScore = side === "home" ? m.homeScore : m.awayScore;
   const oppScore = side === "home" ? m.awayScore : m.homeScore;
   const lineup = side === "home" ? m.homeLineup : m.awayLineup;
+  // snapshot para detectar mudança REAL: os ramos abaixo reatribuem os mesmos
+  // valores em checagens seguidas — sem comparar, o 🔄 piscava sem nada mudar
+  const before = { ...t };
   let changed = false;
 
   const losing = myScore < oppScore;
@@ -753,7 +771,6 @@ function aiThink(rng: Rng, m: LiveMatch, idx: PlayersIndex, side: "home" | "away
     // sendo amassado: time conservador recua; time agressivo aguenta e aposta na truculência
     if (chance(rng, 0.6 - aggression * 0.3)) t.mentality = "defensivo";
     else t.truculencia = true;
-    changed = true;
   } else if (losing && m.minute >= 70 - aggression * 15) {
     // Total ao Ataque + atacantes frescos: times agressivos arriscam mais cedo
     t.mentality = aggression > 0.75 && m.minute >= 85 ? "tudo_ou_nada" : "ofensivo";
@@ -770,9 +787,8 @@ function aiThink(rng: Rng, m: LiveMatch, idx: PlayersIndex, side: "home" | "away
         .filter((l) => l.onField && !l.sentOff && idx[l.playerId].pos !== "GOL")
         .sort((a, b) => a.energy - b.energy);
       if (bench.length > 0 && tiredMid.length > 0)
-        makeSub(m, idx, side, tiredMid[0].playerId, bench[0].playerId);
+        changed = makeSub(m, idx, side, tiredMid[0].playerId, bench[0].playerId) || changed;
     }
-    changed = true;
   } else if (winning && m.minute >= 75 + aggression * 10 && !t.cera) {
     // segurar o resultado: times conservadores fecham mais cedo, agressivos demoram a recuar
     t.cera = true;
@@ -781,11 +797,9 @@ function aiThink(rng: Rng, m: LiveMatch, idx: PlayersIndex, side: "home" | "away
     // é truculento por natureza, entra a faca também
     t.marking = m.minute >= 85 && myScore - oppScore === 1 ? "extrema" : "apertada";
     if (aggression > 0.7 && m.minute >= 85) t.truculencia = true;
-    changed = true;
   } else if (drawing && m.minute >= 80 && aggression > 0.6 && rng() < 0.4) {
     // empate não serve para quem precisa da vitória: arrisca no fim
     t.mentality = "ofensivo";
-    changed = true;
   } else {
     // troca por cansaço
     const tired = lineup.find(
@@ -799,7 +813,11 @@ function aiThink(rng: Rng, m: LiveMatch, idx: PlayersIndex, side: "home" | "away
       if (fresh && makeSub(m, idx, side, tired.playerId, fresh.playerId)) changed = true;
     }
   }
-  if (changed) m.aiFlash = true;
+  // só pisca o 🔄 se a tática realmente mudou de valor ou se houve substituição
+  const tacticsChanged =
+    before.mentality !== t.mentality || before.marking !== t.marking ||
+    before.truculencia !== t.truculencia || before.cera !== t.cera;
+  if (tacticsChanged || changed) m.aiFlash = true;
 }
 
 export function simulateMinute(

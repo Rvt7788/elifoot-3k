@@ -345,14 +345,6 @@ h1, h2, h3, .font-display {
   border-radius: 6px;
 }
 
-@keyframes flash {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.15; }
-}
-.ai-flash {
-  animation: flash 0.6s ease-in-out 3;
-}
-
 /* Mobile: nomes de times truncados para caber o momentum ao lado */
 @media (max-width: 639px) {
   .match-team-name {

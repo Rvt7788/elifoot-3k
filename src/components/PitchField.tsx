@@ -34,7 +34,7 @@ export function pitchLayout(
 }
 
 export function PlayerPin({
-  p, x, y, selected, energyOverride, colors, compact, yellowsMatch, goalsMatch, onClick,
+  p, x, y, selected, energyOverride, colors, compact, yellowsMatch, goalsMatch, penaltyTaker, onClick, onDoubleClick,
 }: {
   p: Player; x: number; y: number; selected: boolean;
   energyOverride?: number; // energia ao vivo (LivePlayer), quando diferente da persistida
@@ -42,16 +42,19 @@ export function PlayerPin({
   compact?: boolean; // prancheta pré-jogo: só a bolinha com a força, sem nome/energia (visual, não informativo)
   yellowsMatch?: number;
   goalsMatch?: number;
+  penaltyTaker?: boolean; // bolinha vermelha: cobrador de pênalti designado
   onClick: () => void;
+  onDoubleClick?: () => void;
 }) {
   const energy = energyOverride ?? p.energy;
   const pinColors = colors ?? { bg: "#27272a", border: "#3f3f46" };
   return (
     <button
       onClick={onClick}
+      onDoubleClick={onDoubleClick}
       style={{ left: `${x}%`, top: `${y}%` }}
       className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
-      title={`${p.name} · Energia: ${Math.round(energy)}% · Pé ${p.foot}`}
+      title={`${p.name} · Energia: ${Math.round(energy)}% · Pé ${p.foot}${penaltyTaker ? " · Cobrador de pênalti" : ""}`}
     >
       <div className="relative">
         <span
@@ -64,6 +67,15 @@ export function PlayerPin({
         >
           {compact ? p.number : p.strength}
         </span>
+        {penaltyTaker && (
+          // bola vermelha do cobrador de pênalti (diferente da ⚽ de quem marcou gol)
+          <span
+            className={`absolute rounded-full border border-white/80 bg-red-600 shadow ${
+              compact ? "-right-0.5 -bottom-0.5 h-2 w-2" : "-right-1 -bottom-1 h-2.5 w-2.5"
+            }`}
+            title="Cobrador de pênalti"
+          />
+        )}
         {!compact && yellowsMatch !== undefined && yellowsMatch > 0 && (
           <span className="absolute -right-1 -top-1 flex gap-0.5 text-[8px] leading-none">
             {"🟨".repeat(yellowsMatch)}

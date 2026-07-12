@@ -24,9 +24,15 @@ const sectorAvg = (squad: Player[], pos: Position) => {
 };
 const POS_KEYS = ["GOL", "DEF", "MEI", "ATA"] as const;
 
-function PlayerDetails({ p }: { p: Player }) {
+function PlayerDetails({ p, penaltyTaker }: { p: Player; penaltyTaker?: boolean }) {
   return (
     <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5 rounded bg-black/30 px-2 py-1.5 text-[11px] text-zinc-300">
+      {penaltyTaker && (
+        <span className="col-span-2 flex items-center gap-1.5">
+          <span className="inline-block h-2 w-2 shrink-0 rounded-full border border-white/70 bg-red-600" />
+          Batedor de pênalti
+        </span>
+      )}
       <span>Idade: <b>{p.age}</b></span>
       <span>Pé: <b className="capitalize">{p.foot}</b></span>
       <span>Energia: <b className={p.energy < 60 ? "text-red-400" : "text-emerald-400"}>{p.energy}%</b></span>
@@ -48,16 +54,19 @@ function PlayerDetails({ p }: { p: Player }) {
 }
 
 function PlayerRow({
-  p, selected, selColor, onClick, expanded, onToggleExpand, suspendedNext,
+  p, selected, selColor, onClick, onDoubleClick, expanded, onToggleExpand, suspendedNext, penaltyTaker,
 }: {
   p: Player; selected: boolean; selColor: string; onClick: () => void;
+  onDoubleClick?: () => void;
   expanded: boolean; onToggleExpand: () => void; suspendedNext: boolean;
+  penaltyTaker?: boolean;
 }) {
   const injured = (p.injuryWeeks ?? 0) > 0;
   return (
     <div className="mb-0.5">
       <button
         onClick={onClick}
+        onDoubleClick={onDoubleClick}
         style={selected ? { background: selColor, color: readableOn(selColor) } : undefined}
         className={`flex w-full items-center justify-between rounded px-1.5 py-0.5 text-left text-[11px] leading-tight ${
           selected ? "" : "bg-zinc-800 hover:bg-zinc-700"
@@ -69,6 +78,12 @@ function PlayerRow({
           {/* nome corta seco (sem "…") para a estrelinha ao lado nunca sumir */}
           <span className={`overflow-hidden whitespace-nowrap [text-overflow:clip] ${suspendedNext || injured ? "text-zinc-500 line-through" : ""}`}>{p.name}</span>
           <span className="shrink-0 text-amber-400">{TIER_BADGE[p.tier]}</span>
+          {penaltyTaker && (
+            <span
+              className="inline-block h-2 w-2 shrink-0 rounded-full border border-white/70 bg-red-600"
+              title="Cobrador de pênalti"
+            />
+          )}
           {suspendedNext && <span className="shrink-0 text-[9px] font-bold text-red-400">SUSP</span>}
           {injured && <span className="shrink-0 text-[9px] font-bold text-orange-400" title={`Lesionado: volta em ${p.injuryWeeks} rodada${(p.injuryWeeks ?? 0) > 1 ? "s" : ""}`}>LES</span>}
         </span>
@@ -84,7 +99,7 @@ function PlayerRow({
           </span>
         </span>
       </button>
-      {expanded && <PlayerDetails p={p} />}
+      {expanded && <PlayerDetails p={p} penaltyTaker={penaltyTaker} />}
     </div>
   );
 }
@@ -128,6 +143,7 @@ export default function TacticsBoard() {
   const setFormation = useStore((s) => s.setFormation);
   const setCustomFormation = useStore((s) => s.setCustomFormation);
   const setDefaultTactics = useStore((s) => s.setDefaultTactics);
+  const setPenaltyTaker = useStore((s) => s.setPenaltyTaker);
   const payBicho = useStore((s) => s.payBicho);
   const [sel, setSel] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -329,6 +345,27 @@ export default function TacticsBoard() {
 
   const toggleExpand = (id: string) => setExpanded(expanded === id ? null : id);
 
+  // ── Cobrador de pênalti ──
+  // Designado por duplo clique (se ainda é titular); senão o ATA titular mais
+  // forte — mesmo padrão que o motor usa quando ninguém foi designado.
+  const effectivePenaltyTakerId = (() => {
+    const chosen = game.penaltyTakerId;
+    if (chosen && starters.includes(chosen)) {
+      const p = squad.find((pl) => pl.id === chosen);
+      if (p && effPos(p) !== "GOL") return chosen;
+    }
+    const atas = titulares.filter((p) => effPos(p) === "ATA").sort((a, b) => b.strength - a.strength);
+    if (atas.length > 0) return atas[0].id;
+    const linha = titulares.filter((p) => effPos(p) !== "GOL").sort((a, b) => b.strength - a.strength);
+    return linha[0]?.id;
+  })();
+  const dblClickPlayer = (p: Player) => {
+    // só titular de linha pode ser o cobrador
+    if (!starters.includes(p.id) || effPos(p) === "GOL") return;
+    setPenaltyTaker(p.id);
+    setSel(null); // o duplo clique não deixa seleção de troca pendurada
+  };
+
   // Próximo confronto DO USUÁRIO: varre as semanas à frente até achar um jogo
   // com o time do técnico — rodada de copa sem o clube não desativa o botão,
   // ele passa a mirar o jogo seguinte que o usuário de fato vai disputar.
@@ -458,7 +495,9 @@ export default function TacticsBoard() {
                 colors={kit}
                 compact
                 selected={sel === s.player.id}
+                penaltyTaker={s.player.id === effectivePenaltyTakerId}
                 onClick={() => clickPlayer(s.player!.id)}
+                onDoubleClick={() => dblClickPlayer(s.player!)}
               />
             ) : (
               <EmptySlot
@@ -611,9 +650,11 @@ export default function TacticsBoard() {
               selected={sel === p.id}
               selColor="#3f3f46"
               onClick={() => clickPlayer(p.id)}
+              onDoubleClick={() => dblClickPlayer(p)}
               expanded={expanded === p.id}
               onToggleExpand={() => toggleExpand(p.id)}
               suspendedNext={isSuspendedNext(p)}
+              penaltyTaker={p.id === effectivePenaltyTakerId}
             />
           ))}
         </div>
