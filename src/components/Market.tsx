@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from "react";
 import { useStore, MIN_SQUAD, MAX_SQUAD } from "../store";
-import { aiAcceptChance, askingPrice, filterMarket, type MarketFilters } from "../game/market";
+import { aiAcceptChance, askingPrice, filterMarket, quickSellPrice, type MarketFilters } from "../game/market";
 import { appConfirm } from "./AppDialog";
 import FinanceModal from "./FinanceModal";
 import type { Player, Position, Trait } from "../types";
@@ -179,7 +179,7 @@ export default function Market() {
   };
 
   const doSell = async (p: Player) => {
-    if (!(await appConfirm(`Vender ${p.name} por $${(askingPrice(game, p) / 1e6).toFixed(2)}M?`))) return;
+    if (!(await appConfirm(`Venda rápida de ${p.name} por $${(quickSellPrice(p) / 1e6).toFixed(2)}M (abaixo do valor de mercado)?`))) return;
     const res = sellPlayer(p.id);
     setResult({
       ok: res.ok,
@@ -495,7 +495,7 @@ export default function Market() {
             {[...squad]
               .sort((a, b) => {
                 const key = (p: Player) =>
-                  sellSort === "value" ? askingPrice(game, p)
+                  sellSort === "value" ? quickSellPrice(p)
                   : sellSort === "name" ? p.name
                   : sellSort === "apps" ? (p.apps ?? 0)
                   : p[sellSort];
@@ -529,7 +529,7 @@ export default function Market() {
                     </span>
                     <span className="w-10 shrink-0 text-center text-xs text-zinc-400">{p.age}a</span>
                     <span className="w-28 shrink-0 text-right text-xs text-emerald-400 font-mono">
-                      ${(askingPrice(game, p) / 1e6).toFixed(2)}M
+                      ${(quickSellPrice(p) / 1e6).toFixed(2)}M
                     </span>
                     <button
                       disabled={squad.length <= MIN_SQUAD}

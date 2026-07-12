@@ -69,6 +69,12 @@ export function askingPrice(game: GameState, player: Player): number {
   return Math.round((player.value * resistanceMultiplier(game, player)) / 1000) * 1000;
 }
 
+// Venda rápida: liquidez imediata tem preço — sai abaixo do valor de mercado.
+// Quem quer valor cheio espera chegar proposta de outro clube (fator sorte).
+export function quickSellPrice(player: Player): number {
+  return Math.round((player.value * 0.7) / 1000) * 1000;
+}
+
 export interface MarketFilters {
   position: string; // "ALL" | Position
   minStrength: number;

@@ -2,7 +2,7 @@ import { Fragment, useState } from "react";
 import { useStore, MIN_SQUAD, MAX_SQUAD, squadWageBill, renewalCost } from "../store";
 import { playerSalary } from "../game/seeder";
 import { appAlert, appConfirm } from "./AppDialog";
-import { askingPrice } from "../game/market";
+import { askingPrice, quickSellPrice } from "../game/market";
 import { userSquadRoles } from "../game/roles";
 import { RoleBadges } from "./icons";
 
@@ -215,7 +215,7 @@ export default function Squad() {
                           disabled={squad.length <= MIN_SQUAD}
                           onClick={async (e) => {
                             e.stopPropagation();
-                            const price = askingPrice(game, p);
+                            const price = quickSellPrice(p);
                             if (await appConfirm(`Vender ${p.name} por $${(price / 1e6).toFixed(2)}M?`)) {
                               const res = sellPlayer(p.id);
                               if (res.ok) {
@@ -229,7 +229,7 @@ export default function Squad() {
                           title={
                             squad.length <= MIN_SQUAD
                               ? `Elenco no mínimo de ${MIN_SQUAD}`
-                              : `Vender jogador por $${(askingPrice(game, p) / 1e6).toFixed(2)}M`
+                              : `Venda rápida (abaixo do mercado): $${(quickSellPrice(p) / 1e6).toFixed(2)}M`
                           }
                         >
                           $ Vender jogador

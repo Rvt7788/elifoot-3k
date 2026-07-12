@@ -13,7 +13,7 @@ import { newGame, aiOffseasonTransfers, assignShirtNumbers, fixDuplicateNumbers,
 import { bestXI, createLiveMatch, simulateMinute } from "./game/engine";
 import { applyResult, buildLeagueFixtures, initTable, sortTable } from "./game/schedule";
 import { mulberry32, pick } from "./game/rng";
-import { aiAcceptChance, askingPrice, canNegotiate } from "./game/market";
+import { aiAcceptChance, askingPrice, canNegotiate, quickSellPrice } from "./game/market";
 import { createManagers, processManagerSeason, remapManagerNames, swapUserClub } from "./game/managers";
 
 export interface Settings {
@@ -370,8 +370,11 @@ function maybeIncomingOffer(g: GameState): GameState["incomingOffer"] {
     (c) => c.id !== g.userClubId && canNegotiate(c.division, userClub.division),
   );
   if (buyers.length === 0) return undefined;
-  // alvo: sorteio pesado pela força ao quadrado — craques no radar
-  const weights = squad.map((p) => p.strength * p.strength);
+  // alvo: sorteio pesado pela força ao quadrado, inflado por quem está se
+  // destacando na temporada (gols e assistências chamam a atenção do mercado)
+  const weights = squad.map(
+    (p) => p.strength * p.strength * (1 + p.goals * 0.2 + p.assists * 0.1),
+  );
   const total = weights.reduce((s, w) => s + w, 0);
   let roll = Math.random() * total;
   let target = squad[0];
@@ -381,8 +384,10 @@ function maybeIncomingOffer(g: GameState): GameState["incomingOffer"] {
   }
   const buyer = buyers[Math.floor(Math.random() * buyers.length)];
   const contractFactor = (target.contract ?? 2) <= 1 ? 0.65 : 1;
+  // proposta em torno do valor de mercado (0.75×–1.35×): segurar com paciência
+  // pode render acima do valor, mas sem os exageros do preço pedido de compra
   const amount =
-    Math.round((askingPrice(g, target) * (0.85 + Math.random() * 0.45) * contractFactor) / 1000) * 1000;
+    Math.round((target.value * (0.75 + Math.random() * 0.6) * contractFactor) / 1000) * 1000;
   return { clubId: buyer.id, playerId: target.id, amount };
 }
 
@@ -425,7 +430,8 @@ export const useStore = create<Store>()(
         if (squad.length <= MIN_SQUAD) return { ok: false };
         const player = squad.find((p) => p.id === id);
         if (!player) return { ok: false };
-        const amount = askingPrice(g, player);
+        // venda por urgência: sai com deságio sobre o valor de mercado
+        const amount = quickSellPrice(player);
         // vendido segue carreira num clube comprador, em vez de ser apagado do jogo
         const dest = findBuyerClub(g, id);
         const players = g.players.map((p) => (p.id === id ? { ...p, clubId: dest } : p));

@@ -14,7 +14,7 @@ import Training from "./components/Training";
 import { IconClub, IconTable, IconSquad, IconMarket, IconTraining, IconTrophy, IconGear, IconPlay, IconLive } from "./components/icons";
 import { ScrollLock } from "./components/useLockBodyScroll";
 import { readableKit } from "./game/color";
-import { askingPrice } from "./game/market";
+import { quickSellPrice } from "./game/market";
 
 type Tab = "clube" | "tabela" | "elenco" | "treino" | "mercado" | "ranking";
 
@@ -112,7 +112,7 @@ function IncomingOfferModal({ onOpenSquad }: { onOpenSquad: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <ScrollLock />
-      <div className="w-full max-w-md rounded-xl border border-sky-700/60 bg-zinc-900 p-5">
+      <div className="w-full max-w-xs sm:max-w-sm rounded-xl border border-sky-700/60 bg-zinc-900 p-5">
         <h2 className="mb-2 font-display text-lg font-bold text-sky-400">📠 Proposta recebida</h2>
         <p className="mb-2 text-pretty text-sm leading-relaxed text-zinc-300">
           O <b className="text-zinc-100">{buyer.name}</b> enviou uma proposta oficial por{" "}
@@ -272,9 +272,9 @@ function ContractWarningModal() {
                     else await appAlert(`${p.name} vendido por $${((r.amount ?? 0) / 1e6).toFixed(2)}M.`);
                   }}
                   className="rounded bg-sky-900 px-2 py-0.5 text-[11px] font-semibold text-sky-100 hover:bg-sky-800"
-                  title="Vende agora pelo preço de mercado, em vez de perder de graça na virada"
+                  title="Venda rápida (abaixo do valor de mercado), em vez de perder de graça na virada"
                 >
-                  Vender (${(askingPrice(game, p) / 1e6).toFixed(2)}M)
+                  Vender (${(quickSellPrice(p) / 1e6).toFixed(2)}M)
                 </button>
               </span>
             </div>
