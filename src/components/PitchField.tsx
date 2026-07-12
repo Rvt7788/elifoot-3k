@@ -1,6 +1,7 @@
 import type { CustomFormation, Formation, Player, Position } from "../types";
 import { FORMATIONS } from "../types";
 import EnergyBar, { energyStepColors } from "./EnergyBar";
+import { readableOn } from "../game/color";
 
 const row = (n: number, y: number) =>
   Array.from({ length: n }, (_, i) => ({ x: ((i + 1) / (n + 1)) * 100, y }));
@@ -60,8 +61,9 @@ export function PlayerPin({
     >
       <div className="relative">
         <span
-          style={{ background: pinColors.bg, borderColor: pinColors.border }}
-          className={`flex items-center justify-center rounded-full border border-zinc-950/65 font-bold shadow text-white ${
+          // camisa clara engoliria o número branco: o texto segue a legibilidade da cor
+          style={{ background: pinColors.bg, borderColor: pinColors.border, color: readableOn(pinColors.bg) }}
+          className={`flex items-center justify-center rounded-full border border-zinc-950/65 font-bold shadow ${
             compact ? "h-4 w-4 text-[8px]" : "h-5 w-5 text-[9px]"
           } ${
             selected ? "ring-2 ring-sky-400 ring-offset-1 ring-offset-emerald-950" : ""

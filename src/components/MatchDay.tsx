@@ -3,7 +3,7 @@ import { useStore, nextPlayableWeek, weekFixtures } from "../store";
 import type { Club, Fixture, LiveMatch, MatchEvent } from "../types";
 import TacticsModal from "./TacticsModal";
 import { playGoal, playGoalConceded, playRed, playWhistle } from "../game/sound";
-import { distinctPair } from "../game/color";
+import { distinctPair, readableOn } from "../game/color";
 import { weekInfo, tiesForLeg, groupFixturesForMatchday, CUP_STAGE_NAMES, CONT_STAGE_NAMES, TOTAL_WEEKS } from "../game/cup";
 import { formatMatchDateLong } from "../game/calendar";
 import { cupName, continentalName } from "../data/leagues";
@@ -423,7 +423,10 @@ function MatchDetailModal({
                 const p = players[l.playerId];
                 return (
                   <div key={l.playerId} className={`flex items-center justify-between ${l.sentOff ? "text-zinc-600 line-through" : l.subbedOut ? "text-zinc-500" : "text-zinc-300"}`}>
-                    <span><span className="tabular-nums text-zinc-500">{p?.number}</span> {p?.pos} {p?.name}</span>
+                    <span>
+                      <span className="tabular-nums text-zinc-500">{p?.number}</span> {p?.pos} {p?.name}
+                      {l.subbedIn && <span className="ml-1 font-bold text-emerald-400" title="Entrou na substituição">▲</span>}
+                    </span>
                     <span className="text-amber-400 text-[10px]">{p?.strength}</span>
                   </div>
                 );
@@ -438,7 +441,10 @@ function MatchDetailModal({
                 const p = players[l.playerId];
                 return (
                   <div key={l.playerId} className={`flex items-center justify-between ${l.sentOff ? "text-zinc-600 line-through" : l.subbedOut ? "text-zinc-500" : "text-zinc-300"}`}>
-                    <span><span className="tabular-nums text-zinc-500">{p?.number}</span> {p?.pos} {p?.name}</span>
+                    <span>
+                      <span className="tabular-nums text-zinc-500">{p?.number}</span> {p?.pos} {p?.name}
+                      {l.subbedIn && <span className="ml-1 font-bold text-emerald-400" title="Entrou na substituição">▲</span>}
+                    </span>
                     <span className="text-amber-400 text-[10px]">{p?.strength}</span>
                   </div>
                 );
@@ -497,9 +503,14 @@ function PenaltyModal({
         <p className="mb-1 text-sm font-bold uppercase tracking-wide text-amber-400">
           Pênalti {forUser ? "a favor" : "contra"} · {event.minute}&#39;
         </p>
-        <div className="mb-3 flex items-center justify-center gap-2">
-          <span className="inline-block h-3 w-3 rounded-full border border-white/30" style={{ background: teamColor }} />
-          <span className="text-sm font-semibold text-zinc-300">{teamName}</span>
+        {/* nome do clube no padrão da tabela: fundo na cor do time, texto legível */}
+        <div className="mb-3 flex items-center justify-center">
+          <span
+            className="rounded px-3 py-1 text-base font-bold"
+            style={{ background: teamColor, color: readableOn(teamColor) }}
+          >
+            {teamName}
+          </span>
         </div>
         <p className="mb-3 text-base font-bold text-zinc-100">{event.playerName} na bola</p>
         {!revealed ? (
@@ -1100,7 +1111,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
           <PenaltyModal
             event={pendingPenalty.event}
             forUser={pendingPenalty.forUser}
-            teamName={penClub.shortName}
+            teamName={penClub.name}
             teamColor={penClub.primaryColor}
             soundOn={settings.soundGoal}
             onDone={() => {

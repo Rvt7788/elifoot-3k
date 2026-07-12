@@ -9,7 +9,7 @@ import {
   cupChampion,
 } from "./game/cup";
 import continentalData from "./data/continental.json";
-import { newGame, assignShirtNumbers, fixDuplicateNumbers, freeShirtNumber, renumberSquadByStarters, playerSalary, processSeasonTransitions } from "./game/seeder";
+import { newGame, aiOffseasonTransfers, assignShirtNumbers, fixDuplicateNumbers, freeShirtNumber, renumberSquadByStarters, playerSalary, processSeasonTransitions } from "./game/seeder";
 import { bestXI, createLiveMatch, simulateMinute } from "./game/engine";
 import { applyResult, buildLeagueFixtures, initTable, sortTable } from "./game/schedule";
 import { mulberry32, pick } from "./game/rng";
@@ -131,7 +131,8 @@ function crowdMorale(g: GameState): number {
 }
 
 // Atualiza a moral após a rodada: vitória em casa +6, fora +10; empate em casa -4, fora +2;
-// derrota em casa -10, fora -6. Com piso de 10 e teto de 95.
+// derrota em casa -10, fora -6. Teto de 95; a moral pode chegar a 0 — e moral
+// zerada custa o emprego do técnico (a diretoria não segura a pressão da torcida).
 export function nextMorale(current: number, my: number, op: number, isHome: boolean): number {
   let delta = 0;
   if (my > op) {
@@ -141,7 +142,7 @@ export function nextMorale(current: number, my: number, op: number, isHome: bool
   } else {
     delta = isHome ? -10 : -6;
   }
-  return Math.max(10, Math.min(95, current + delta));
+  return Math.max(0, Math.min(95, current + delta));
 }
 
 export function stadiumUpgradeCost(g: GameState): number {
@@ -578,19 +579,25 @@ export const useStore = create<Store>()(
           const posA = finalA.findIndex((r) => r.clubId === userClub.id) + 1;
           const posB = finalB.findIndex((r) => r.clubId === userClub.id) + 1;
           const offerChance =
-            g.fired ? 0 // demitido não recebe convite: só observa
+            g.fired ? 0.5 // demitido: um time em baixa pode apostar na reconstrução
             : posA === 1 ? 0.6 // campeão da Série A: cobiçado, mas mercado é mercado
             : posA >= 2 && posA <= 4 ? 0.3 // G4 da A chama atenção
             : posB === 1 ? 0.45 // campeão da B: acesso com moral
             : posB === 2 ? 0.25 // vice da B: subiu, mas com menos brilho
             : 0; // campanha comum não gera convite
+          // demitido só recebe convite de time em baixa (fundo da tabela da própria
+          // divisão): é a porta de volta ao futebol, num projeto de reconstrução
+          const strugglingIds = new Set([
+            ...finalA.slice(-4).map((r) => r.clubId),
+            ...finalB.slice(-4).map((r) => r.clubId),
+          ]);
           const suitors =
             offerChance > 0 && seasonRng() < offerChance
-              ? countryClubs.filter(
-                  (c) =>
-                    c.division === "Série A" &&
-                    c.id !== userClub.id &&
-                    c.baseBudget > userClub.baseBudget * 1.25,
+              ? countryClubs.filter((c) =>
+                  c.id !== userClub.id &&
+                  (g!.fired
+                    ? strugglingIds.has(c.id)
+                    : c.division === "Série A" && c.baseBudget > userClub.baseBudget * 1.25),
                 )
               : [];
           const jobOffer = suitors.length > 0 ? pick(seasonRng, suitors).id : undefined;
@@ -621,16 +628,21 @@ export const useStore = create<Store>()(
           );
           // ── contratos queimam 1 ano; expirados do usuário saem de graça ──
           const transitions = processSeasonTransitions(seasonRng, playersTitled, clubsTitled, g.userClubId);
+          // mercado da IA: cada clube analisa o setor mais fraco e busca reforço
+          // por permuta com outro clube — os elencos da IA evoluem entre temporadas
+          aiOffseasonTransfers(seasonRng, transitions.updatedPlayers, clubsTitled, g.userClubId);
           const awardBonus =
             mgrRes.userWonAward && !g.fired
               ? Math.round(seasonRevenue(userClub.baseBudget) * 0.25)
               : 0;
+          // premiação de campeão: escada consistente — continental (5×) > Série A (4×)
+          // > copa nacional (3×) > Série B (1.5×), sempre em múltiplos do aporte anual
           let leagueChampionBonus = 0;
           if (!g.fired) {
             if (finalA[0]?.clubId === g.userClubId) {
-              leagueChampionBonus = Math.round(seasonRevenue(userClub.baseBudget) * 2.5);
+              leagueChampionBonus = Math.round(seasonRevenue(userClub.baseBudget) * 4);
             } else if (finalB[0]?.clubId === g.userClubId) {
-              leagueChampionBonus = Math.round(seasonRevenue(userClub.baseBudget) * 1.0);
+              leagueChampionBonus = Math.round(seasonRevenue(userClub.baseBudget) * 1.5);
             }
           }
           g = {
@@ -831,7 +843,7 @@ export const useStore = create<Store>()(
       // do novo clube (base + aporte de temporada) e escalação inicial do novo elenco.
       acceptJobOffer: () => {
         const g = get().game;
-        if (!g?.jobOffer || g.fired) return;
+        if (!g?.jobOffer) return;
         const club = g.clubs.find((c) => c.id === g.jobOffer);
         if (!club) { set({ game: { ...g, jobOffer: undefined } }); return; }
         const squad = g.players.filter((p) => p.clubId === club.id);
@@ -845,6 +857,12 @@ export const useStore = create<Store>()(
             formation: "4-4-2",
             jobOffer: undefined,
             incomingOffer: undefined,
+            // demitido que aceita o convite volta ao comando: ficha limpa no novo clube
+            fired: false,
+            firedReason: undefined,
+            debtWeeks: 0,
+            morale: 50,
+            prevMorale: 50,
             // troca de cadeiras: o técnico deslocado do novo clube herda o antigo
             managers: g.managers
               ? swapUserClub(g.managers, g.userClubId, club.id)
@@ -1124,14 +1142,14 @@ export const useStore = create<Store>()(
                 const STAGE_PRIZE = [10, 15, 25];
                 cupPrize +=
                   info.stage === CONT_STAGES - 1
-                    ? seasonRevenue(userClub2.baseBudget) * 3 // campeão continental
+                    ? seasonRevenue(userClub2.baseBudget) * 5 // campeão continental: topo da escada
                     : gate * STAGE_PRIZE[info.stage];
               } else {
                 // preliminar, 32, oitavas, quartas, semi: multiplicador crescente da bilheteria
                 const STAGE_PRIZE = [3, 5, 8, 12, 20];
                 cupPrize +=
                   info.stage === 5
-                    ? seasonRevenue(userClub2.baseBudget) * 2 // campeão da copa
+                    ? seasonRevenue(userClub2.baseBudget) * 3 // campeão da copa nacional
                     : gate * STAGE_PRIZE[info.stage];
               }
             }
@@ -1237,7 +1255,6 @@ export const useStore = create<Store>()(
         // caixa negativo acumula semanas de dívida; a diretoria tolera até
         // BANKRUPTCY_WEEKS rodadas no vermelho antes de decretar falência e demitir
         const debtWeeks = game.fired ? game.debtWeeks : budget < 0 ? (game.debtWeeks ?? 0) + 1 : 0;
-        const fired = game.fired || (debtWeeks ?? 0) >= BANKRUPTCY_WEEKS;
         // moral do time: reage ao resultado do usuário na rodada
         const userMatchM = live.find(
           (m) => m.homeId === game.userClubId || m.awayId === game.userClubId,
@@ -1250,6 +1267,15 @@ export const useStore = create<Store>()(
               userMatchM.homeId === game.userClubId,
             )
           : (game.morale ?? 60);
+        // demissão: falência (dívida prolongada) ou moral zerada (pressão da torcida)
+        const bankrupt = (debtWeeks ?? 0) >= BANKRUPTCY_WEEKS;
+        const moraleCollapse = !game.fired && morale <= 0;
+        const fired = game.fired || bankrupt || moraleCollapse;
+        const firedReason = game.fired
+          ? game.firedReason
+          : bankrupt ? "falencia" as const
+          : moraleCollapse ? "moral" as const
+          : undefined;
         // vitórias da rodada por técnico: acumuladas por divisão do clube na hora
         // da vitória (Série A pesa mais que B no ranking de técnicos)
         const managers = game.managers?.map((m) => {
@@ -1326,6 +1352,7 @@ export const useStore = create<Store>()(
             budget,
             debtWeeks,
             fired,
+            firedReason,
             starters,
             slotOrder,
             posOverrides,

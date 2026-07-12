@@ -251,12 +251,12 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
       {game.fired && (
         <div className="mb-4 rounded-lg border border-red-800 bg-red-950/60 px-4 py-3">
           <p className="text-sm font-bold uppercase tracking-wide text-red-400">
-            💸 Falência — você foi demitido
+            {game.firedReason === "moral" ? "📉 Moral zerada — você foi demitido" : "💸 Falência — você foi demitido"}
           </p>
           <p className="mt-1 text-xs text-zinc-400">
-            O caixa ficou no vermelho por {BANKRUPTCY_WEEKS} rodadas seguidas e a
-            diretoria decretou falência. A IA assumiu o {club.name}: agora você só
-            observa os jogos acontecerem.
+            {game.firedReason === "moral"
+              ? `A sequência de maus resultados zerou a moral da torcida e a diretoria não resistiu à pressão. A IA assumiu o ${club.name}: agora você só observa — mas um clube em baixa pode te chamar no fim da temporada.`
+              : `O caixa ficou no vermelho por ${BANKRUPTCY_WEEKS} rodadas seguidas e a diretoria decretou falência. A IA assumiu o ${club.name}: agora você só observa os jogos acontecerem.`}
           </p>
         </div>
       )}
@@ -344,7 +344,7 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
             </button>
             <button onClick={() => setFinanceOpen(true)} className="text-left hover:opacity-70" title="Ver as finanças">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1">Orçamento</p>
-              <p className={`flex h-8 items-end sm:h-9 text-lg sm:text-xl font-black leading-none mb-0.5 ${game.budget < 0 ? "text-red-950" : "text-white"}`}>
+              <p className={`flex h-8 items-end sm:h-9 text-xl sm:text-2xl font-black leading-none mb-0.5 ${game.budget < 0 ? "text-red-950" : "text-white"}`}>
                 ${(game.budget / 1e6).toFixed(1)}M
               </p>
             </button>

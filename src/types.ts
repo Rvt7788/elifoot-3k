@@ -273,7 +273,8 @@ export interface GameState {
   prevMorale?: number; // moral antes da última rodada, para a seta de tendência na Home
   stadiumLevel?: number; // arquibancadas comprou: cada nível = +8% de público em casa
   debtWeeks?: number; // rodadas consecutivas com o caixa negativo (rumo à falência)
-  fired?: boolean; // faliu: técnico demitido — só observa os jogos, sem comandar nada
+  fired?: boolean; // técnico demitido — só observa os jogos, sem comandar nada
+  firedReason?: "falencia" | "moral"; // motivo da demissão (banner e convite de volta)
   pendingPromotions?: PendingPromotion[];
   retiredLastSeason?: RetiredPlayerInfo[];
   managers?: Manager[]; // um técnico por clube + eventuais desempregados

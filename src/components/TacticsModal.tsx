@@ -25,6 +25,8 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
   // sugestão da sub. rápida: par sai/entra aguardando confirmação do usuário
   const [suggestion, setSuggestion] = useState<{ out: string; in: string } | null>(null);
   const [rejectedSubs, setRejectedSubs] = useState<string[]>([]);
+  // substituições feitas NESTA parada: cada uma pode ser cancelada individualmente
+  const [sessionSubs, setSessionSubs] = useState<{ out: string; in: string }[]>([]);
   // titulares começam colapsados: a interação principal é pela prancheta e pelo banco
   const [startersOpen, setStartersOpen] = useState(false);
   // reservas colapsáveis, padrão aberto — é a lista mais usada na parada
@@ -119,6 +121,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
     setSelectedInId(null);
     setSuggestion(null);
     setSlotOrder(null);
+    setSessionSubs([]);
   };
 
   // Sair do modal: sem alteração volta ao jogo direto; com alteração pergunta —
@@ -220,10 +223,54 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
     });
     setSlotOrder(newOrder);
     setStoreSlotOrder(newOrder);
+    setSessionSubs((prev) => [...prev, { out: outPlayerId, in: inPlayerId }]);
     setSelectedOutId(null);
     setSelectedInId(null);
     setSuggestion(null);
     setRejectedSubs([]);
+  };
+
+  // Cancela uma substituição feita nesta parada: quem saiu volta ao campo no
+  // mesmo slot, quem entrou volta ao banco, a sub é devolvida e o evento apagado.
+  const cancelSub = (sub: { out: string; in: string }) => {
+    updateLive((ms) => {
+      const m2 = ms[mi];
+      const lu = side === "home" ? m2.homeLineup : m2.awayLineup;
+      const outLp = lu.find((l) => l.playerId === sub.out);
+      const inLp = lu.find((l) => l.playerId === sub.in);
+      if (!outLp || !inLp || !inLp.onField) return;
+      outLp.onField = true;
+      outLp.subbedOut = false;
+      outLp.slotIdx = inLp.slotIdx;
+      outLp.posOverride = inLp.posOverride;
+      inLp.onField = false;
+      inLp.subbedIn = false;
+      inLp.slotIdx = undefined;
+      inLp.posOverride = undefined;
+      if (side === "home") m2.homeSubsLeft += 1;
+      else m2.awaySubsLeft += 1;
+      // apaga o evento de substituição lançado pelo makeSub
+      const inName = pById[sub.in]?.name;
+      for (let i = m2.events.length - 1; i >= 0; i--) {
+        const e = m2.events[i];
+        if (e.type === "sub" && e.side === side && e.playerName === inName) {
+          m2.events.splice(i, 1);
+          break;
+        }
+      }
+      // desfaz a troca de id na ordem dos slots
+      const order = side === "home" ? m2.homeSlotOrder : m2.awaySlotOrder;
+      if (order) {
+        const i = order.indexOf(sub.in);
+        if (i >= 0) order[i] = sub.out;
+        setSlotOrder([...order]);
+        setStoreSlotOrder([...order]);
+      }
+    });
+    setSessionSubs((prev) => prev.filter((s) => !(s.out === sub.out && s.in === sub.in)));
+    setSelectedOutId(null);
+    setSelectedInId(null);
+    setSuggestion(null);
   };
 
   const reallocateLineup = (lineup2: LivePlayer[], f: Formation) => {
@@ -842,6 +889,31 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
             </span>
           </button>
 
+        {/* substituições feitas nesta parada: canceláveis uma a uma antes de retomar */}
+        {sessionSubs.length > 0 && (
+          <div className="mb-2 flex flex-col gap-1">
+            {sessionSubs.map((s) => (
+              <div
+                key={`${s.out}-${s.in}`}
+                className="flex items-center justify-between rounded bg-zinc-800 px-2 py-1 text-xs text-zinc-300"
+              >
+                <span className="min-w-0 truncate">
+                  <span className="text-red-400">▼</span> {pById[s.out]?.name}{" "}
+                  <span className="text-zinc-500">→</span>{" "}
+                  <span className="text-emerald-400">▲</span> {pById[s.in]?.name}
+                </span>
+                <button
+                  onClick={() => cancelSub(s)}
+                  className="ml-2 shrink-0 rounded bg-zinc-700 px-2 py-0.5 text-[10px] font-semibold text-zinc-200 hover:bg-red-800"
+                  title="Cancela esta substituição: devolve a troca e o jogador volta ao campo"
+                >
+                  Cancelar
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* sugestão pendente: mostra a troca e espera confirmação */}
         {suggestion && (() => {
           const outP = pById[suggestion.out];
@@ -1077,7 +1149,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
                         <span className="truncate">
                           <span className="tabular-nums text-zinc-500">{p.number}</span> {p.pos} {p.name} ({p.strength}){" "}
                           <span className={p.foot === "canhoto" ? "text-red-500" : "text-sky-400"}>{p.foot === "canhoto" ? "◀" : "▶"}</span>
-                          {l.subbedIn && <span className="ml-1" title="Entrou durante o jogo">🔄</span>}
+                          {l.subbedIn && <span className="ml-1 font-bold text-emerald-400" title="Entrou na substituição">▲</span>}
                         </span>
                         <RoleBadges
                           penalty={l.playerId === livePenaltyTakerId}

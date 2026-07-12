@@ -14,6 +14,7 @@ import Training from "./components/Training";
 import { IconClub, IconTable, IconSquad, IconMarket, IconTraining, IconTrophy, IconGear, IconPlay, IconLive } from "./components/icons";
 import { ScrollLock } from "./components/useLockBodyScroll";
 import { readableKit } from "./game/color";
+import { askingPrice } from "./game/market";
 
 type Tab = "clube" | "tabela" | "elenco" | "treino" | "mercado" | "ranking";
 
@@ -34,17 +35,34 @@ function JobOfferModal() {
         style={{ background: club.primaryColor, color: club.secondaryColor }}
       >
         <h2 className="mb-2 font-display text-lg font-bold">📞 Convite recebido</h2>
-        <p className="mb-2 text-pretty text-sm leading-relaxed">
-          Técnico, o futebol inteiro viu o que você construiu nesta temporada — com
-          elenco limitado, contra prognósticos, jogo após jogo. Feitos assim não
-          passam despercebidos. O <b>{club.name}</b> quer
-          essa mentalidade no comando do projeto.
-        </p>
-        <p className="mb-2 text-pretty text-sm leading-relaxed">
-          Aqui você terá liberdade total: monte o elenco, escolha o estilo, conduza
-          o clube do seu jeito. Orçamento de ${(club.baseBudget / 1e6).toFixed(1)}M
-          à sua disposição. Queremos o seu futebol, não um manual.
-        </p>
+        {game.fired ? (
+          <>
+            <p className="mb-2 text-pretty text-sm leading-relaxed">
+              Técnico, sabemos como a sua passagem terminou — mas aqui ninguém está
+              em posição de julgar. O <b>{club.name}</b> vive um momento difícil e
+              precisa de alguém disposto a reconstruir do zero. Achamos que essa
+              pessoa é você.
+            </p>
+            <p className="mb-2 text-pretty text-sm leading-relaxed">
+              É a sua volta ao futebol: orçamento de ${(club.baseBudget / 1e6).toFixed(1)}M,
+              paciência da diretoria e um projeto de recuperação. O resto é com você.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="mb-2 text-pretty text-sm leading-relaxed">
+              Técnico, o futebol inteiro viu o que você construiu nesta temporada — com
+              elenco limitado, contra prognósticos, jogo após jogo. Feitos assim não
+              passam despercebidos. O <b>{club.name}</b> quer
+              essa mentalidade no comando do projeto.
+            </p>
+            <p className="mb-2 text-pretty text-sm leading-relaxed">
+              Aqui você terá liberdade total: monte o elenco, escolha o estilo, conduza
+              o clube do seu jeito. Orçamento de ${(club.baseBudget / 1e6).toFixed(1)}M
+              à sua disposição. Queremos o seu futebol, não um manual.
+            </p>
+          </>
+        )}
         <p className="mb-4 text-right text-xs italic opacity-80">
           Presidente do {club.name}
         </p>
@@ -206,6 +224,7 @@ function RoundNewsModal() {
 function ContractWarningModal() {
   const game = useStore((s) => s.game);
   const renewContract = useStore((s) => s.renewContract);
+  const sellPlayer = useStore((s) => s.sellPlayer);
   const dismissContractWarning = useStore((s) => s.dismissContractWarning);
   if (!game || game.fired) return null;
   if (game.contractWarningSeason === game.season) return null;
@@ -236,15 +255,28 @@ function ContractWarningModal() {
                 {p.name}
                 <span className="ml-1 text-xs text-amber-400">{p.strength}</span>
               </span>
-              <button
-                onClick={async () => {
-                  const r = renewContract(p.id);
-                  if (!r.ok) await appAlert(r.message);
-                }}
-                className="shrink-0 rounded bg-emerald-800 px-2 py-0.5 text-[11px] font-semibold text-emerald-100 hover:bg-emerald-700"
-              >
-                Renovar +2 (${(renewalCost(p) / 1e3).toFixed(0)}k)
-              </button>
+              <span className="flex shrink-0 items-center gap-1">
+                <button
+                  onClick={async () => {
+                    const r = renewContract(p.id);
+                    if (!r.ok) await appAlert(r.message);
+                  }}
+                  className="rounded bg-emerald-800 px-2 py-0.5 text-[11px] font-semibold text-emerald-100 hover:bg-emerald-700"
+                >
+                  Renovar +2 (${(renewalCost(p) / 1e3).toFixed(0)}k)
+                </button>
+                <button
+                  onClick={async () => {
+                    const r = sellPlayer(p.id);
+                    if (!r.ok) await appAlert("Não foi possível vender: o elenco não pode ficar abaixo do mínimo.");
+                    else await appAlert(`${p.name} vendido por $${((r.amount ?? 0) / 1e6).toFixed(2)}M.`);
+                  }}
+                  className="rounded bg-sky-900 px-2 py-0.5 text-[11px] font-semibold text-sky-100 hover:bg-sky-800"
+                  title="Vende agora pelo preço de mercado, em vez de perder de graça na virada"
+                >
+                  Vender (${(askingPrice(game, p) / 1e6).toFixed(2)}M)
+                </button>
+              </span>
             </div>
           ))}
         </div>
