@@ -330,7 +330,9 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
 
         {/* Estatísticas (Posição, Orçamento) + Botão Jogar ao lado */}
         <div className="flex flex-row items-stretch justify-between gap-3 text-left w-full sm:w-auto sm:justify-start sm:gap-6">
-          <div className="flex-1 rounded-lg border-2 border-[#cfa717] bg-[#e5be30] px-4 shadow-lg shadow-yellow-950/15 flex flex-row items-center justify-start gap-4 h-24 sm:h-28 sm:mx-0 sm:flex-initial sm:w-auto sm:max-w-none sm:gap-10 sm:px-8">
+          {/* min-w-0: sem isso o conteúdo (flex min-width:auto) não encolhe e empurra
+              o botão Jogar para fora da linha do cartão no mobile */}
+          <div className="min-w-0 overflow-hidden flex-1 rounded-lg border-2 border-[#cfa717] bg-[#e5be30] px-3 shadow-lg shadow-yellow-950/15 flex flex-row items-center justify-between gap-2 h-24 sm:h-28 sm:mx-0 sm:flex-initial sm:w-auto sm:max-w-none sm:justify-start sm:gap-10 sm:px-8">
             {/* três blocos com a mesma grade de linhas (rótulo / valor / duas
                 sublinhas), para rótulos e números ficarem sempre alinhados */}
             <button onClick={onOpenTable} className="text-left hover:opacity-70" title="Ver a tabela">

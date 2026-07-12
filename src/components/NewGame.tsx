@@ -104,13 +104,10 @@ export default function NewGame() {
       />
 
       <div className="mx-auto mb-6 max-w-md text-center">
-        <p className="ui-label mb-3" style={{ color: "#fbbf24" }}>
-          Toda carreira começa de baixo
-        </p>
         <p className="text-pretty text-sm leading-relaxed text-zinc-400">
           Toda lenda do futebol tem um primeiro capítulo, e ele nunca começa na
           elite. Um clube pequeno espera por você. Escreva seu nome e comece sua
-          história.
+          história. Toda carreira começa de baixo.
         </p>
       </div>
 

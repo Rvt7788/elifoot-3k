@@ -33,3 +33,9 @@ export function playRed() {
   beep(220, 0.25, "sawtooth");
   beep(180, 0.4, "sawtooth", 0.28);
 }
+
+// Pênalti marcado: apito longo e agudo do árbitro
+export function playWhistle() {
+  beep(1800, 0.12, "square", 0, 0.15);
+  beep(1800, 0.35, "square", 0.14, 0.15);
+}

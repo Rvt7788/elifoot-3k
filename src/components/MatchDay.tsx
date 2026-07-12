@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useStore, nextPlayableWeek, weekFixtures } from "../store";
 import type { Club, Fixture, LiveMatch, MatchEvent } from "../types";
 import TacticsModal from "./TacticsModal";
-import { playGoal, playGoalConceded, playRed } from "../game/sound";
+import { playGoal, playGoalConceded, playRed, playWhistle } from "../game/sound";
 import { distinctPair } from "../game/color";
 import { weekInfo, tiesForLeg, groupFixturesForMatchday, CUP_STAGE_NAMES, CONT_STAGE_NAMES, TOTAL_WEEKS } from "../game/cup";
 import { formatMatchDateLong } from "../game/calendar";
@@ -90,7 +90,7 @@ const DIVISION_COLOR: Record<string, string> = {
   "Série B": "text-sky-400",
 };
 
-const EVENT_ICON = { goal: "⚽", yellow: "🟨", red: "🟥", sub: "🔄" } as const;
+const EVENT_ICON = { goal: "⚽", yellow: "🟨", red: "🟥", sub: "🔄", penalty: "🥅" } as const;
 
 // Nome completo do clube quando cabe ("São Paulo", "Real Madrid"); nomes muito
 // longos caem para os primeiros 15 caracteres, e o truncate do CSS cuida do resto.
@@ -458,17 +458,63 @@ function MatchDetailModal({
   );
 }
 
+// =========================================================================
+// Modal de pênalti: cobrança automática, sem interação do usuário. Mostra quem
+// bateu e se converteu, tanto a favor quanto contra o time do jogador.
+// =========================================================================
+function PenaltyModal({
+  event, forUser, teamName, teamColor, onClose,
+}: {
+  event: MatchEvent;
+  forUser: boolean;
+  teamName: string;
+  teamColor: string;
+  onClose: () => void;
+}) {
+  const scored = event.scored;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+      <ScrollLock />
+      <div
+        className="w-full max-w-xs rounded-xl border border-zinc-700 bg-zinc-900 p-6 text-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <p className="mb-1 text-4xl">🥅</p>
+        <p className="mb-1 text-sm font-bold uppercase tracking-wide text-amber-400">
+          Pênalti {forUser ? "a favor" : "contra"} · {event.minute}&#39;
+        </p>
+        <div className="mb-3 flex items-center justify-center gap-2">
+          <span className="inline-block h-3 w-3 rounded-full border border-white/30" style={{ background: teamColor }} />
+          <span className="text-sm font-semibold text-zinc-300">{teamName}</span>
+        </div>
+        <p className="mb-1 text-base font-bold text-zinc-100">{event.playerName}</p>
+        <p className={`mb-4 text-2xl font-black ${scored ? "text-emerald-400" : "text-red-500"}`}>
+          {scored ? "GOL! ⚽" : "PERDEU!"}
+        </p>
+        <button
+          onClick={onClose}
+          className="w-full rounded-lg btn-retro-amber py-2 font-bold"
+        >
+          Continuar
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void }) {
   const { game, live, lastResults, paused, settings, setPaused, finishMatchday } = useStore();
   const [modalOpen, setModalOpen] = useState(false);
   const [detailMatch, setDetailMatch] = useState<LiveMatch | null>(null);
   const [halftimeNotice, setHalftimeNotice] = useState(false);
+  // pênalti do jogo do usuário: abre o modal de cobrança automática e pausa o jogo
+  const [pendingPenalty, setPendingPenalty] = useState<{ event: MatchEvent; forUser: boolean } | null>(null);
   // navegação pelas rodadas do calendário (setas no título); null = semana atual
   const [browseWeek, setBrowseWeek] = useState<number | null>(null);
   // clique no nome de um time abre a ficha do clube
   const [selectedClub, setSelectedClub] = useState<Club | null>(null);
   const timer = useRef<ReturnType<typeof setInterval>>();
-  const prevCounts = useRef<{ userGoals: number; oppGoals: number; userReds: number } | null>(null);
+  const prevCounts = useRef<{ userGoals: number; oppGoals: number; userReds: number; penalties: number } | null>(null);
   const halftimePaused = useRef(false);
 
   const allDone = live?.every((m) => m.finished) ?? false;
@@ -516,11 +562,26 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
     const userReds = userMatch
       ? userMatch.events.filter((e) => e.type === "red" && e.side === userSide).length
       : 0;
+    const penaltyEvents = userMatch
+      ? userMatch.events.filter((e) => e.type === "penalty")
+      : [];
+    const penalties = penaltyEvents.length;
     const prev = prevCounts.current;
-    prevCounts.current = { userGoals, oppGoals, userReds };
+    prevCounts.current = { userGoals, oppGoals, userReds, penalties };
     if (!prev) return;
-    if (userGoals > prev.userGoals && settings.soundGoal) playGoal();
-    if (oppGoals > prev.oppGoals && settings.soundGoal) playGoalConceded();
+    // pênalti no jogo do usuário (a favor ou contra): pausa e abre a cobrança automática
+    if (penalties > prev.penalties && userMatch && !userMatch.finished) {
+      const last = penaltyEvents[penaltyEvents.length - 1];
+      playWhistle();
+      setPaused(true);
+      setPendingPenalty({ event: last, forUser: last.side === userSide });
+    }
+    // som do gol só quando NÃO veio de pênalti (o pênalti tem apito próprio + modal)
+    const lastEvent = userMatch?.events[userMatch.events.length - 1];
+    const goalFromPenalty = lastEvent?.type === "goal" &&
+      penaltyEvents.some((p) => p.minute === lastEvent.minute && p.side === lastEvent.side && p.scored);
+    if (userGoals > prev.userGoals && settings.soundGoal && !goalFromPenalty) playGoal();
+    if (oppGoals > prev.oppGoals && settings.soundGoal && !goalFromPenalty) playGoalConceded();
     if (userReds > prev.userReds) {
       if (settings.soundRed) playRed();
       if (!userMatch?.finished) {
@@ -983,6 +1044,23 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
           </div>
         );
       })}
+
+      {pendingPenalty && userMatch && (() => {
+        const penSideId = pendingPenalty.event.side === "home" ? userMatch.homeId : userMatch.awayId;
+        const penClub = clubById(penSideId);
+        return (
+          <PenaltyModal
+            event={pendingPenalty.event}
+            forUser={pendingPenalty.forUser}
+            teamName={penClub.shortName}
+            teamColor={penClub.primaryColor}
+            onClose={() => {
+              setPendingPenalty(null);
+              if (!userMatch.finished) setPaused(false);
+            }}
+          />
+        );
+      })()}
 
       {modalOpen && (
         <TacticsModal

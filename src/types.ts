@@ -99,9 +99,10 @@ export interface Tactics {
 
 export interface MatchEvent {
   minute: number;
-  type: "goal" | "yellow" | "red" | "sub";
+  type: "goal" | "yellow" | "red" | "sub" | "penalty";
   side: "home" | "away";
   playerName: string;
+  scored?: boolean; // só para pênaltis: se a cobrança automática foi convertida
 }
 
 export interface LivePlayer {

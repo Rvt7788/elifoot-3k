@@ -431,6 +431,60 @@ function menDown(lineup: LivePlayer[]): number {
   return Math.max(0, 11 - n);
 }
 
+// Escolhe o cobrador de pênalti: o melhor batedor em campo. Goleador é o cobrador
+// natural; craque/extra também assumem a bola. Nunca o goleiro.
+function pickPenaltyTaker(lineup: LivePlayer[], idx: PlayersIndex): Player | null {
+  const cands = lineup
+    .filter((lp) => lp.onField && !lp.sentOff && (lp.posOverride ?? idx[lp.playerId].pos) !== "GOL")
+    .map((lp) => idx[lp.playerId]);
+  if (cands.length === 0) return null;
+  const score = (p: Player) => {
+    let s = p.strength;
+    if (p.traits.includes("Goleador")) s += 8; // artilheiro é o cobrador oficial
+    if (p.tier === "extra") s += 4;
+    else if (p.tier === "craque") s += 2;
+    return s;
+  };
+  return cands.sort((a, b) => score(b) - score(a))[0];
+}
+
+// Cobrança automática de pênalti: converte com probabilidade alta (~75% base),
+// ajustada pela força do cobrador contra o goleiro. Grava o gol e o evento.
+function takePenalty(rng: Rng, m: LiveMatch, idx: PlayersIndex, side: "home" | "away") {
+  const atkLineup = side === "home" ? m.homeLineup : m.awayLineup;
+  const defLineup = side === "home" ? m.awayLineup : m.homeLineup;
+  const taker = pickPenaltyTaker(atkLineup, idx);
+  const keeper = bestOnField(defLineup, idx, "GOL");
+  if (!taker) return;
+  const atkStats = m.stats?.[side];
+  const defStats = m.stats?.[side === "home" ? "away" : "home"];
+  if (atkStats) atkStats.shots++;
+  // pênalti é chute quase certo: base 0.75, cobrador forte sobe, goleiro Paredão salva mais
+  let pConv = 0.75 + (taker.strength - (keeper?.strength ?? 5)) * 0.012;
+  if (taker.traits.includes("Goleador")) pConv += 0.05;
+  if (keeper?.traits.includes("Paredão")) pConv -= 0.08;
+  pConv = Math.min(0.92, Math.max(0.5, pConv));
+  const scored = chance(rng, pConv);
+  if (scored) {
+    if (atkStats) atkStats.onTarget++;
+    if (side === "home") m.homeScore++;
+    else m.awayScore++;
+    idx[taker.id].goals++;
+    m.events.push({ minute: m.minute, type: "penalty", side, playerName: taker.name, scored: true });
+    m.events.push({ minute: m.minute, type: "goal", side, playerName: taker.name });
+    m.momentum = 0;
+    m.dangerTime = 0;
+    const conceded = side === "home" ? "away" : "home";
+    m.swingSide = conceded;
+    m.swingUntil = m.minute + randInt(rng, 4, 8);
+  } else {
+    // defendido/perdido: conta como chute no alvo defendido pelo goleiro
+    if (atkStats) atkStats.onTarget++;
+    if (defStats) defStats.saves++;
+    m.events.push({ minute: m.minute, type: "penalty", side, playerName: taker.name, scored: false });
+  }
+}
+
 function tryShot(
   rng: Rng, m: LiveMatch, idx: PlayersIndex, side: "home" | "away",
   counter = false,
@@ -439,6 +493,17 @@ function tryShot(
   const defLineup = side === "home" ? m.awayLineup : m.homeLineup;
   const atkTactics = side === "home" ? m.homeTactics : m.awayTactics;
   const defTactics = side === "home" ? m.awayTactics : m.homeTactics;
+  // pênalti: uma pequena fração das jogadas de ataque termina em falta na área. A
+  // marcação dura do rival aumenta o risco de pênalti (entra mais forte na dividida).
+  let pPenalty = 0.035;
+  if (defTactics.marking === "extrema") pPenalty *= 2;
+  else if (defTactics.marking === "apertada") pPenalty *= 1.5;
+  else if (defTactics.marking === "leve") pPenalty *= 0.6;
+  if (defTactics.truculencia) pPenalty *= 1.6;
+  if (chance(rng, pPenalty)) {
+    takePenalty(rng, m, idx, side);
+    return;
+  }
   const striker = pickStriker(rng, atkLineup, idx, atkTactics.mentality, counter);
   const keeper = bestOnField(defLineup, idx, "GOL");
   const bestDef = bestOnField(defLineup, idx, "DEF");
