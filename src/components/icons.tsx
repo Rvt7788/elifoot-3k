@@ -123,8 +123,8 @@ export function RoleBadges({ penalty, captain, armed, onPick }: {
         <span
           onClick={pick("penalty")}
           className={`inline-block h-2 w-2 shrink-0 rounded-full border border-white/70 bg-sky-500${
-            onPick ? " cursor-pointer" : ""
-          }${armed === "penalty" ? " ring-2 ring-sky-400 animate-pulse" : ""}`}
+            onPick ? " cursor-pointer hover:ring-2 hover:ring-emerald-400" : ""
+          }${armed === "penalty" ? " ring-2 ring-emerald-400 animate-pulse" : ""}`}
           title={onPick ? "Cobrador de pênalti — clique e escolha o novo cobrador" : "Cobrador de pênalti"}
         />
       )}
@@ -132,8 +132,8 @@ export function RoleBadges({ penalty, captain, armed, onPick }: {
         <span
           onClick={pick("captain")}
           className={`inline-block h-2 w-2 shrink-0 rounded-[2px] border border-white/70 bg-black${
-            onPick ? " cursor-pointer" : ""
-          }${armed === "captain" ? " ring-2 ring-sky-400 animate-pulse" : ""}`}
+            onPick ? " cursor-pointer hover:ring-2 hover:ring-emerald-400" : ""
+          }${armed === "captain" ? " ring-2 ring-emerald-400 animate-pulse" : ""}`}
           title={onPick ? "Capitão — clique e escolha o novo capitão" : "Capitão"}
         />
       )}

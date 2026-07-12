@@ -35,7 +35,7 @@ export function pitchLayout(
 }
 
 export function PlayerPin({
-  p, x, y, selected, energyOverride, colors, compact, yellowsMatch, goalsMatch, penaltyTaker, captain, onRoleClick, onClick, onDoubleClick,
+  p, x, y, selected, energyOverride, colors, compact, yellowsMatch, goalsMatch, penaltyTaker, captain, armedRole, onRoleClick, onClick, onDoubleClick,
 }: {
   p: Player; x: number; y: number; selected: boolean;
   energyOverride?: number; // energia ao vivo (LivePlayer), quando diferente da persistida
@@ -45,6 +45,7 @@ export function PlayerPin({
   goalsMatch?: number;
   penaltyTaker?: boolean; // bolinha azul: cobrador de pênalti designado
   captain?: boolean; // bolinha preta: capitão do time
+  armedRole?: "penalty" | "captain" | null; // badge clicado (aguardando a escolha do novo dono da função)
   onRoleClick?: (role: "penalty" | "captain") => void; // badge clicável: arma a troca da função
   onClick: () => void;
   onDoubleClick?: () => void;
@@ -90,7 +91,9 @@ export function PlayerPin({
               onClick={onRoleClick ? (e) => { e.stopPropagation(); onRoleClick("captain"); } : undefined}
               className={`rounded-[2px] border border-white/80 bg-black shadow ${
                 compact ? "h-2 w-2" : "h-2.5 w-2.5"
-              }${onRoleClick ? " cursor-pointer" : ""}`}
+              }${onRoleClick ? " cursor-pointer hover:ring-2 hover:ring-emerald-400" : ""}${
+                armedRole === "captain" ? " ring-2 ring-emerald-400 animate-pulse" : ""
+              }`}
               title={onRoleClick ? "Capitão — clique e escolha o novo capitão" : "Capitão"}
             />
           )}
@@ -99,7 +102,9 @@ export function PlayerPin({
               onClick={onRoleClick ? (e) => { e.stopPropagation(); onRoleClick("penalty"); } : undefined}
               className={`rounded-full border border-white/80 bg-sky-500 shadow ${
                 compact ? "h-2 w-2" : "h-2.5 w-2.5"
-              }${onRoleClick ? " cursor-pointer" : ""}`}
+              }${onRoleClick ? " cursor-pointer hover:ring-2 hover:ring-emerald-400" : ""}${
+                armedRole === "penalty" ? " ring-2 ring-emerald-400 animate-pulse" : ""
+              }`}
               title={onRoleClick ? "Cobrador de pênalti — clique e escolha o novo cobrador" : "Cobrador de pênalti"}
             />
           )}

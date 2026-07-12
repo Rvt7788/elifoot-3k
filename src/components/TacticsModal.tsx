@@ -1093,6 +1093,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
                   goalsMatch={goalsMatch}
                   penaltyTaker={s.player.id === livePenaltyTakerId}
                   captain={s.player.id === liveCaptainId}
+                  armedRole={assignRole}
                   onRoleClick={armRole}
                   onClick={() => pickOut(s.player!.id)}
                 />

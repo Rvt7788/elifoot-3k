@@ -556,6 +556,7 @@ export default function TacticsBoard() {
                 selected={sel === s.player.id}
                 penaltyTaker={s.player.id === effectivePenaltyTakerId}
                 captain={s.player.id === effectiveCaptainId}
+                armedRole={assignRole}
                 onRoleClick={pickRole}
                 onClick={() => clickPlayer(s.player!.id)}
                 onDoubleClick={() => dblClickPlayer(s.player!)}
