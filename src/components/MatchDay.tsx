@@ -946,6 +946,28 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
     (m) => m.homeId === game.userClubId || m.awayId === game.userClubId,
   );
 
+  // Spoiler do pênalti: o modal de cobrança tem fundo translúcido e o motor já
+  // gravou o gol no mesmo tick — enquanto o veredito não sai, o card exibe o
+  // placar e os eventos SEM esse gol, para não entregar o resultado antes da batida.
+  const displayUserMatch = (() => {
+    if (!userMatch || !pendingPenalty?.event.scored) return userMatch;
+    const pe = pendingPenalty.event;
+    const events = [...userMatch.events];
+    for (let i = events.length - 1; i >= 0; i--) {
+      const ev = events[i];
+      if (ev.type === "goal" && ev.side === pe.side && ev.minute === pe.minute && ev.playerName === pe.playerName) {
+        events.splice(i, 1);
+        break;
+      }
+    }
+    return {
+      ...userMatch,
+      events,
+      homeScore: userMatch.homeScore - (pe.side === "home" ? 1 : 0),
+      awayScore: userMatch.awayScore - (pe.side === "away" ? 1 : 0),
+    };
+  })();
+
   const liveInfo = weekInfo(game.week);
   const liveIsCup = liveInfo.type !== "league";
 
@@ -1007,7 +1029,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
           {/* jogo do usuário ao vivo: QUALQUER clique (nome de time incluso) abre a
               parada tática — informações de clube ficam dentro dela */}
           <MatchRow
-            m={userMatch}
+            m={displayUserMatch ?? userMatch}
             home={clubById(userMatch.homeId)}
             away={clubById(userMatch.awayId)}
             isUser

@@ -7,8 +7,10 @@ import EnergyBar from "./EnergyBar";
 import type { Marking, Mentality, Player, Position, LivePlayer, Formation } from "../types";
 import { shapeOf } from "../types";
 import { pitchLayout, PlayerPin, EmptySlot, PitchBackground } from "./PitchField";
+import { isDarkColor } from "../game/color";
 import { useLockBodyScroll } from "./useLockBodyScroll";
 import ClubBoard from "./ClubBoard";
+import { RoleBadges } from "./icons";
 import { ScrollLock } from "./useLockBodyScroll";
 import type { Club } from "../types";
 
@@ -25,11 +27,17 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
   const [rejectedSubs, setRejectedSubs] = useState<string[]>([]);
   // titulares começam colapsados: a interação principal é pela prancheta e pelo banco
   const [startersOpen, setStartersOpen] = useState(false);
+  // reservas colapsáveis, padrão aberto — é a lista mais usada na parada
+  const [benchOpen, setBenchOpen] = useState(true);
+  // badge clicado (capitão/cobrador): arma a escolha — o próximo jogador em
+  // campo clicado (pino ou lista) assume a função nesta partida
+  const [assignRole, setAssignRole] = useState<"penalty" | "captain" | null>(null);
   const setPaused = useStore((s) => s.setPaused);
   // foto do estado ao abrir o modal: permite desfazer tudo (táticas, subs, formação)
   const snapshot = useRef<{
     tactics: unknown; lineup: unknown; subsLeft: number; events: unknown;
     liveSlotOrder?: string[]; formation: unknown; gameSlotOrder?: string[];
+    penaltyTakerId?: string; captainId?: string;
   } | null>(null);
   useLockBodyScroll(!!game && !!live);
   if (!game || !live) return null;
@@ -60,6 +68,8 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
       liveSlotOrder: side === "home" ? match.homeSlotOrder : match.awaySlotOrder,
       formation: game.formation ?? "4-4-2",
       gameSlotOrder: game.slotOrder,
+      penaltyTakerId: side === "home" ? match.homePenaltyTakerId : match.awayPenaltyTakerId,
+      captainId: side === "home" ? match.homeCaptainId : match.awayCaptainId,
     }));
   }
 
@@ -73,6 +83,8 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
       liveSlotOrder: side === "home" ? match.homeSlotOrder : match.awaySlotOrder,
       formation: game.formation ?? "4-4-2",
       gameSlotOrder: game.slotOrder,
+      penaltyTakerId: side === "home" ? match.homePenaltyTakerId : match.awayPenaltyTakerId,
+      captainId: side === "home" ? match.homeCaptainId : match.awayCaptainId,
     });
   const hasChanges = () => currentShape() !== JSON.stringify(snapshot.current);
 
@@ -87,11 +99,15 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
         m2.homeLineup = JSON.parse(JSON.stringify(snap.lineup)) as typeof lineup;
         m2.homeSubsLeft = snap.subsLeft;
         m2.homeSlotOrder = snap.liveSlotOrder;
+        m2.homePenaltyTakerId = snap.penaltyTakerId;
+        m2.homeCaptainId = snap.captainId;
       } else {
         m2.awayTactics = JSON.parse(JSON.stringify(snap.tactics)) as typeof tactics;
         m2.awayLineup = JSON.parse(JSON.stringify(snap.lineup)) as typeof lineup;
         m2.awaySubsLeft = snap.subsLeft;
         m2.awaySlotOrder = snap.liveSlotOrder;
+        m2.awayPenaltyTakerId = snap.penaltyTakerId;
+        m2.awayCaptainId = snap.captainId;
       }
     });
     useStore.setState((state) =>
@@ -147,8 +163,47 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
     return 0;
   };
   const onField = lineup.filter((l) => l.onField && !l.sentOff).sort(byPos);
-  const bench = lineup.filter((l) => !l.onField && !l.subbedOut && !l.sentOff).sort(byPos);
+  // lesionado nunca é opção de substituição (o motor também bloqueia no makeSub)
+  const bench = lineup
+    .filter((l) => !l.onField && !l.subbedOut && !l.sentOff && !((pById[l.playerId]?.injuryWeeks ?? 0) > 0))
+    .sort(byPos);
   const hasKeeperOnField = onField.some((l) => (l.posOverride ?? pById[l.playerId].pos) === "GOL");
+
+  // ── Cobrador de pênalti e capitão EM CAMPO (mesma regra do motor) ──
+  const effPosOf = (l: LivePlayer) => l.posOverride ?? pById[l.playerId].pos;
+  const livePenaltyTakerId = (() => {
+    const chosen = side === "home" ? match.homePenaltyTakerId : match.awayPenaltyTakerId;
+    const linha = onField.filter((l) => effPosOf(l) !== "GOL");
+    if (chosen && linha.some((l) => l.playerId === chosen)) return chosen;
+    const atas = linha.filter((l) => effPosOf(l) === "ATA");
+    const pool = atas.length > 0 ? atas : linha;
+    return [...pool].sort((a, b) => pById[b.playerId].strength - pById[a.playerId].strength)[0]?.playerId;
+  })();
+  const liveCaptainId = (() => {
+    const chosen = side === "home" ? match.homeCaptainId : match.awayCaptainId;
+    if (chosen && onField.some((l) => l.playerId === chosen)) return chosen;
+    const leaders = onField.filter((l) => pById[l.playerId].traits.includes("Líder"));
+    const pool = leaders.length > 0 ? leaders : onField;
+    return [...pool].sort((a, b) => pById[b.playerId].strength - pById[a.playerId].strength)[0]?.playerId;
+  })();
+  // atribui a função a um jogador em campo (vale para esta partida)
+  const assignLiveRole = (role: "penalty" | "captain", playerId: string) => {
+    setAssignRole(null);
+    const lp = onField.find((l) => l.playerId === playerId);
+    if (!lp) return;
+    if (role === "penalty" && effPosOf(lp) === "GOL") return; // goleiro não cobra
+    updateLive((ms) => {
+      const m2 = ms[mi];
+      if (role === "penalty") {
+        if (side === "home") m2.homePenaltyTakerId = playerId;
+        else m2.awayPenaltyTakerId = playerId;
+      } else {
+        if (side === "home") m2.homeCaptainId = playerId;
+        else m2.awayCaptainId = playerId;
+      }
+    });
+  };
+  const armRole = (role: "penalty" | "captain") => setAssignRole(assignRole === role ? null : role);
 
   const executeSub = (outPlayerId: string, inPlayerId: string) => {
     if (subsLeft <= 0) return;
@@ -266,6 +321,11 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
   };
 
   const pickOut = (id: string) => {
+    // badge armado: o clique escolhe o novo capitão/cobrador e nada mais
+    if (assignRole) {
+      assignLiveRole(assignRole, id);
+      return;
+    }
     setSuggestion(null);
     if (selectedInId) {
       const outP = pById[id];
@@ -600,19 +660,25 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
         className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 p-5"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-4 flex items-center justify-between">
-          <div className="min-w-0">
-            <h2 className="text-lg font-bold">Parada tática — {match.minute}&#39;</h2>
+        {/* cabeçalho no padrão compacto da tela: título 11px em maiúsculo à
+            esquerda; ações (resetar, jogar, fechar) agrupadas à direita */}
+        <div className="mb-4 flex items-stretch gap-3">
+          {/* min-w-0 + overflow-hidden: título e placar truncam antes de tocar o Jogar */}
+          <div className="min-w-0 overflow-hidden">
+            <h2 className="truncate text-[11px] font-bold text-zinc-400">⏸ PARADA TÁTICA — {match.minute}&#39;</h2>
             {/* confronto com placar: cada nome na cor do time; o adversário
                 sublinhado para destacar que é clicável (abre sua prancheta) */}
-            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-zinc-400">
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-zinc-400">
               {([homeClub, awayClub] as const).map((c, idx) => {
                 const isOpp = c.id !== game.userClubId;
                 return (
                   <span key={c.id} className="contents">
                     <span
                       onClick={() => setInfoClub(c)}
-                      className={`cursor-pointer truncate font-semibold ${isOpp ? "underline decoration-2 underline-offset-2" : ""} hover:opacity-80`}
+                      // cor escura (time de preto) some no fundo: nome ganha chip claro
+                      className={`cursor-pointer truncate font-semibold ${isOpp ? "underline decoration-2 underline-offset-2" : ""} hover:opacity-80${
+                        isDarkColor(c.primaryColor) ? " rounded bg-zinc-300 px-1" : ""
+                      }`}
                       style={{ color: c.primaryColor, textDecorationColor: c.primaryColor }}
                     >
                       {c.shortName}
@@ -627,24 +693,24 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
               })}
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            {/* confirmar e retoma o jogo */}
-            <button
-              onClick={closeAndResume}
-              disabled={!hasKeeperOnField}
-              className="flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-6 py-3.5 text-sm font-bold text-white hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              title={hasKeeperOnField ? "Voltar ao jogo" : "Você precisa escalar um goleiro ou jogador de linha no gol!"}
-            >
-              <span className="text-[12px]">▶</span> Jogar
-            </button>
-            
-            {/* Coluna para controle de fechar (✕) e desfazer (↺) */}
+          {/* Jogar ocupa todo o espaço vazio, na altura das duas linhas (título +
+              confronto), encostando na coluna ✕/↺ */}
+          <button
+            onClick={closeAndResume}
+            disabled={!hasKeeperOnField}
+            className="flex min-w-0 flex-1 items-center justify-center gap-1.5 self-stretch rounded-lg bg-emerald-600 px-4 text-sm font-bold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+            title={hasKeeperOnField ? "Voltar ao jogo" : "Você precisa escalar um goleiro ou jogador de linha no gol!"}
+          >
+            <span className="text-[12px]">▶</span> Jogar
+          </button>
+          <div className="flex shrink-0 items-center">
+            {/* coluna: fechar (✕) em cima, desfazer (↺) abaixo */}
             <div className="flex flex-col items-center gap-2">
               {/* ✕: mesmo fluxo — sem alteração sai direto; com alteração pede confirmação */}
               <button
                 onClick={closeAndResume}
                 disabled={!hasKeeperOnField}
-                className="text-zinc-400 hover:text-white text-lg font-bold px-1 disabled:opacity-45 disabled:cursor-not-allowed leading-none"
+                className="px-1 text-lg font-bold leading-none text-zinc-400 hover:text-white disabled:opacity-45 disabled:cursor-not-allowed"
                 title={hasKeeperOnField ? "Voltar ao jogo" : "Você precisa escalar um goleiro ou jogador de linha no gol!"}
               >
                 ✕
@@ -653,7 +719,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
               <button
                 onClick={revertToSnapshot}
                 disabled={!hasChanges()}
-                className="text-zinc-450 hover:text-white text-lg font-bold px-1 disabled:opacity-25 disabled:cursor-not-allowed leading-none"
+                className="px-1 text-lg font-bold leading-none text-zinc-400 hover:text-white disabled:opacity-25 disabled:cursor-not-allowed"
                 title="Desfaz todas as alterações feitas nesta parada"
               >
                 ↺
@@ -662,88 +728,119 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        {/* Mentalidade e Marcação em linhas empilhadas (uma opção por linha, no
-            padrão dos extras), lado a lado em duas colunas — nada quebra no mobile */}
-        <div className="mb-3 grid grid-cols-2 gap-x-3">
-          <div className="min-w-0">
-            <p className="mb-1 text-sm text-zinc-400">Mentalidade</p>
-            <div className="flex flex-col gap-1">
-              {MENT.map((m) => (
-                <button
-                  key={m.key}
-                  onClick={() => setTactic((t) => (t.mentality = m.key))}
-                  className={`w-full truncate rounded px-2 py-1.5 text-left text-sm ${
-                    tactics.mentality === m.key ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
-                  }`}
-                >
-                  {m.label}
-                </button>
+        {/* ── 1. INFORMAÇÕES DO JOGO ── */}
+        {(homeCarded.length > 0 || awayCarded.length > 0 || homeGoals.length > 0 || awayGoals.length > 0 || homeSubs.length > 0 || awaySubs.length > 0) && (
+          <div className="mb-3 rounded-lg bg-zinc-800/60 px-3 py-2">
+            <p className="mb-1 text-xs font-bold text-zinc-400">ℹ INFORMAÇÕES</p>
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              {([
+                { club: homeClub, goals: homeGoals, carded: homeCarded, subs: homeSubs },
+                { club: awayClub, goals: awayGoals, carded: awayCarded, subs: awaySubs },
+              ] as const).map(({ club, goals, carded, subs }) => (
+                <div key={club.id}>
+                  <p className="mb-0.5 text-[10px] text-zinc-500">{club.shortName}</p>
+                  {goals.length === 0 && carded.length === 0 && subs.length === 0 && <p className="text-zinc-600">—</p>}
+                  {goals.map((g) => (
+                    <div key={g.name} className="flex items-center justify-between">
+                      <span>{g.name}</span>
+                      <span>
+                        {"⚽".repeat(g.minutes.length)}
+                        <span className="ml-1 text-zinc-500">{g.minutes.map((m) => `${m}'`).join(" ")}</span>
+                      </span>
+                    </div>
+                  ))}
+                  {carded.map(({ p, lp }) => (
+                    <div key={p.id} className="flex items-center justify-between">
+                      <span className={lp.sentOff ? "text-zinc-500 line-through" : ""}>{p.name}</span>
+                      <span>{"🟨".repeat(Math.min(lp.yellowsMatch, 2))}{lp.sentOff ? "🟥" : ""}</span>
+                    </div>
+                  ))}
+                  {subs.map((e, i) => (
+                    <div key={i} className="flex items-center justify-between text-zinc-400">
+                      <span>🔄 {e.playerName}</span>
+                      <span className="text-zinc-500">{e.minute}'</span>
+                    </div>
+                  ))}
+                </div>
               ))}
             </div>
           </div>
-          <div className="min-w-0">
-            <p className="mb-1 text-sm text-zinc-400">Marcação</p>
-            <div className="flex flex-col gap-1">
-              {MARK.map((m) => (
-                <button
-                  key={m.key}
-                  onClick={() => setTactic((t) => (t.marking = m.key))}
-                  className={`w-full truncate rounded px-2 py-1.5 text-left text-sm ${
-                    tactics.marking === m.key ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
-                  }`}
-                >
-                  {m.label}
-                </button>
-              ))}
+        )}
+
+        {/* Volume de jogo: o técnico vê se está perto ou longe do gol */}
+        {match.stats && (() => {
+          const st = match.stats;
+          const total = st.home.poss + st.away.poss;
+          const homePoss = total > 0 ? Math.round((100 * st.home.poss) / total) : 50;
+          const row = (label: string, h: number | string, a: number | string) => (
+            <div className="flex items-center justify-between py-0.5 text-xs">
+              <span className="w-10 text-right font-mono font-bold text-zinc-200">{h}</span>
+              <span className="flex-1 text-center text-zinc-500">{label}</span>
+              <span className="w-10 text-left font-mono font-bold text-zinc-200">{a}</span>
             </div>
+          );
+          return (
+            <div className="mb-3 rounded-lg bg-zinc-800/60 px-3 py-2">
+              {/* abreviações com a mesma largura/alinhamento das colunas de números */}
+              <div className="mb-1 flex items-center justify-between text-[10px] text-zinc-500">
+                <span className="w-10 text-right font-semibold">{homeClub.shortName}</span>
+                <span className="font-bold">📊 VOLUME DE JOGO</span>
+                <span className="w-10 text-left font-semibold">{awayClub.shortName}</span>
+              </div>
+              {row("Posse (%)", homePoss, 100 - homePoss)}
+              {row("Finalizações", st.home.shots, st.away.shots)}
+              {row("Chutes no gol", st.home.onTarget, st.away.onTarget)}
+              {row("Defesas", st.home.saves, st.away.saves)}
+              {row("Desarmes", st.home.tackles, st.away.tackles)}
+              {row("Interceptações", st.home.interceptions, st.away.interceptions)}
+            </div>
+          );
+        })()}
+
+        {/* ── 2. SUBSTITUIÇÕES: rápida e automática, mesma hierarquia ── */}
+        <div className="mb-3 rounded-lg bg-zinc-800/60 px-3 py-2">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-[11px] font-bold text-zinc-400">🔁 SUBSTITUIÇÕES</p>
+            <span className="text-[11px] text-zinc-600">{subsLeft}/5 subs</span>
           </div>
-        </div>
-
-        <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <Toggle
-            checked={tactics.truculencia}
-            onChange={() => setTactic((t) => (t.truculencia = !t.truculencia))}
-            label="🦵 Truculência"
-            color="#b91c1c"
-            hint="Bônus pesado de desarme, mas 3× mais cartões"
-          />
-          <Toggle
-            checked={tactics.cera}
-            onChange={() => setTactic((t) => (t.cera = !t.cera))}
-            label="🐢 Catimba"
-            color="#b45309"
-            hint="Trava o ritmo do jogo; cede um pouco de volume e arrisca cartões"
-          />
-          <Toggle
-            checked={tactics.autoSub ?? false}
-            onChange={() => setTactic((t) => (t.autoSub = !t.autoSub))}
-            label="🔁 Substituição automática"
-            color="#0891b2"
-            hint="No segundo tempo, troca sozinho jogadores esgotados por reservas descansados da mesma posição"
-          />
-        </div>
-
-        {/* Sub. rápida: um clique resolve a troca mais óbvia (energia ou força) */}
-        <div className="mb-3 flex items-center gap-2">
-          <p className="text-sm text-zinc-400">Sub. rápida</p>
+          <div className="mb-1.5 flex items-center gap-2">
+            <span className="w-20 shrink-0 text-[11px] font-semibold text-zinc-500">RÁPIDA</span>
+            <button
+              onClick={() => quickSub("energia")}
+              disabled={subsLeft <= 0}
+              className="rounded bg-zinc-800 px-2.5 py-1 text-[11px] text-zinc-300 hover:bg-zinc-700 disabled:opacity-40"
+              title="Troca o titular mais cansado pelo reserva mais descansado da mesma posição"
+            >
+              Energia
+            </button>
+            <button
+              onClick={() => quickSub("posicao")}
+              disabled={subsLeft <= 0}
+              className="rounded bg-zinc-800 px-2.5 py-1 text-[11px] text-zinc-300 hover:bg-zinc-700 disabled:opacity-40"
+              title="Melhora o setor: entra o reserva mais forte que um titular da mesma posição"
+            >
+              Posição
+            </button>
+          </div>
           <button
-            onClick={() => quickSub("energia")}
-            disabled={subsLeft <= 0}
-            className="rounded bg-zinc-800 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-700 disabled:opacity-40"
-            title="Troca o titular mais cansado pelo reserva mais descansado da mesma posição"
+            type="button"
+            role="switch"
+            aria-checked={tactics.autoSub ?? false}
+            onClick={() => setTactic((t) => (t.autoSub = !t.autoSub))}
+            title="No segundo tempo, troca sozinho jogadores esgotados por reservas descansados da mesma posição"
+            className="flex w-full items-center gap-2 text-left"
           >
-            Energia
+            <span className="w-20 shrink-0 text-[11px] font-semibold text-zinc-500">AUTOMÁTICA</span>
+            <span
+              className="relative inline-block h-3.5 w-7 shrink-0 rounded-full transition-colors"
+              style={{ backgroundColor: (tactics.autoSub ?? false) ? "#0891b2" : "#3f3f46" }}
+            >
+              <span
+                className="absolute top-0.5 h-2.5 w-2.5 rounded-full bg-white transition-transform"
+                style={{ transform: (tactics.autoSub ?? false) ? "translateX(16px)" : "translateX(2px)" }}
+              />
+            </span>
           </button>
-          <button
-            onClick={() => quickSub("posicao")}
-            disabled={subsLeft <= 0}
-            className="rounded bg-zinc-800 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-700 disabled:opacity-40"
-            title="Melhora o setor: entra o reserva mais forte que um titular da mesma posição"
-          >
-            Posição
-          </button>
-          <span className="text-xs text-zinc-600">{subsLeft}/5 subs</span>
-        </div>
 
         {/* sugestão pendente: mostra a troca e espera confirmação */}
         {suggestion && (() => {
@@ -753,9 +850,13 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
           const inLp = lineup.find((l) => l.playerId === suggestion.in);
           const outEnergy = outLp ? Math.round(outLp.energy) : outP.energy;
           const inEnergy = inLp ? Math.round(inLp.energy) : inP.energy;
-          // só o primeiro nome: a posição é informação obrigatória e nunca pode
-          // ser cortada pelo truncate quando o nome é comprido
-          const firstName = (n: string) => n.split(" ")[0];
+          // nome comprido abrevia priorizando o sobrenome ("R. Nascimento"); a
+          // posição é informação obrigatória e nunca pode ser cortada pelo truncate
+          const firstName = (n: string) => {
+            const parts = n.trim().split(/\s+/);
+            if (parts.length < 2 || n.length <= 14) return n;
+            return `${parts[0][0]}. ${parts[parts.length - 1]}`;
+          };
           return (
             <div className="mb-3 flex flex-col gap-2.5 rounded-lg border border-amber-700/60 bg-amber-950/30 px-3 py-2 text-sm">
               <div className="flex items-center justify-between gap-4">
@@ -812,48 +913,62 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
             </div>
           );
         })()}
+        </div>
 
-        {/* INFORMAÇÕES card moved up here to sit directly below quick sub suggestions */}
-        {(homeCarded.length > 0 || awayCarded.length > 0 || homeGoals.length > 0 || awayGoals.length > 0 || homeSubs.length > 0 || awaySubs.length > 0) && (
-          <div className="mb-3 rounded-lg bg-zinc-800/60 px-3 py-2">
-            <p className="mb-1 text-xs font-bold text-zinc-400">ℹ INFORMAÇÕES</p>
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              {([
-                { club: homeClub, goals: homeGoals, carded: homeCarded, subs: homeSubs },
-                { club: awayClub, goals: awayGoals, carded: awayCarded, subs: awaySubs },
-              ] as const).map(({ club, goals, carded, subs }) => (
-                <div key={club.id}>
-                  <p className="mb-0.5 text-[10px] text-zinc-500">{club.shortName}</p>
-                  {goals.length === 0 && carded.length === 0 && subs.length === 0 && <p className="text-zinc-600">—</p>}
-                  {goals.map((g) => (
-                    <div key={g.name} className="flex items-center justify-between">
-                      <span>{g.name}</span>
-                      <span>
-                        {"⚽".repeat(g.minutes.length)}
-                        <span className="ml-1 text-zinc-500">{g.minutes.map((m) => `${m}'`).join(" ")}</span>
-                      </span>
-                    </div>
-                  ))}
-                  {carded.map(({ p, lp }) => (
-                    <div key={p.id} className="flex items-center justify-between">
-                      <span className={lp.sentOff ? "text-zinc-500 line-through" : ""}>{p.name}</span>
-                      <span>{"🟨".repeat(Math.min(lp.yellowsMatch, 2))}{lp.sentOff ? "🟥" : ""}</span>
-                    </div>
-                  ))}
-                  {subs.map((e, i) => (
-                    <div key={i} className="flex items-center justify-between text-zinc-400">
-                      <span>🔄 {e.playerName}</span>
-                      <span className="text-zinc-500">{e.minute}'</span>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
+        {/* atalho: mentalidade e marcação em badges compactos — o estado completo
+            (com rótulos) segue na seção MENTALIDADE/MARCAÇÃO no fim do modal */}
+        <div className="mb-3 flex items-center gap-2">
+          <div className="flex flex-1 items-center gap-1" title="Mentalidade">
+            {MENT.map((m) => (
+              <button
+                key={m.key}
+                onClick={() => setTactic((t) => (t.mentality = m.key))}
+                title={m.label}
+                className={`flex-1 rounded px-1 py-1.5 text-center text-sm leading-none ${
+                  tactics.mentality === m.key ? "bg-emerald-600" : "bg-zinc-800/60 hover:bg-zinc-700"
+                }`}
+              >
+                {m.label.split(" ")[0]}
+              </button>
+            ))}
           </div>
-        )}
+          <span className="h-6 w-px shrink-0 bg-zinc-700" />
+          <div className="flex flex-1 items-center gap-1" title="Marcação">
+            {MARK.map((m) => (
+              <button
+                key={m.key}
+                onClick={() => setTactic((t) => (t.marking = m.key))}
+                title={m.label}
+                className={`flex-1 rounded px-1 py-1.5 text-center text-sm leading-none ${
+                  tactics.marking === m.key ? "bg-emerald-600" : "bg-zinc-800/60 hover:bg-zinc-700"
+                }`}
+              >
+                {m.label.split(" ")[0]}
+              </button>
+            ))}
+          </div>
+        </div>
 
+        {/* truculência e catimba lado a lado, logo abaixo dos badges */}
+        <div className="mb-3 grid grid-cols-2 gap-2">
+          <Toggle
+            checked={tactics.truculencia}
+            onChange={() => setTactic((t) => (t.truculencia = !t.truculencia))}
+            label="🦵 Truculência"
+            color="#b91c1c"
+            hint="Bônus pesado de desarme, mas 3× mais cartões"
+          />
+          <Toggle
+            checked={tactics.cera}
+            onChange={() => setTactic((t) => (t.cera = !t.cera))}
+            label="🐢 Catimba"
+            color="#b45309"
+            hint="Trava o ritmo do jogo; cede um pouco de volume e arrisca cartões"
+          />
+        </div>
+
+        {/* ── 3. FORMAÇÃO ── */}
         <div className="mb-4">
-          <p className="mb-1 text-sm text-zinc-400">Formação</p>
           <div className="flex gap-2 flex-wrap">
             {(["4-4-2", "4-3-3", "3-5-2", "4-5-1", "5-3-2", "3-4-3", "3-3-4"] as const).map((f) => (
               <button
@@ -870,37 +985,6 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
             ))}
           </div>
         </div>
-
-        {/* Volume de jogo: o técnico vê se está perto ou longe do gol */}
-        {match.stats && (() => {
-          const st = match.stats;
-          const total = st.home.poss + st.away.poss;
-          const homePoss = total > 0 ? Math.round((100 * st.home.poss) / total) : 50;
-          const row = (label: string, h: number | string, a: number | string) => (
-            <div className="flex items-center justify-between py-0.5 text-xs">
-              <span className="w-10 text-right font-mono font-bold text-zinc-200">{h}</span>
-              <span className="flex-1 text-center text-zinc-500">{label}</span>
-              <span className="w-10 text-left font-mono font-bold text-zinc-200">{a}</span>
-            </div>
-          );
-          return (
-            <div className="mb-3 rounded-lg bg-zinc-800/60 px-3 py-2">
-              <div className="mb-1 flex items-center justify-between text-[10px] text-zinc-500">
-                <span>{homeClub.shortName}</span>
-                <span className="font-bold">📊 VOLUME DE JOGO</span>
-                <span>{awayClub.shortName}</span>
-              </div>
-              {row("Posse (%)", homePoss, 100 - homePoss)}
-              {row("Finalizações", st.home.shots, st.away.shots)}
-              {row("Chutes no gol", st.home.onTarget, st.away.onTarget)}
-              {row("Defesas", st.home.saves, st.away.saves)}
-              {row("Desarmes", st.home.tackles, st.away.tackles)}
-              {row("Interceptações", st.home.interceptions, st.away.interceptions)}
-            </div>
-          );
-        })()}
-
-
 
         {!hasKeeperOnField && (
           <p className="mb-3 rounded-lg bg-red-950 px-3 py-2 text-xs text-red-400 font-semibold border border-red-800/80 animate-pulse text-center">
@@ -935,6 +1019,9 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
                   energyOverride={s.energy}
                   yellowsMatch={yellowsMatch}
                   goalsMatch={goalsMatch}
+                  penaltyTaker={s.player.id === livePenaltyTakerId}
+                  captain={s.player.id === liveCaptainId}
+                  onRoleClick={armRole}
                   onClick={() => pickOut(s.player!.id)}
                 />
               ) : (
@@ -968,7 +1055,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
                 TITULARES EM CAMPO <span className="font-normal text-zinc-600">({onField.length})</span>
               </button>
               {startersOpen && (
-              <div className="max-h-40 overflow-y-auto pr-1">
+              <div className="pr-1">
                 {onField.map((l) => {
                   const p = pById[l.playerId];
                   const isSelected = selectedOutId === l.playerId || suggestion?.out === l.playerId;
@@ -986,10 +1073,18 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
                           : "bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40"
                       }`}
                     >
-                      <span>
-                        <span className="tabular-nums text-zinc-500">{p.number}</span> {p.pos} {p.name} ({p.strength}){" "}
-                        <span className={p.foot === "canhoto" ? "text-red-500" : "text-sky-400"}>{p.foot === "canhoto" ? "◀" : "▶"}</span>
-                        {l.subbedIn && <span className="ml-1" title="Entrou durante o jogo">🔄</span>}
+                      <span className="inline-flex min-w-0 items-center gap-1">
+                        <span className="truncate">
+                          <span className="tabular-nums text-zinc-500">{p.number}</span> {p.pos} {p.name} ({p.strength}){" "}
+                          <span className={p.foot === "canhoto" ? "text-red-500" : "text-sky-400"}>{p.foot === "canhoto" ? "◀" : "▶"}</span>
+                          {l.subbedIn && <span className="ml-1" title="Entrou durante o jogo">🔄</span>}
+                        </span>
+                        <RoleBadges
+                          penalty={l.playerId === livePenaltyTakerId}
+                          captain={l.playerId === liveCaptainId}
+                          armed={assignRole}
+                          onPick={armRole}
+                        />
                       </span>
                       <EnergyBar value={l.energy} />
                     </button>
@@ -1000,10 +1095,15 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
             </div>
 
             <div>
-              <p className="mb-1 text-xs font-bold text-zinc-500">
+              <button
+                onClick={() => setBenchOpen((v) => !v)}
+                className="mb-1 flex w-full items-center gap-1 text-xs font-bold text-zinc-500 hover:text-zinc-300"
+              >
+                <span className="text-[9px]">{benchOpen ? "▼" : "▶"}</span>
                 BANCO (RESERVAS) <span className="font-normal text-zinc-600">· {subsLeft}/5 subs</span>
-              </p>
-              <div className="max-h-40 overflow-y-auto pr-1">
+              </button>
+              {benchOpen && (
+              <div className="pr-1">
                 {bench.map((l) => {
                   const p = pById[l.playerId];
                   const isSelected = selectedInId === l.playerId || suggestion?.in === l.playerId;
@@ -1048,6 +1148,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
                   <p className="text-xs text-zinc-500">Banco vazio.</p>
                 )}
               </div>
+              )}
             </div>
           </div>
         </div>
