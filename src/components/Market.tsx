@@ -5,9 +5,11 @@ import { appConfirm } from "./AppDialog";
 import FinanceModal from "./FinanceModal";
 import type { Player, Position, Trait } from "../types";
 import { ScrollLock } from "./useLockBodyScroll";
+import { userSquadRoles } from "../game/roles";
+import { RoleBadges } from "./icons";
 
 const POSITIONS: (Position | "ALL")[] = ["ALL", "GOL", "DEF", "MEI", "ATA"];
-const TRAITS: (Trait | "ALL")[] = ["ALL", "Goleador", "Paredão", "Veloz", "Criativo", "Raçudo"];
+const TRAITS: (Trait | "ALL")[] = ["ALL", "Goleador", "Paredão", "Veloz", "Criativo", "Raçudo", "Líder"];
 const TIER_BADGE: Record<string, string> = {
   bagre: "", bom: "★", craque: "★★", extra: "💎",
 };
@@ -86,6 +88,10 @@ function OfferResultModal({
   );
 }
 
+// Última busca feita no mercado: sobrevive à navegação entre telas (módulo vive
+// enquanto a aba estiver aberta), então voltar ao mercado reabre a mesma pesquisa.
+let lastSearch: { filters: MarketFilters; appliedFilters: MarketFilters | null } | null = null;
+
 export default function Market() {
   const { game, buyPlayer, sellPlayer } = useStore();
   const [tab, setTab] = useState<"buy" | "sell">("buy");
@@ -102,8 +108,16 @@ export default function Market() {
     minAssists: null,
     query: "",
   };
-  const [filters, setFilters] = useState<MarketFilters>(emptyFilters);
-  const [appliedFilters, setAppliedFilters] = useState<MarketFilters | null>(null);
+  const [filters, setFiltersRaw] = useState<MarketFilters>(lastSearch?.filters ?? emptyFilters);
+  const [appliedFilters, setAppliedFiltersRaw] = useState<MarketFilters | null>(lastSearch?.appliedFilters ?? null);
+  const setFilters = (f: MarketFilters) => {
+    lastSearch = { filters: f, appliedFilters: lastSearch?.appliedFilters ?? null };
+    setFiltersRaw(f);
+  };
+  const setAppliedFilters = (f: MarketFilters | null) => {
+    lastSearch = { filters: lastSearch?.filters ?? filters, appliedFilters: f };
+    setAppliedFiltersRaw(f);
+  };
   const [offers, setOffers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("strength");
@@ -115,6 +129,7 @@ export default function Market() {
 
   if (!game) return null;
   const squad = game.players.filter((p) => p.clubId === game.userClubId);
+  const roles = userSquadRoles(game);
 
   const updateFilters = (patch: Partial<MarketFilters>) => setFilters({ ...filters, ...patch });
 
@@ -417,10 +432,13 @@ export default function Market() {
                     </span>
                     <span className="min-w-0 truncate text-zinc-400 text-xs sm:w-24 sm:shrink-0">{p.traits.join(", ") || "—"}</span>
                     <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:ml-0 sm:w-[110px] sm:justify-end">
+                      {/* clique seleciona tudo para digitar o valor novo; apagar e sair
+                          volta ao valor pedido (placeholder), mesmo padrão do Nº do elenco */}
                       <input
                         type="number"
                         placeholder={`${(price / 1e6).toFixed(1)}`}
                         value={offers[p.id] ?? ""}
+                        onFocus={(e) => e.target.select()}
                         onChange={(e) => setOffers({ ...offers, [p.id]: e.target.value })}
                         className="w-12 shrink-0 rounded bg-zinc-800 px-1 py-0.5 text-xs text-zinc-100 text-center"
                         title="Sua oferta em $M (vazio = valor pedido)"
@@ -493,10 +511,15 @@ export default function Market() {
                     onClick={() => setExpandedSell(expandedSell === p.id ? null : p.id)}
                     className="flex flex-wrap sm:flex-nowrap items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm cursor-pointer hover:bg-zinc-800/20"
                   >
-                    <span className="w-6 shrink-0 text-right tabular-nums text-zinc-500">{p.number}</span>
                     <span className="w-8 shrink-0 text-zinc-400">{p.pos}</span>
                     <span className="min-w-[120px] flex-1 truncate">
-                      {p.name} <span className="text-amber-400">{TIER_BADGE[p.tier]}</span>
+                      <span className="inline-flex items-center gap-1">
+                        {p.name} <span className="text-amber-400">{TIER_BADGE[p.tier]}</span>
+                        <RoleBadges penalty={p.id === roles.penaltyTakerId} captain={p.id === roles.captainId} />
+                        {game.starters.includes(p.id) && (
+                          <span className="shrink-0 rounded bg-emerald-950 px-1 text-[10px] text-emerald-400">titular</span>
+                        )}
+                      </span>
                     </span>
                     <span className="w-10 shrink-0 text-center font-bold">
                       {p.strength}

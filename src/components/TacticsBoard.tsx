@@ -7,6 +7,8 @@ import type { Formation, Marking, Mentality, Player, Position } from "../types";
 import { FORMATIONS } from "../types";
 import { pitchLayout, PlayerPin, EmptySlot, PitchBackground } from "./PitchField";
 import { readableOn } from "../game/color";
+import { userSquadRoles } from "../game/roles";
+import { RoleBadges } from "./icons";
 import EnergyBar from "./EnergyBar";
 import { appAlert } from "./AppDialog";
 import FormationEditorModal from "./FormationEditorModal";
@@ -24,14 +26,38 @@ const sectorAvg = (squad: Player[], pos: Position) => {
 };
 const POS_KEYS = ["GOL", "DEF", "MEI", "ATA"] as const;
 
-function PlayerDetails({ p, penaltyTaker }: { p: Player; penaltyTaker?: boolean }) {
+function PlayerDetails({ p, penaltyTaker, captain, assignRole, onPickRole }: {
+  p: Player; penaltyTaker?: boolean; captain?: boolean;
+  assignRole?: "penalty" | "captain" | null;
+  onPickRole?: (role: "penalty" | "captain") => void;
+}) {
   return (
     <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5 rounded bg-black/30 px-2 py-1.5 text-[11px] text-zinc-300">
+      {/* nome completo: a linha da lista corta nomes compridos, aqui aparece inteiro */}
+      <span className="col-span-2 font-bold text-zinc-100">{p.name}</span>
       {penaltyTaker && (
-        <span className="col-span-2 flex items-center gap-1.5">
-          <span className="inline-block h-2 w-2 shrink-0 rounded-full border border-white/70 bg-red-600" />
+        <button
+          onClick={(e) => { e.stopPropagation(); onPickRole?.("penalty"); }}
+          className={`col-span-2 flex w-fit items-center gap-1.5 rounded px-1 -mx-1 text-left hover:bg-zinc-800 ${
+            assignRole === "penalty" ? "bg-zinc-800 ring-1 ring-sky-400 animate-pulse" : ""
+          }`}
+          title="Trocar o cobrador: clique aqui e depois no novo jogador"
+        >
+          <span className="inline-block h-2 w-2 shrink-0 rounded-full border border-white/70 bg-sky-500" />
           Batedor de pênalti
-        </span>
+        </button>
+      )}
+      {captain && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onPickRole?.("captain"); }}
+          className={`col-span-2 flex w-fit items-center gap-1.5 rounded px-1 -mx-1 text-left hover:bg-zinc-800 ${
+            assignRole === "captain" ? "bg-zinc-800 ring-1 ring-sky-400 animate-pulse" : ""
+          }`}
+          title="Trocar o capitão: clique aqui e depois no novo jogador"
+        >
+          <span className="inline-block h-2 w-2 shrink-0 rounded-[2px] border border-white/70 bg-black" />
+          Capitão
+        </button>
       )}
       <span>Idade: <b>{p.age}</b></span>
       <span>Pé: <b className="capitalize">{p.foot}</b></span>
@@ -54,12 +80,16 @@ function PlayerDetails({ p, penaltyTaker }: { p: Player; penaltyTaker?: boolean 
 }
 
 function PlayerRow({
-  p, selected, selColor, onClick, onDoubleClick, expanded, onToggleExpand, suspendedNext, penaltyTaker,
+  p, selected, selColor, onClick, onDoubleClick, expanded, onToggleExpand, suspendedNext, penaltyTaker, captain,
+  assignRole, onPickRole,
 }: {
   p: Player; selected: boolean; selColor: string; onClick: () => void;
   onDoubleClick?: () => void;
   expanded: boolean; onToggleExpand: () => void; suspendedNext: boolean;
   penaltyTaker?: boolean;
+  captain?: boolean;
+  assignRole?: "penalty" | "captain" | null;
+  onPickRole?: (role: "penalty" | "captain") => void;
 }) {
   const injured = (p.injuryWeeks ?? 0) > 0;
   return (
@@ -72,18 +102,14 @@ function PlayerRow({
           selected ? "" : "bg-zinc-800 hover:bg-zinc-700"
         }`}
       >
-        <span className="flex min-w-0 items-center gap-1">
+        {/* flex-1 + overflow-hidden: o nome encolhe e os badges nunca invadem a barra de energia */}
+        <span className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden pr-1">
           <span className={`w-4 shrink-0 text-right tabular-nums ${selected ? "opacity-70" : "text-zinc-500"}`}>{p.number}</span>
           <b className={`shrink-0 ${selected ? "opacity-70" : "text-zinc-400"}`}>{p.pos}</b>
           {/* nome corta seco (sem "…") para a estrelinha ao lado nunca sumir */}
           <span className={`overflow-hidden whitespace-nowrap [text-overflow:clip] ${suspendedNext || injured ? "text-zinc-500 line-through" : ""}`}>{p.name}</span>
           <span className="shrink-0 text-amber-400">{TIER_BADGE[p.tier]}</span>
-          {penaltyTaker && (
-            <span
-              className="inline-block h-2 w-2 shrink-0 rounded-full border border-white/70 bg-red-600"
-              title="Cobrador de pênalti"
-            />
-          )}
+          <RoleBadges penalty={penaltyTaker} captain={captain} />
           {suspendedNext && <span className="shrink-0 text-[9px] font-bold text-red-400">SUSP</span>}
           {injured && <span className="shrink-0 text-[9px] font-bold text-orange-400" title={`Lesionado: volta em ${p.injuryWeeks} rodada${(p.injuryWeeks ?? 0) > 1 ? "s" : ""}`}>LES</span>}
         </span>
@@ -99,7 +125,12 @@ function PlayerRow({
           </span>
         </span>
       </button>
-      {expanded && <PlayerDetails p={p} penaltyTaker={penaltyTaker} />}
+      {expanded && (
+        <PlayerDetails
+          p={p} penaltyTaker={penaltyTaker} captain={captain}
+          assignRole={assignRole} onPickRole={onPickRole}
+        />
+      )}
     </div>
   );
 }
@@ -144,9 +175,13 @@ export default function TacticsBoard() {
   const setCustomFormation = useStore((s) => s.setCustomFormation);
   const setDefaultTactics = useStore((s) => s.setDefaultTactics);
   const setPenaltyTaker = useStore((s) => s.setPenaltyTaker);
+  const setCaptain = useStore((s) => s.setCaptain);
   const payBicho = useStore((s) => s.payBicho);
   const [sel, setSel] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  // modo de troca de função: badge clicado no card expandido arma a escolha —
+  // o próximo jogador clicado vira o cobrador de pênalti / capitão
+  const [assignRole, setAssignRole] = useState<"penalty" | "captain" | null>(null);
   const [scaleBy, setScaleBy] = useState<"forca" | "posicao" | "energia">("forca");
   const byEnergy = scaleBy === "energia";
 
@@ -252,10 +287,38 @@ export default function TacticsBoard() {
   const flatOrder = (pp: Record<Position, Player[]>) =>
     POS_KEYS.flatMap((k) => pp[k].map((p) => p.id));
 
+  // Lista de titulares na ordem do desenho do campo, não por força: linha por
+  // linha (GOL→DEF→MEI→ATA) e, dentro da linha, da direita para a esquerda.
+  const titularesDisplay = (() => {
+    const inSlots = POS_KEYS.flatMap((k) =>
+      slots
+        .filter((s) => s.pos === k && s.player)
+        .sort((a, b) => b.x - a.x)
+        .map((s) => s.player!),
+    );
+    const seen = new Set(inSlots.map((p) => p.id));
+    return [...inSlots, ...titulares.filter((p) => !seen.has(p.id))];
+  })();
+
   // Clique em jogador (pin do campo ou linha da lista). Mesmo setor em campo:
   // trocam de slot (ou titular↔reserva). Setores diferentes: dois TITULARES de
   // linha trocam de setor no desenho (MEI vai pro ataque, ATA vem pro meio).
   const clickPlayer = (id: string) => {
+    // modo armado pelo badge: o clique escolhe o novo dono da função e sai do modo
+    if (assignRole) {
+      const p = squad.find((x) => x.id === id);
+      const role = assignRole;
+      setAssignRole(null);
+      setSel(null);
+      if (!p || !starters.includes(id)) return;
+      if (role === "penalty") {
+        if (effPos(p) === "GOL") return; // goleiro nunca cobra
+        setPenaltyTaker(id);
+      } else {
+        setCaptain(id);
+      }
+      return;
+    }
     if (!sel) { setSel(id); return; }
     if (sel === id) { setSel(null); return; }
     const a = squad.find((p) => p.id === sel);
@@ -345,20 +408,16 @@ export default function TacticsBoard() {
 
   const toggleExpand = (id: string) => setExpanded(expanded === id ? null : id);
 
-  // ── Cobrador de pênalti ──
-  // Designado por duplo clique (se ainda é titular); senão o ATA titular mais
-  // forte — mesmo padrão que o motor usa quando ninguém foi designado.
-  const effectivePenaltyTakerId = (() => {
-    const chosen = game.penaltyTakerId;
-    if (chosen && starters.includes(chosen)) {
-      const p = squad.find((pl) => pl.id === chosen);
-      if (p && effPos(p) !== "GOL") return chosen;
-    }
-    const atas = titulares.filter((p) => effPos(p) === "ATA").sort((a, b) => b.strength - a.strength);
-    if (atas.length > 0) return atas[0].id;
-    const linha = titulares.filter((p) => effPos(p) !== "GOL").sort((a, b) => b.strength - a.strength);
-    return linha[0]?.id;
-  })();
+  // clique no badge do card expandido: arma (ou desarma) a escolha da função
+  const pickRole = (role: "penalty" | "captain") => {
+    setSel(null);
+    setAssignRole(assignRole === role ? null : role);
+  };
+
+  // ── Cobrador de pênalti e capitão ──
+  // Lógica compartilhada em game/roles.ts (badges também aparecem em Elenco,
+  // Treino e Mercado): designado enquanto titular, senão o automático.
+  const { penaltyTakerId: effectivePenaltyTakerId, captainId: effectiveCaptainId } = userSquadRoles(game);
   const dblClickPlayer = (p: Player) => {
     // só titular de linha pode ser o cobrador
     if (!starters.includes(p.id) || effPos(p) === "GOL") return;
@@ -496,6 +555,8 @@ export default function TacticsBoard() {
                 compact
                 selected={sel === s.player.id}
                 penaltyTaker={s.player.id === effectivePenaltyTakerId}
+                captain={s.player.id === effectiveCaptainId}
+                onRoleClick={pickRole}
                 onClick={() => clickPlayer(s.player!.id)}
                 onDoubleClick={() => dblClickPlayer(s.player!)}
               />
@@ -643,7 +704,7 @@ export default function TacticsBoard() {
           TITULARES ({titulares.length})
         </p>
         <div ref={titularesListRef} className="mb-4">
-          {titulares.map((p) => (
+          {titularesDisplay.map((p) => (
             <PlayerRow
               key={p.id}
               p={p}
@@ -655,6 +716,9 @@ export default function TacticsBoard() {
               onToggleExpand={() => toggleExpand(p.id)}
               suspendedNext={isSuspendedNext(p)}
               penaltyTaker={p.id === effectivePenaltyTakerId}
+              captain={p.id === effectiveCaptainId}
+              assignRole={assignRole}
+              onPickRole={pickRole}
             />
           ))}
         </div>

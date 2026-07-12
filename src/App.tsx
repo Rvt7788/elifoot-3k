@@ -13,6 +13,7 @@ import Market from "./components/Market";
 import Training from "./components/Training";
 import { IconClub, IconTable, IconSquad, IconMarket, IconTraining, IconTrophy, IconGear, IconPlay, IconLive } from "./components/icons";
 import { ScrollLock } from "./components/useLockBodyScroll";
+import { readableKit } from "./game/color";
 
 type Tab = "clube" | "tabela" | "elenco" | "treino" | "mercado" | "ranking";
 
@@ -142,9 +143,25 @@ function RoundNewsModal() {
       <div className="my-auto w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-900 p-5">
         <h2 className="mb-3 font-display text-lg font-bold text-zinc-100">📰 Notícias da rodada</h2>
         <div className="mb-5 flex flex-col gap-2 text-sm leading-relaxed text-zinc-300">
-          {game.lastNews.map((n, i) => (
-            <p key={i}>{n}</p>
-          ))}
+          {game.lastNews.map((n, i) => {
+            // manchete no esquema de cores do clube protagonista; contraste ruim
+            // entre primária/secundária cai para preto/branco legível
+            const item = typeof n === "string" ? { text: n } : n;
+            const club = item.clubId ? game.clubs.find((c) => c.id === item.clubId) : undefined;
+            if (!club) return <p key={i}>{item.text}</p>;
+            return (
+              <p
+                key={i}
+                className="rounded-lg px-3 py-2"
+                style={{
+                  background: club.primaryColor,
+                  color: readableKit(club.primaryColor, club.secondaryColor),
+                }}
+              >
+                {item.text}
+              </p>
+            );
+          })}
         </div>
         <button
           onClick={dismissNews}

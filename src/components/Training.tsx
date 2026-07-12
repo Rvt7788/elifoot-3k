@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useStore } from "../store";
 import type { TrainingIntensity } from "../types";
 import { ageFactor, weeklyXp, xpNeeded, RECOVERY, XP_MATCH, XP_TRAINING } from "../game/training";
+import { userSquadRoles } from "../game/roles";
+import { RoleBadges } from "./icons";
 import { ScrollLock } from "./useLockBodyScroll";
 
 const TIER_BADGE: Record<string, string> = {
@@ -65,6 +67,7 @@ export default function Training() {
   const squad = game.players
     .filter((p) => p.clubId === game.userClubId)
     .sort((a, b) => order[a.pos] - order[b.pos] || b.strength - a.strength);
+  const roles = userSquadRoles(game);
 
   // quem entrou em campo na última rodada encerrada (ganhou XP extra de jogo)
   const playedLast = new Set<string>();
@@ -129,7 +132,10 @@ export default function Training() {
                 <td className="py-1.5 pr-2 text-center tabular-nums text-zinc-500">{p.number}</td>
                 <td className="pr-3 text-zinc-400">{p.pos}</td>
                 <td>
-                  {p.name} <span className="text-amber-400">{TIER_BADGE[p.tier]}</span>
+                  <span className="inline-flex items-center gap-1">
+                    {p.name} <span className="text-amber-400">{TIER_BADGE[p.tier]}</span>
+                    <RoleBadges penalty={p.id === roles.penaltyTakerId} captain={p.id === roles.captainId} />
+                  </span>
                 </td>
                 <td className="hidden text-center sm:table-cell">{p.age}</td>
                 <td className="text-center font-bold">{p.strength}</td>

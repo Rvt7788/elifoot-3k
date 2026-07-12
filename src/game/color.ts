@@ -22,6 +22,19 @@ export function readableOn(bgHex: string): string {
   return luminance(hexToRgb(bgHex)) > 140 ? "#09090b" : "#ffffff";
 }
 
+// Texto sobre a cor primária do clube: usa a secundária quando ela contrasta
+// bem; contraste ruim (cores parecidas) cai para preto/branco legível.
+export function readableKit(bgHex: string, preferredHex: string): string {
+  const contrast = Math.abs(luminance(hexToRgb(bgHex)) - luminance(hexToRgb(preferredHex)));
+  return contrast >= 80 ? preferredHex : readableOn(bgHex);
+}
+
+// Cor escura demais para texto sobre o fundo escuro do app: precisa de um
+// fundo claro de contraste atrás do nome (times de preto, azul-marinho etc.).
+export function isDarkColor(hex: string): boolean {
+  return luminance(hexToRgb(hex)) < 60;
+}
+
 // Se as cores primárias de dois clubes forem parecidas demais (confuso no mosaico),
 // escurece/clareia uma delas para criar contraste, mantendo o matiz reconhecível.
 export function distinctPair(homeHex: string, awayHex: string): [string, string] {

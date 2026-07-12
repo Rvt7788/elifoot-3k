@@ -12,9 +12,12 @@ import { leagueName, cupName, continentalName } from "../data/leagues";
 import { IconPlay } from "./icons";
 import ClubModal from "./ClubModal";
 import FinanceModal from "./FinanceModal";
-import { readableOn } from "../game/color";
+import { isDarkColor, readableOn } from "../game/color";
 import { formatMatchDate } from "../game/calendar";
 import { ScrollLock } from "./useLockBodyScroll";
+
+// Nome nas listas de artilheiros: comprido demais vira só o primeiro nome
+const scorerName = (n: string) => (n.length > 16 ? n.split(" ")[0] : n);
 
 const sectorAvg = (squad: Player[], poss: string[]) => {
   const ps = squad.filter((p) => poss.includes(p.pos));
@@ -132,9 +135,9 @@ function OpponentModal({
             <SectionLabel>Artilheiros</SectionLabel>
             <div className="mb-4">
               {topScorers.filter((p) => p.goals > 0).map((p) => (
-                <div key={p.id} className="flex justify-between border-b border-[rgba(30,42,56,0.6)] py-1.5 text-sm text-zinc-200">
-                  <span>{p.name}</span>
-                  <span className="font-display font-semibold text-amber-400">{p.goals}</span>
+                <div key={p.id} className="flex w-fit items-center gap-2 border-b border-[rgba(30,42,56,0.6)] py-1.5 text-sm text-zinc-200">
+                  <span className="truncate">{scorerName(p.name)}</span>
+                  <span className="font-display font-semibold text-amber-400 shrink-0">{p.goals}</span>
                 </div>
               ))}
             </div>
@@ -419,12 +422,16 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
                     style={{ background: c.primaryColor }}
                   />
                 );
+                // cor escura (time de preto) some no fundo do app: nome ganha um chip claro
+                const oppNameCls = `cursor-pointer font-semibold hover:opacity-80${
+                  isDarkColor(nextOpp.primaryColor) ? " rounded bg-zinc-300 px-1" : ""
+                }`;
                 return next.homeId === club.id ? (
                   <>{dot(club)}{club.name} <span className="text-zinc-600">vs</span><br className="sm:hidden" />{" "}
                     {dot(nextOpp)}
                     <span
                       onClick={() => setViewClub(nextOpp)}
-                      className="cursor-pointer font-semibold hover:opacity-80"
+                      className={oppNameCls}
                       style={{ color: nextOpp.primaryColor }}
                     >
                       {nextOpp.name}
@@ -433,7 +440,7 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
                   <>{dot(nextOpp)}
                     <span
                       onClick={() => setViewClub(nextOpp)}
-                      className="cursor-pointer font-semibold hover:opacity-80"
+                      className={oppNameCls}
                       style={{ color: nextOpp.primaryColor }}
                     >
                       {nextOpp.name}
@@ -596,8 +603,9 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
               topScorers
                 .filter((p) => p.goals > 0)
                 .map((p) => (
-                  <div key={p.id} className="flex items-center justify-between gap-2 py-1 md:py-1.5 text-xs md:text-sm text-zinc-200">
-                    <span className="truncate">{p.name}</span>
+                  // gols colados ao nome (w-fit), não empurrados para a borda direita da coluna
+                  <div key={p.id} className="flex w-fit max-w-full items-center gap-2 py-1 md:py-1.5 text-xs md:text-sm text-zinc-200">
+                    <span className="truncate">{scorerName(p.name)}</span>
                     <span className="font-display font-semibold text-amber-400 shrink-0">{p.goals}</span>
                   </div>
                 ))

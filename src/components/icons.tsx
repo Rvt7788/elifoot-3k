@@ -103,3 +103,40 @@ export function IconLive({ className }: IconProps) {
     </svg>
   );
 }
+
+// Badges de função ao lado do nome, com o mesmo comportamento da estrela de
+// tier: bolinha azul = cobrador de pênalti, quadradinho preto = capitão.
+// Com onPick, o badge é clicável: arma a escolha de um novo dono da função
+// (armed indica qual função está armada, para pulsar o badge).
+export function RoleBadges({ penalty, captain, armed, onPick }: {
+  penalty?: boolean; captain?: boolean;
+  armed?: "penalty" | "captain" | null;
+  onPick?: (role: "penalty" | "captain") => void;
+}) {
+  const pick = (role: "penalty" | "captain") =>
+    onPick
+      ? (e: React.MouseEvent) => { e.stopPropagation(); onPick(role); }
+      : undefined;
+  return (
+    <>
+      {penalty && (
+        <span
+          onClick={pick("penalty")}
+          className={`inline-block h-2 w-2 shrink-0 rounded-full border border-white/70 bg-sky-500${
+            onPick ? " cursor-pointer" : ""
+          }${armed === "penalty" ? " ring-2 ring-sky-400 animate-pulse" : ""}`}
+          title={onPick ? "Cobrador de pênalti — clique e escolha o novo cobrador" : "Cobrador de pênalti"}
+        />
+      )}
+      {captain && (
+        <span
+          onClick={pick("captain")}
+          className={`inline-block h-2 w-2 shrink-0 rounded-[2px] border border-white/70 bg-black${
+            onPick ? " cursor-pointer" : ""
+          }${armed === "captain" ? " ring-2 ring-sky-400 animate-pulse" : ""}`}
+          title={onPick ? "Capitão — clique e escolha o novo capitão" : "Capitão"}
+        />
+      )}
+    </>
+  );
+}

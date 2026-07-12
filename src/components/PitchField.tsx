@@ -34,7 +34,7 @@ export function pitchLayout(
 }
 
 export function PlayerPin({
-  p, x, y, selected, energyOverride, colors, compact, yellowsMatch, goalsMatch, penaltyTaker, onClick, onDoubleClick,
+  p, x, y, selected, energyOverride, colors, compact, yellowsMatch, goalsMatch, penaltyTaker, captain, onRoleClick, onClick, onDoubleClick,
 }: {
   p: Player; x: number; y: number; selected: boolean;
   energyOverride?: number; // energia ao vivo (LivePlayer), quando diferente da persistida
@@ -42,7 +42,9 @@ export function PlayerPin({
   compact?: boolean; // prancheta pré-jogo: só a bolinha com a força, sem nome/energia (visual, não informativo)
   yellowsMatch?: number;
   goalsMatch?: number;
-  penaltyTaker?: boolean; // bolinha vermelha: cobrador de pênalti designado
+  penaltyTaker?: boolean; // bolinha azul: cobrador de pênalti designado
+  captain?: boolean; // bolinha preta: capitão do time
+  onRoleClick?: (role: "penalty" | "captain") => void; // badge clicável: arma a troca da função
   onClick: () => void;
   onDoubleClick?: () => void;
 }) {
@@ -54,7 +56,7 @@ export function PlayerPin({
       onDoubleClick={onDoubleClick}
       style={{ left: `${x}%`, top: `${y}%` }}
       className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
-      title={`${p.name} · Energia: ${Math.round(energy)}% · Pé ${p.foot}${penaltyTaker ? " · Cobrador de pênalti" : ""}`}
+      title={`${p.name} · Energia: ${Math.round(energy)}% · Pé ${p.foot}${penaltyTaker ? " · Cobrador de pênalti" : ""}${captain ? " · Capitão" : ""}`}
     >
       <div className="relative">
         <span
@@ -68,12 +70,23 @@ export function PlayerPin({
           {compact ? p.number : p.strength}
         </span>
         {penaltyTaker && (
-          // bola vermelha do cobrador de pênalti (diferente da ⚽ de quem marcou gol)
+          // bola azul do cobrador de pênalti (diferente da ⚽ de quem marcou gol)
           <span
-            className={`absolute rounded-full border border-white/80 bg-red-600 shadow ${
+            onClick={onRoleClick ? (e) => { e.stopPropagation(); onRoleClick("penalty"); } : undefined}
+            className={`absolute rounded-full border border-white/80 bg-sky-500 shadow ${
               compact ? "-right-0.5 -bottom-0.5 h-2 w-2" : "-right-1 -bottom-1 h-2.5 w-2.5"
-            }`}
-            title="Cobrador de pênalti"
+            }${onRoleClick ? " cursor-pointer" : ""}`}
+            title={onRoleClick ? "Cobrador de pênalti — clique e escolha o novo cobrador" : "Cobrador de pênalti"}
+          />
+        )}
+        {captain && (
+          // braçadeira do capitão: quadradinho preto no canto oposto ao do cobrador
+          <span
+            onClick={onRoleClick ? (e) => { e.stopPropagation(); onRoleClick("captain"); } : undefined}
+            className={`absolute rounded-[2px] border border-white/80 bg-black shadow ${
+              compact ? "-left-0.5 -bottom-0.5 h-2 w-2" : "-left-1 -bottom-1 h-2.5 w-2.5"
+            }${onRoleClick ? " cursor-pointer" : ""}`}
+            title={onRoleClick ? "Capitão — clique e escolha o novo capitão" : "Capitão"}
           />
         )}
         {!compact && yellowsMatch !== undefined && yellowsMatch > 0 && (

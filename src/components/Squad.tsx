@@ -3,6 +3,8 @@ import { useStore, MIN_SQUAD, MAX_SQUAD, squadWageBill, renewalCost } from "../s
 import { playerSalary } from "../game/seeder";
 import { appAlert, appConfirm } from "./AppDialog";
 import { askingPrice } from "../game/market";
+import { userSquadRoles } from "../game/roles";
+import { RoleBadges } from "./icons";
 
 const TIER_BADGE: Record<string, string> = {
   bagre: "", bom: "★", craque: "★★", extra: "💎",
@@ -31,6 +33,7 @@ export default function Squad() {
   const game = useStore((s) => s.game);
   const releasePlayer = useStore((s) => s.releasePlayer);
   const setPlayerNumber = useStore((s) => s.setPlayerNumber);
+  const renumberSquad = useStore((s) => s.renumberSquad);
   const renewContract = useStore((s) => s.renewContract);
   const sellPlayer = useStore((s) => s.sellPlayer);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -39,6 +42,7 @@ export default function Squad() {
   const squad = game.players
     .filter((p) => p.clubId === game.userClubId)
     .sort((a, b) => order[a.pos] - order[b.pos] || b.strength - a.strength);
+  const roles = userSquadRoles(game);
 
   return (
     <div className="mx-auto max-w-2xl p-4">
@@ -52,7 +56,13 @@ export default function Squad() {
       <div className="w-full select-none">
         {/* Cabeçalho do Grid Flex */}
         <div className="flex w-full border-b border-zinc-700 py-1 uppercase tracking-wide text-zinc-400 text-[9px] min-[375px]:text-[10px] sm:text-[11px] font-semibold">
-          <div className="w-[8%] sm:w-[6%] shrink-0 text-center">Nº</div>
+          <button
+            onClick={renumberSquad}
+            title="Redistribuir os números: titulares primeiro, depois reservas"
+            className="w-[8%] sm:w-[6%] shrink-0 text-center uppercase tracking-wide font-semibold text-zinc-400 hover:text-emerald-400"
+          >
+            Nº
+          </button>
           <div className="w-[10%] sm:w-[7%] shrink-0 pl-1 text-center sm:text-left">Pos</div>
           <div className="flex-1 min-w-0 pr-1">Nome</div>
           <div className="w-[8%] sm:w-[6%] shrink-0 text-center">Id.</div>
@@ -74,14 +84,21 @@ export default function Squad() {
                 >
                   {/* Nº */}
                   <div className="w-[8%] sm:w-[6%] shrink-0 text-center" onClick={(e) => e.stopPropagation()}>
+                    {/* clique seleciona tudo (edição livre, dá para apagar); confirma no
+                        blur/Enter — vazio ou inválido volta ao número antigo. A troca
+                        continua em swap: quem tinha o número herda o antigo. */}
                     <input
+                      key={`${p.id}-${p.number}`}
                       type="number"
                       min={1}
                       max={99}
-                      value={p.number}
-                      onChange={(e) => {
+                      defaultValue={p.number}
+                      onFocus={(e) => e.target.select()}
+                      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                      onBlur={(e) => {
                         const n = e.target.valueAsNumber;
-                        if (!Number.isNaN(n) && n >= 1 && n <= 99) setPlayerNumber(p.id, n);
+                        if (!Number.isNaN(n) && n >= 1 && n <= 99 && n !== p.number) setPlayerNumber(p.id, n);
+                        else e.target.value = String(p.number);
                       }}
                       className="w-8 sm:w-10 rounded bg-zinc-800 px-0.5 sm:px-1 py-0.5 text-center text-[10px] sm:text-xs"
                     />
@@ -94,6 +111,7 @@ export default function Squad() {
                     <span className="flex min-w-0 items-center gap-1">
                       <span className="overflow-hidden whitespace-nowrap [text-overflow:clip]">{p.name}</span>
                       <span className="shrink-0 text-amber-400">{TIER_BADGE[p.tier]}</span>
+                      <RoleBadges penalty={p.id === roles.penaltyTakerId} captain={p.id === roles.captainId} />
                     </span>
                     {(p.injuryWeeks ?? 0) > 0 && (
                       <span className="whitespace-nowrap rounded bg-orange-950 px-1 text-[9px] sm:text-[10px] text-orange-400" title={`Lesionado: volta em ${p.injuryWeeks} rodada${(p.injuryWeeks ?? 0) > 1 ? "s" : ""}`}>
@@ -133,6 +151,8 @@ export default function Squad() {
                 </div>
                 {expanded === p.id && (
                   <div className="bg-zinc-900/50 px-3 py-2 border-t border-zinc-800">
+                    {/* nome completo em primeiro: a linha da lista pode cortar, aqui não */}
+                    <p className="mb-1 text-xs font-bold text-zinc-100">{p.name}</p>
                     <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-zinc-400 sm:grid-cols-4">
                       <p>Nível: <span className="text-zinc-200">{TIER_NAME[p.tier]}</span></p>
                       <p>Pé: <span className="text-zinc-200 capitalize">{p.foot}</span></p>
