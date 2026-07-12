@@ -553,6 +553,12 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
     }
   }, [userMatchMinute, live !== null]);
 
+  // Parada tática aberta = jogo parado, sempre: mesmo que a pausa seja retirada
+  // por outro caminho (botão do placar, atalho), o jogo não anda com o modal aberto.
+  useEffect(() => {
+    if (modalOpen && live && !allDone && !paused) setPaused(true);
+  }, [modalOpen, paused, live !== null, allDone]);
+
   useEffect(() => {
     if (!live || allDone) return;
     timer.current = setInterval(

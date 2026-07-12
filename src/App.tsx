@@ -28,28 +28,32 @@ function JobOfferModal() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <ScrollLock />
-      <div className="w-full max-w-md rounded-xl border border-amber-600/60 bg-zinc-900 p-5">
-        <h2 className="mb-2 font-display text-lg font-bold text-amber-400">📞 Convite recebido</h2>
-        <p className="mb-2 text-pretty text-sm leading-relaxed text-zinc-300">
+      {/* o modal veste as cores do clube que convida, como o de boas-vindas */}
+      <div
+        className="w-full max-w-md rounded-xl p-5"
+        style={{ background: club.primaryColor, color: club.secondaryColor }}
+      >
+        <h2 className="mb-2 font-display text-lg font-bold">📞 Convite recebido</h2>
+        <p className="mb-2 text-pretty text-sm leading-relaxed">
           Técnico, o futebol inteiro viu o que você construiu nesta temporada — com
           elenco limitado, contra prognósticos, jogo após jogo. Feitos assim não
-          passam despercebidos. O <b className="text-zinc-100">{club.name}</b> quer
+          passam despercebidos. O <b>{club.name}</b> quer
           essa mentalidade no comando do projeto.
         </p>
-        <p className="mb-2 text-pretty text-sm leading-relaxed text-zinc-300">
+        <p className="mb-2 text-pretty text-sm leading-relaxed">
           Aqui você terá liberdade total: monte o elenco, escolha o estilo, conduza
           o clube do seu jeito. Orçamento de ${(club.baseBudget / 1e6).toFixed(1)}M
           à sua disposição. Queremos o seu futebol, não um manual.
         </p>
-        <p className="mb-4 text-right text-xs italic text-zinc-500">
+        <p className="mb-4 text-right text-xs italic opacity-80">
           Presidente do {club.name}
         </p>
-        <p className="mb-4 text-xs text-zinc-500">
+        <p className="mb-4 text-xs opacity-80">
           Aceitar troca de clube imediatamente — a decisão é definitiva.
         </p>
         <div className="flex gap-2">
-          <button onClick={acceptJobOffer} className="btn-cta flex-1 py-2">
-            Aceitar convite
+          <button onClick={acceptJobOffer} className="btn-cta btn-cta--plain flex-1 py-2">
+            Aceitar
           </button>
           <button
             onClick={declineJobOffer}
@@ -141,27 +145,49 @@ function RoundNewsModal() {
     <div className="fixed inset-0 z-50 flex justify-center overflow-y-auto bg-black/70 p-4">
       <ScrollLock />
       <div className="my-auto w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-900 p-5">
-        <h2 className="mb-3 font-display text-lg font-bold text-zinc-100">📰 Notícias da rodada</h2>
+        <h2 className="mb-3 text-center font-display text-lg font-bold text-zinc-100">📰 Notícias da rodada</h2>
         <div className="mb-5 flex flex-col gap-2 text-sm leading-relaxed text-zinc-300">
-          {game.lastNews.map((n, i) => {
-            // manchete no esquema de cores do clube protagonista; contraste ruim
-            // entre primária/secundária cai para preto/branco legível
-            const item = typeof n === "string" ? { text: n } : n;
-            const club = item.clubId ? game.clubs.find((c) => c.id === item.clubId) : undefined;
-            if (!club) return <p key={i}>{item.text}</p>;
-            return (
-              <p
-                key={i}
-                className="rounded-lg px-3 py-2"
-                style={{
-                  background: club.primaryColor,
-                  color: readableKit(club.primaryColor, club.secondaryColor),
-                }}
-              >
-                {item.text}
-              </p>
-            );
-          })}
+          {(() => {
+            // agrupa manchetes do mesmo clube num container só, na ordem em que aparecem
+            const groups: { clubId?: string; items: string[] }[] = [];
+            for (const n of game.lastNews) {
+              const item = typeof n === "string" ? { text: n } : n;
+              const last = groups.find((gr) => gr.clubId && gr.clubId === item.clubId);
+              if (last) last.items.push(item.text);
+              else groups.push({ clubId: item.clubId, items: [item.text] });
+            }
+            // emoji abre a manchete no texto gerado; aqui ele migra para a direita
+            const splitEmoji = (text: string) => {
+              const m = text.match(/^(\p{Extended_Pictographic}️?)\s*(.*)$/u);
+              return m ? { emoji: m[1], body: m[2] } : { emoji: null, body: text };
+            };
+            const line = (text: string, key: number) => {
+              const { emoji, body } = splitEmoji(text);
+              return (
+                <p key={key} className="flex items-start justify-between gap-2">
+                  <span>{body}</span>
+                  {emoji && <span className="shrink-0">{emoji}</span>}
+                </p>
+              );
+            };
+            return groups.map((gr, i) => {
+              const club = gr.clubId ? game.clubs.find((c) => c.id === gr.clubId) : undefined;
+              if (!club)
+                return <div key={i} className="flex flex-col gap-1">{gr.items.map(line)}</div>;
+              return (
+                <div
+                  key={i}
+                  className="flex flex-col gap-1.5 rounded-lg px-3 py-2"
+                  style={{
+                    background: club.primaryColor,
+                    color: readableKit(club.primaryColor, club.secondaryColor),
+                  }}
+                >
+                  {gr.items.map(line)}
+                </div>
+              );
+            });
+          })()}
         </div>
         <button
           onClick={dismissNews}

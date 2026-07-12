@@ -69,26 +69,6 @@ export function PlayerPin({
         >
           {compact ? p.number : p.strength}
         </span>
-        {penaltyTaker && (
-          // bola azul do cobrador de pênalti (diferente da ⚽ de quem marcou gol)
-          <span
-            onClick={onRoleClick ? (e) => { e.stopPropagation(); onRoleClick("penalty"); } : undefined}
-            className={`absolute rounded-full border border-white/80 bg-sky-500 shadow ${
-              compact ? "-right-0.5 -bottom-0.5 h-2 w-2" : "-right-1 -bottom-1 h-2.5 w-2.5"
-            }${onRoleClick ? " cursor-pointer" : ""}`}
-            title={onRoleClick ? "Cobrador de pênalti — clique e escolha o novo cobrador" : "Cobrador de pênalti"}
-          />
-        )}
-        {captain && (
-          // braçadeira do capitão: quadradinho preto no canto oposto ao do cobrador
-          <span
-            onClick={onRoleClick ? (e) => { e.stopPropagation(); onRoleClick("captain"); } : undefined}
-            className={`absolute rounded-[2px] border border-white/80 bg-black shadow ${
-              compact ? "-left-0.5 -bottom-0.5 h-2 w-2" : "-left-1 -bottom-1 h-2.5 w-2.5"
-            }${onRoleClick ? " cursor-pointer" : ""}`}
-            title={onRoleClick ? "Capitão — clique e escolha o novo capitão" : "Capitão"}
-          />
-        )}
         {!compact && yellowsMatch !== undefined && yellowsMatch > 0 && (
           <span className="absolute -right-1 -top-1 flex gap-0.5 text-[8px] leading-none">
             {"🟨".repeat(yellowsMatch)}
@@ -100,6 +80,29 @@ export function PlayerPin({
           </span>
         )}
       </div>
+      {/* badges de função abaixo da bolinha: não cobrem o alvo do clique de troca de posição */}
+      {(penaltyTaker || captain) && (
+        <span className="mt-0.5 flex items-center gap-1 leading-none">
+          {captain && (
+            <span
+              onClick={onRoleClick ? (e) => { e.stopPropagation(); onRoleClick("captain"); } : undefined}
+              className={`rounded-[2px] border border-white/80 bg-black shadow ${
+                compact ? "h-2 w-2" : "h-2.5 w-2.5"
+              }${onRoleClick ? " cursor-pointer" : ""}`}
+              title={onRoleClick ? "Capitão — clique e escolha o novo capitão" : "Capitão"}
+            />
+          )}
+          {penaltyTaker && (
+            <span
+              onClick={onRoleClick ? (e) => { e.stopPropagation(); onRoleClick("penalty"); } : undefined}
+              className={`rounded-full border border-white/80 bg-sky-500 shadow ${
+                compact ? "h-2 w-2" : "h-2.5 w-2.5"
+              }${onRoleClick ? " cursor-pointer" : ""}`}
+              title={onRoleClick ? "Cobrador de pênalti — clique e escolha o novo cobrador" : "Cobrador de pênalti"}
+            />
+          )}
+        </span>
+      )}
       {!compact && (
         <>
           <span className="mt-0.5 max-w-[44px] truncate rounded bg-black/60 px-1 text-[8px] leading-tight text-white">
