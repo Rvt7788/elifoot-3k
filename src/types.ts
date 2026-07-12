@@ -1,7 +1,7 @@
 export type Position = "GOL" | "DEF" | "MEI" | "ATA";
 export type Foot = "destro" | "canhoto";
 export type Tier = "bagre" | "bom" | "craque" | "extra";
-export type Trait = "Goleador" | "Paredão" | "Veloz" | "Criativo" | "Raçudo";
+export type Trait = "Goleador" | "Paredão" | "Veloz" | "Criativo" | "Raçudo" | "Líder";
 export type Mentality = "defensivo" | "equilibrado" | "ofensivo" | "tudo_ou_nada";
 export type Marking = "leve" | "frouxa" | "apertada" | "extrema";
 
@@ -155,6 +155,8 @@ export interface LiveMatch {
   awaySlotOrder?: string[];
   homePenaltyTakerId?: string; // cobrador de pênalti designado (usuário); ausente = automático
   awayPenaltyTakerId?: string;
+  homeCaptainId?: string; // capitão designado (usuário); ausente = automático (Líder mais forte, senão o mais forte)
+  awayCaptainId?: string;
   homeMorale?: number; // moral do time (0..1): dá até ±5% de poder em campo
   awayMorale?: number;
   attendance?: number; // público no estádio do mandante (define a renda da partida)
@@ -252,6 +254,7 @@ export interface GameState {
   starters: string[]; // 11 titulares escolhidos pelo usuário
   slotOrder?: string[]; // ordem manual dos titulares no campo (lado esquerdo/direito por linha)
   penaltyTakerId?: string; // cobrador de pênalti escolhido na prancheta (padrão: ATA mais forte)
+  captainId?: string; // capitão escolhido na prancheta (padrão: titular mais forte)
   posOverrides?: Record<string, Position>; // titular escalado fora da posição natural (ex.: MEI jogando de ATA)
   formation: Formation;
   customFormation?: CustomFormation; // desenhada no editor, usada quando formation === "custom"
@@ -263,7 +266,9 @@ export interface GameState {
   jobOffer?: string; // convite de clube maior após temporada de sucesso (clubId)
   pendingBicho?: number; // valor do bicho pago para a próxima partida (vira gasto no fechamento)
   lastFinance?: { revenue: number; prize: number; bicho: number; wages?: number; tv?: number; attendance?: number }; // caixa da última rodada encerrada
-  lastNews?: string[]; // manchetes da última rodada (divisão do usuário)
+  // manchetes da última rodada (divisão do usuário); clubId pinta a manchete com
+  // as cores do clube — itens antigos (string pura) seguem válidos em saves velhos
+  lastNews?: (string | { text: string; clubId?: string })[];
   morale?: number; // moral do time do usuário (0-100): sobe com vitória, cai com derrota
   prevMorale?: number; // moral antes da última rodada, para a seta de tendência na Home
   stadiumLevel?: number; // arquibancadas comprou: cada nível = +8% de público em casa

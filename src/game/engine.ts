@@ -223,10 +223,13 @@ export function createLiveMatch(
   awayPosOverrides?: Record<string, Position>,
   homePenaltyTakerId?: string,
   awayPenaltyTakerId?: string,
+  homeCaptainId?: string,
+  awayCaptainId?: string,
 ): LiveMatch {
   return {
     homeMorale, awayMorale,
     homePenaltyTakerId, awayPenaltyTakerId,
+    homeCaptainId, awayCaptainId,
     competition,
     homeId, awayId,
     minute: 0, homeScore: 0, awayScore: 0,
@@ -434,6 +437,25 @@ function menDown(lineup: LivePlayer[]): number {
   return Math.max(0, 11 - n);
 }
 
+// Capitão em campo: o designado (se está jogando); senão o Líder mais forte em
+// campo; senão o mais forte. Mesma regra da prancheta (game/roles.ts).
+function captainOnField(lineup: LivePlayer[], idx: PlayersIndex, captainId?: string): Player | null {
+  const onField = lineup.filter((lp) => lp.onField && !lp.sentOff).map((lp) => idx[lp.playerId]);
+  if (onField.length === 0) return null;
+  const chosen = captainId && onField.find((p) => p.id === captainId);
+  if (chosen) return chosen;
+  const leaders = onField.filter((p) => p.traits.includes("Líder"));
+  const pool = leaders.length > 0 ? leaders : onField;
+  return [...pool].sort((a, b) => b.strength - a.strength)[0];
+}
+
+// Fator liderança: um capitão Líder em campo organiza e motiva o time — bônus
+// de ~5% no poder. Sem Líder com a braçadeira, não há bônus (capitão comum é neutro).
+function leadershipFactor(lineup: LivePlayer[], idx: PlayersIndex, captainId?: string): number {
+  const cap = captainOnField(lineup, idx, captainId);
+  return cap?.traits.includes("Líder") ? 1.05 : 1;
+}
+
 // Escolhe o cobrador de pênalti. Prioridade: o designado na prancheta (se está em
 // campo); senão o ATA mais forte em campo (mesmo padrão exibido na prancheta);
 // sem atacante, o melhor batedor de linha. Nunca o goleiro.
@@ -510,7 +532,10 @@ function tryShot(
   const defTactics = side === "home" ? m.awayTactics : m.homeTactics;
   // pênalti: uma pequena fração das jogadas de ataque termina em falta na área. A
   // marcação dura do rival aumenta o risco de pênalti (entra mais forte na dividida).
-  let pPenalty = 0.035;
+  // Base calibrada para ~0,25 pênalti/jogo somando os dois lados (com ~9 chances
+  // por lado); os multiplicadores táticos podem até dobrar isso, mas 3 pênaltis
+  // numa partida volta a ser raridade, não rotina como era com a base de 3,5%.
+  let pPenalty = 0.014;
   if (defTactics.marking === "extrema") pPenalty *= 2;
   else if (defTactics.marking === "apertada") pPenalty *= 1.5;
   else if (defTactics.marking === "leve") pPenalty *= 0.6;
@@ -626,6 +651,8 @@ function tryCards(rng: Rng, m: LiveMatch, idx: PlayersIndex, side: "home" | "awa
   if (t.marking === "apertada") pCard *= 1.4;
   else if (t.marking === "extrema") pCard *= 1.9; // retranca no limite da falta
   else if (t.marking === "leve") pCard *= 0.7;
+  // capitão Líder em campo acalma o time e conversa com o juiz: menos cartões
+  if (leadershipFactor(lineup, idx, side === "home" ? m.homeCaptainId : m.awayCaptainId) > 1) pCard *= 0.8;
   if (!chance(rng, pCard)) return;
   const player = randomOnField(rng, lineup, idx);
   const lp = lineup.find((l) => l.playerId === player.id)!;
@@ -689,6 +716,7 @@ export function makeSub(
   const out = lineup.find((l) => l.playerId === outId);
   const inn = lineup.find((l) => l.playerId === inId);
   if (!out?.onField || !inn || inn.onField || inn.subbedOut || inn.sentOff) return false;
+  if (isInjured(idx[inId])) return false; // lesionado não entra em campo, nunca
   const outPos = out.posOverride ?? idx[outId].pos;
   const inPos = inn.posOverride ?? idx[inId].pos;
   if (!goalkeeperRuleOk(lineup, idx, outPos, inPos)) return false;
@@ -710,28 +738,24 @@ export function makeSub(
   return true;
 }
 
-// Substituição por cansaço: tira o jogador de linha mais gasto (energia < 55) e põe
-// um reserva descansado da mesma posição. Usada pela IA e pelo piloto automático do usuário.
+// Substituição por cansaço — algoritmo único da IA e do piloto automático do usuário:
+// sai SEMPRE o jogador de linha com menor energia do time (abaixo de 55) e entra o
+// reserva da MESMA posição com a melhor força efetiva (força × energia). A troca só
+// acontece se for vantajosa: o reserva precisa render mais em campo, agora, do que
+// o titular exausto — senão o time segura o cansado mesmo.
 export function fatigueSub(m: LiveMatch, idx: PlayersIndex, side: "home" | "away"): boolean {
   const lineup = side === "home" ? m.homeLineup : m.awayLineup;
+  const eff = (lp: LivePlayer) => idx[lp.playerId].strength * energyFactor(lp.energy);
   const tired = lineup
     .filter((l) => l.onField && !l.sentOff && l.energy < 55 && idx[l.playerId].pos !== "GOL")
     .sort((a, b) => a.energy - b.energy)[0];
   if (!tired) return false;
   const pos = idx[tired.playerId].pos;
   const fresh = lineup
-    .filter((l) => !l.onField && !l.subbedOut && !l.sentOff && idx[l.playerId].pos === pos && l.energy > 70)
-    .sort((a, b) => idx[b.playerId].strength - idx[a.playerId].strength || b.energy - a.energy)[0];
+    .filter((l) => !l.onField && !l.subbedOut && !l.sentOff && idx[l.playerId].pos === pos)
+    .sort((a, b) => eff(b) - eff(a))[0];
   if (!fresh) return false;
-
-  // Inteligência de substituição: se o substituto for muito inferior ao titular cansado
-  // (diferença maior que 15 pontos), só substitui se a energia do titular estiver crítica (< 40).
-  const tiredStrength = idx[tired.playerId].strength;
-  const freshStrength = idx[fresh.playerId].strength;
-  if (tiredStrength - freshStrength > 15 && tired.energy >= 40) {
-    return false;
-  }
-
+  if (eff(fresh) <= eff(tired)) return false; // não vale a pena: mantém o titular
   return makeSub(m, idx, side, tired.playerId, fresh.playerId);
 }
 
@@ -801,17 +825,9 @@ function aiThink(rng: Rng, m: LiveMatch, idx: PlayersIndex, side: "home" | "away
     // empate não serve para quem precisa da vitória: arrisca no fim
     t.mentality = "ofensivo";
   } else {
-    // troca por cansaço
-    const tired = lineup.find(
-      (l) => l.onField && !l.sentOff && l.energy < 55 && idx[l.playerId].pos !== "GOL",
-    );
-    if (tired) {
-      const pos = idx[tired.playerId].pos;
-      const fresh = lineup.find(
-        (l) => !l.onField && !l.subbedOut && !l.sentOff && idx[l.playerId].pos === pos,
-      );
-      if (fresh && makeSub(m, idx, side, tired.playerId, fresh.playerId)) changed = true;
-    }
+    // troca por cansaço: mesmo algoritmo do piloto automático (mais cansado sai,
+    // melhor força efetiva da posição entra, e só quando a troca é vantajosa)
+    if (fatigueSub(m, idx, side)) changed = true;
   }
   // só pisca o 🔄 se a tática realmente mudou de valor ou se houve substituição
   const tacticsChanged =
@@ -891,8 +907,11 @@ export function simulateMinute(
     (homeMoraleN > 0.6 ? 0.16 * Math.min(1, (homeMoraleN - 0.6) / 0.35)
       : homeMoraleN < 0.4 ? -0.16 * Math.min(1, (0.4 - homeMoraleN) / 0.3)
       : 0);
-  const hp = teamPower(m.homeLineup, idx, m.homeTactics, awayDef, m.homeSlotOrder) * homeAdv * moraleBoost(m.homeMorale) * homeShort;
-  const ap = teamPower(m.awayLineup, idx, m.awayTactics, homeDef, m.awaySlotOrder) * moraleBoost(m.awayMorale) * awayShort;
+  // liderança: capitão Líder em campo vale ~5% de poder para o time inteiro
+  const homeLead = leadershipFactor(m.homeLineup, idx, m.homeCaptainId);
+  const awayLead = leadershipFactor(m.awayLineup, idx, m.awayCaptainId);
+  const hp = teamPower(m.homeLineup, idx, m.homeTactics, awayDef, m.homeSlotOrder) * homeAdv * moraleBoost(m.homeMorale) * homeShort * homeLead;
+  const ap = teamPower(m.awayLineup, idx, m.awayTactics, homeDef, m.awaySlotOrder) * moraleBoost(m.awayMorale) * awayShort * awayLead;
   let delta = ((hp - ap) / (hp + ap)) * 34 + (rng() - 0.5) * 18;
   // "cera" do lado que trava: barra tende ao zero e adversário ganha volume sutil
   if (m.homeTactics.cera) delta = delta * 0.5 - 1.5;

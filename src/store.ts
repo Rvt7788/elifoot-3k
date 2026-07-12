@@ -9,7 +9,7 @@ import {
   cupChampion,
 } from "./game/cup";
 import continentalData from "./data/continental.json";
-import { newGame, assignShirtNumbers, playerSalary, processSeasonTransitions } from "./game/seeder";
+import { newGame, assignShirtNumbers, fixDuplicateNumbers, freeShirtNumber, renumberSquadByStarters, playerSalary, processSeasonTransitions } from "./game/seeder";
 import { bestXI, createLiveMatch, simulateMinute } from "./game/engine";
 import { applyResult, buildLeagueFixtures, initTable, sortTable } from "./game/schedule";
 import { mulberry32, pick } from "./game/rng";
@@ -155,32 +155,40 @@ export function stadiumUpgradeCost(g: GameState): number {
 // e o resultado do técnico viram notícia; sem dado relevante, sem manchete.
 function buildRoundNews(
   g: GameState,
-  live: { finished: boolean; homeId: string; awayId: string; homeScore: number; awayScore: number; events: { type: string; playerName?: string }[] }[],
+  live: { finished: boolean; homeId: string; awayId: string; homeScore: number; awayScore: number; events: { type: string; playerName?: string; side?: "home" | "away" }[] }[],
   injured: { name: string; weeks: number }[],
-): string[] {
+): { text: string; clubId?: string }[] {
   const user = g.clubs.find((c) => c.id === g.userClubId)!;
   const name = (id: string) => g.clubs.find((c) => c.id === id)?.name ?? "?";
   const divIds = new Set(
     g.clubs.filter((c) => c.country === user.country && c.division === user.division).map((c) => c.id),
   );
   const divMatches = live.filter((m) => m.finished && divIds.has(m.homeId) && divIds.has(m.awayId));
-  const news: string[] = [];
+  // cada manchete carrega o clube protagonista: a UI pinta com as cores dele
+  const news: { text: string; clubId?: string }[] = [];
   for (const m of divMatches) {
     if (Math.abs(m.homeScore - m.awayScore) >= 3) {
       const winner = m.homeScore > m.awayScore ? m.homeId : m.awayId;
       const loser = winner === m.homeId ? m.awayId : m.homeId;
-      news.push(`🔥 ${name(winner)} atropela o ${name(loser)}: ${m.homeScore} a ${m.awayScore}.`);
+      news.push({ text: `🔥 ${name(winner)} atropela o ${name(loser)}: ${m.homeScore} a ${m.awayScore}.`, clubId: winner });
     }
   }
   for (const m of divMatches) {
-    const count = new Map<string, number>();
+    const count = new Map<string, { gols: number; side?: "home" | "away" }>();
     for (const e of m.events)
-      if (e.type === "goal" && e.playerName) count.set(e.playerName, (count.get(e.playerName) ?? 0) + 1);
-    for (const [player, gols] of count)
-      if (gols >= 3) news.push(`⚽ ${player} marca ${gols} gols em ${name(m.homeId)} x ${name(m.awayId)}.`);
+      if (e.type === "goal" && e.playerName) {
+        const cur = count.get(e.playerName) ?? { gols: 0, side: e.side };
+        count.set(e.playerName, { gols: cur.gols + 1, side: cur.side ?? e.side });
+      }
+    for (const [player, { gols, side }] of count)
+      if (gols >= 3)
+        news.push({
+          text: `⚽ ${player} marca ${gols} gols em ${name(m.homeId)} x ${name(m.awayId)}.`,
+          clubId: side === "away" ? m.awayId : m.homeId,
+        });
   }
   for (const i of injured)
-    news.push(`🚑 ${i.name} se lesiona e desfalca o ${user.name} por ${i.weeks} rodada${i.weeks > 1 ? "s" : ""}.`);
+    news.push({ text: `🚑 ${i.name} se lesiona e desfalca o ${user.name} por ${i.weeks} rodada${i.weeks > 1 ? "s" : ""}.`, clubId: user.id });
   return news.slice(0, 6);
 }
 
@@ -240,6 +248,7 @@ interface Store {
   setStarters: (ids: string[]) => void;
   setSlotOrder: (ids: string[]) => void;
   setPenaltyTaker: (id: string | undefined) => void;
+  setCaptain: (id: string | undefined) => void;
   setPosOverrides: (m: Record<string, Position> | undefined) => void;
   setFormation: (f: Formation, custom?: CustomFormation) => void;
   setCustomFormation: (custom: CustomFormation) => void;
@@ -247,6 +256,7 @@ interface Store {
   setPlayerTraining: (id: string, i: TrainingIntensity) => void;
   setAllTraining: (i: TrainingIntensity) => void;
   setPlayerNumber: (id: string, number: number) => void;
+  renumberSquad: () => void;
   payBicho: (level: BichoLevel) => boolean;
   upgradeStadium: () => boolean;
   sellPlayer: (id: string) => { ok: boolean; amount?: number };
@@ -516,8 +526,10 @@ export const useStore = create<Store>()(
         const chance = aiAcceptChance(g, player, offer);
         if (Math.random() > chance)
           return { ok: false, message: "O clube recusou a proposta." };
+        // o reforço não pode repetir número de camisa de quem já está no elenco
+        const newNumber = freeShirtNumber(squad, player.pos);
         const players = g.players.map((p) =>
-          p.id === id ? { ...p, clubId: g.userClubId } : p,
+          p.id === id ? { ...p, clubId: g.userClubId, number: newNumber } : p,
         );
         set({ game: { ...g, players, budget: g.budget - offer } });
         return { ok: true, message: `Negócio fechado! ${player.name} é reforço.` };
@@ -733,6 +745,8 @@ export const useStore = create<Store>()(
             isUserTeam(f.awayId) ? g.posOverrides : undefined,
             isUserTeam(f.homeId) ? g.penaltyTakerId : undefined,
             isUserTeam(f.awayId) ? g.penaltyTakerId : undefined,
+            isUserTeam(f.homeId) ? g.captainId : undefined,
+            isUserTeam(f.awayId) ? g.captainId : undefined,
           ),
         );
         // público de cada estádio definido na abertura da rodada (e exibido nela)
@@ -791,6 +805,13 @@ export const useStore = create<Store>()(
         const g = get().game;
         if (!g) return;
         set({ game: { ...g, penaltyTakerId: id } });
+      },
+
+      // capitão designado na prancheta (undefined volta ao automático)
+      setCaptain: (id) => {
+        const g = get().game;
+        if (!g) return;
+        set({ game: { ...g, captainId: id } });
       },
 
       // paga o bicho na prancheta pré-jogo: desconta do orçamento na hora e o time entra
@@ -862,8 +883,11 @@ export const useStore = create<Store>()(
         const updatedPlayers = [...g.players, newPlayer];
         const updatedPromotions = g.pendingPromotions.slice(1);
 
-        const updatedSquad = updatedPlayers.filter((p) => p.clubId === g.userClubId);
-        assignShirtNumbers(updatedSquad);
+        // o promovido ganha um número livre; ninguém do elenco troca de camisa
+        newPlayer.number = freeShirtNumber(
+          updatedPlayers.filter((p) => p.clubId === g.userClubId && p.id !== newPlayer.id),
+          newPlayer.pos,
+        );
 
         set({
           game: {
@@ -932,6 +956,18 @@ export const useStore = create<Store>()(
           if (swapWith && p.id === swapWith.id) return { ...p, number: target.number };
           return p;
         });
+        set({ game: { ...g, players } });
+      },
+
+      // Renumera o elenco do usuário priorizando os titulares (números baixos da
+      // faixa de cada posição) e depois os reservas — disparado pelo "Nº" no Elenco.
+      renumberSquad: () => {
+        const g = get().game;
+        if (!g) return;
+        const squad = g.players.filter((p) => p.clubId === g.userClubId).map((p) => ({ ...p }));
+        renumberSquadByStarters(squad, g.starters ?? []);
+        const byId = new Map(squad.map((p) => [p.id, p.number]));
+        const players = g.players.map((p) => (byId.has(p.id) ? { ...p, number: byId.get(p.id)! } : p));
         set({ game: { ...g, players } });
       },
 
@@ -1147,7 +1183,9 @@ export const useStore = create<Store>()(
             .map((p) => p.id),
         );
         // lesões: rolagem determinística pós-rodada para quem entrou em campo —
-        // ~3% base, mais provável para veteranos (30+) e com desconto para Raçudo;
+        // ~1,2% base, mais provável para veteranos (30+) e com desconto para Raçudo.
+        // Com ~14 jogadores usados por rodada isso dá ~1 lesão a cada 5-6 rodadas
+        // por clube (o antigo 3% gerava quase 1 lesão a cada 2 rodadas — demais);
         // quem já estava lesionado cumpre uma rodada de recuperação
         const injuryRng = mulberry32((game.seed ^ (game.week * 15485863)) >>> 0);
         const newlyInjured: { name: string; weeks: number }[] = [];
@@ -1162,7 +1200,7 @@ export const useStore = create<Store>()(
             injuryWeeks -= 1;
           } else if (enteredField.has(p.id)) {
             const pInjury =
-              (0.03 + Math.max(0, p.age - 30) * 0.005) * (p.traits.includes("Raçudo") ? 0.5 : 1);
+              (0.012 + Math.max(0, p.age - 30) * 0.004) * (p.traits.includes("Raçudo") ? 0.5 : 1);
             if (injuryRng() < pInjury) {
               injuryWeeks = 1 + Math.floor(injuryRng() * 4); // 1 a 4 rodadas fora
               if (p.clubId === game.userClubId) newlyInjured.push({ name: p.name, weeks: injuryWeeks });
@@ -1341,6 +1379,12 @@ export const useStore = create<Store>()(
               const squad = (g.players as Player[]).filter((p) => p.clubId === club.id);
               if (squad.some((p) => !p.number)) assignShirtNumbers(squad);
             }
+          }
+          // trava contra números repetidos em saves antigos (contratações que
+          // chegavam com o número do clube anterior): renumera só os duplicados
+          for (const club of g.clubs as { id: string }[]) {
+            const squad = (g.players as Player[]).filter((p) => p.clubId === club.id);
+            fixDuplicateNumbers(squad);
           }
           if (!g.cup) {
             const userClub = g.clubs.find((c: any) => c.id === g.userClubId);

@@ -147,6 +147,9 @@ export function makePlayer(
   const traits: Trait[] = chance(rng, tier === "bagre" ? 0.25 : 0.7)
     ? [pick(rng, TRAITS_BY_POS[pos])]
     : [];
+  // Líder é raro e quase sempre veterano: o capitão natural do elenco. Rolagem à
+  // parte das traits de posição — pode coexistir com qualquer outra.
+  if (chance(rng, age >= 28 ? 0.10 : 0.02)) traits.push("Líder");
   const p: Player = {
     id: `${clubId}_p${idNum}`,
     clubId,
@@ -189,6 +192,50 @@ const NUMBER_RANGE: Record<Position, [number, number]> = {
   MEI: [7, 10],
   ATA: [9, 11],
 };
+
+// Número livre para quem chega ao elenco (contratação/promoção) sem mexer nos
+// números de quem já está: tenta a faixa da posição e sobe até achar vaga.
+export function freeShirtNumber(squad: Player[], pos: Position): number {
+  const used = new Set(squad.map((p) => p.number));
+  for (let n = NUMBER_RANGE[pos][0]; n <= 99; n++) if (!used.has(n)) return n;
+  return 99;
+}
+
+// Trava contra número repetido: mantém quem tem número único e renumera só os
+// duplicados/sem número, na faixa da posição.
+export function fixDuplicateNumbers(squad: Player[]): void {
+  const seen = new Set<number>();
+  for (const p of squad) {
+    if (!p.number || seen.has(p.number)) {
+      const used = new Set(squad.filter((q) => q !== p).map((q) => q.number));
+      for (const n of seen) used.add(n);
+      let n = NUMBER_RANGE[p.pos][0];
+      while (used.has(n)) n++;
+      p.number = n;
+    }
+    seen.add(p.number);
+  }
+}
+
+// Renumeração completa priorizando os titulares: eles pegam primeiro os números
+// baixos da faixa de cada posição (goleiro titular = 1, zagueiros 2-6...); só
+// depois os reservas recebem os números que sobraram, na mesma ordem de posição.
+export function renumberSquadByStarters(squad: Player[], starterIds: string[]): void {
+  const used = new Set<number>();
+  const order: Record<Position, number> = { GOL: 0, DEF: 1, MEI: 2, ATA: 3 };
+  const groups = [
+    squad.filter((p) => starterIds.includes(p.id)),
+    squad.filter((p) => !starterIds.includes(p.id)),
+  ];
+  for (const g of groups) {
+    for (const p of [...g].sort((a, b) => order[a.pos] - order[b.pos] || b.strength - a.strength)) {
+      let n = NUMBER_RANGE[p.pos][0];
+      while (used.has(n)) n++;
+      p.number = n;
+      used.add(n);
+    }
+  }
+}
 
 export function assignShirtNumbers(squad: Player[]): void {
   const used = new Set<number>();
