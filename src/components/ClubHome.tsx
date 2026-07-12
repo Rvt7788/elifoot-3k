@@ -7,6 +7,7 @@ import { autoTacticsForOpponent } from "../game/autoTactics";
 import { appAlert } from "./AppDialog";
 import type { Club, GameState, Player } from "../types";
 import TacticsBoard from "./TacticsBoard";
+import ClubBoard from "./ClubBoard";
 import { leagueName, cupName, continentalName } from "../data/leagues";
 import { IconPlay } from "./icons";
 import ClubModal from "./ClubModal";
@@ -49,11 +50,6 @@ function OpponentModal({
   // mesma lógica que a IA usa ao entrar em campo contra o time do usuário
   const tactics = aiPregameTactics(squad, userSquad, clubAggression(game, opp.id));
   const topScorers = [...squad].sort((a, b) => b.goals - a.goals).slice(0, 3);
-  const sorted = [...squad].sort((a, b) =>
-    a.pos === b.pos
-      ? b.strength - a.strength
-      : ["GOL", "DEF", "MEI", "ATA"].indexOf(a.pos) - ["GOL", "DEF", "MEI", "ATA"].indexOf(b.pos),
-  );
 
   return (
     <div
@@ -104,6 +100,11 @@ function OpponentModal({
           ))}
         </div>
 
+        <SectionLabel>Última formação</SectionLabel>
+        <div className="mb-4">
+          <ClubBoard club={opp} squad={squad} formation="4-4-2" mentality={tactics.mentality} />
+        </div>
+
         {last5.length > 0 && (
           <>
             <SectionLabel>Últimos jogos</SectionLabel>
@@ -139,21 +140,6 @@ function OpponentModal({
             </div>
           </>
         )}
-
-        <SectionLabel>Elenco</SectionLabel>
-        <div>
-          {sorted.map((p) => (
-            <div key={p.id} className="flex items-center gap-3 border-b border-[rgba(30,42,56,0.6)] py-1 text-sm">
-              <span className="w-5 text-right tabular-nums text-xs text-zinc-500">{p.number}</span>
-              <span className="ui-label w-8">{p.pos}</span>
-              <span className="flex-1 text-zinc-200">{p.name}</span>
-              <span className="text-xs text-zinc-500">{p.age} anos</span>
-              <span className="w-8 text-right font-display font-semibold text-amber-400">
-                {p.strength}
-              </span>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );
@@ -436,7 +422,8 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
                     {dot(nextOpp)}
                     <span
                       onClick={() => setViewClub(nextOpp)}
-                      className="cursor-pointer hover:underline text-zinc-50"
+                      className="cursor-pointer font-semibold hover:opacity-80"
+                      style={{ color: nextOpp.primaryColor }}
                     >
                       {nextOpp.name}
                     </span></>
@@ -444,7 +431,8 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
                   <>{dot(nextOpp)}
                     <span
                       onClick={() => setViewClub(nextOpp)}
-                      className="cursor-pointer hover:underline text-zinc-50"
+                      className="cursor-pointer font-semibold hover:opacity-80"
+                      style={{ color: nextOpp.primaryColor }}
                     >
                       {nextOpp.name}
                     </span>{" "}
@@ -479,7 +467,7 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
             )}
             <button
               onClick={() => setAnalyzing(true)}
-              className="country-tab active mt-1.5 !text-[10px]"
+              className="country-tab active mt-1.5 !text-xs"
             >
               Analisar
             </button>

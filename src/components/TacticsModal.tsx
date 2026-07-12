@@ -8,7 +8,8 @@ import type { Marking, Mentality, Player, Position, LivePlayer, Formation } from
 import { shapeOf } from "../types";
 import { pitchLayout, PlayerPin, EmptySlot, PitchBackground } from "./PitchField";
 import { useLockBodyScroll } from "./useLockBodyScroll";
-import ClubModal from "./ClubModal";
+import ClubBoard from "./ClubBoard";
+import { ScrollLock } from "./useLockBodyScroll";
 import type { Club } from "../types";
 
 export default function TacticsModal({ onClose }: { onClose: () => void }) {
@@ -22,6 +23,8 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
   // sugestão da sub. rápida: par sai/entra aguardando confirmação do usuário
   const [suggestion, setSuggestion] = useState<{ out: string; in: string } | null>(null);
   const [rejectedSubs, setRejectedSubs] = useState<string[]>([]);
+  // titulares começam colapsados: a interação principal é pela prancheta e pelo banco
+  const [startersOpen, setStartersOpen] = useState(false);
   const setPaused = useStore((s) => s.setPaused);
   // foto do estado ao abrir o modal: permite desfazer tudo (táticas, subs, formação)
   const snapshot = useRef<{
@@ -600,23 +603,28 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
         <div className="mb-4 flex items-center justify-between">
           <div className="min-w-0">
             <h2 className="text-lg font-bold">Parada tática — {match.minute}&#39;</h2>
-            {/* confronto com placar: nome do time abre as informações do clube */}
+            {/* confronto com placar: cada nome na cor do time; o adversário
+                sublinhado para destacar que é clicável (abre sua prancheta) */}
             <p className="mt-0.5 flex items-center gap-1.5 text-sm text-zinc-400">
-              <span
-                onClick={() => setInfoClub(homeClub)}
-                className="cursor-pointer truncate font-semibold text-zinc-300 hover:underline"
-              >
-                {homeClub.shortName}
-              </span>
-              <span className="shrink-0 rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-xs font-bold text-zinc-100">
-                {match.homeScore}-{match.awayScore}
-              </span>
-              <span
-                onClick={() => setInfoClub(awayClub)}
-                className="cursor-pointer truncate font-semibold text-zinc-300 hover:underline"
-              >
-                {awayClub.shortName}
-              </span>
+              {([homeClub, awayClub] as const).map((c, idx) => {
+                const isOpp = c.id !== game.userClubId;
+                return (
+                  <span key={c.id} className="contents">
+                    <span
+                      onClick={() => setInfoClub(c)}
+                      className={`cursor-pointer truncate font-semibold ${isOpp ? "underline decoration-2 underline-offset-2" : ""} hover:opacity-80`}
+                      style={{ color: c.primaryColor, textDecorationColor: c.primaryColor }}
+                    >
+                      {c.shortName}
+                    </span>
+                    {idx === 0 && (
+                      <span className="shrink-0 rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-xs font-bold text-zinc-100">
+                        {match.homeScore}-{match.awayScore}
+                      </span>
+                    )}
+                  </span>
+                );
+              })}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -847,7 +855,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
         <div className="mb-4">
           <p className="mb-1 text-sm text-zinc-400">Formação</p>
           <div className="flex gap-2 flex-wrap">
-            {(["4-4-2", "4-3-3", "3-5-2", "4-5-1", "5-3-2", "3-4-3"] as const).map((f) => (
+            {(["4-4-2", "4-3-3", "3-5-2", "4-5-1", "5-3-2", "3-4-3", "3-3-4"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => changeFormation(f)}
@@ -952,7 +960,14 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
           {/* Listas: Titulares e Banco em duas colunas empilhadas */}
           <div className="flex flex-1 flex-col gap-3">
             <div>
-              <p className="mb-1 text-xs font-bold text-zinc-500">TITULARES EM CAMPO</p>
+              <button
+                onClick={() => setStartersOpen((v) => !v)}
+                className="mb-1 flex w-full items-center gap-1 text-xs font-bold text-zinc-500 hover:text-zinc-300"
+              >
+                <span className="text-[9px]">{startersOpen ? "▼" : "▶"}</span>
+                TITULARES EM CAMPO <span className="font-normal text-zinc-600">({onField.length})</span>
+              </button>
+              {startersOpen && (
               <div className="max-h-40 overflow-y-auto pr-1">
                 {onField.map((l) => {
                   const p = pById[l.playerId];
@@ -981,6 +996,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
                   );
                 })}
               </div>
+              )}
             </div>
 
             <div>
@@ -1043,11 +1059,32 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
           ▶ Voltar ao jogo
         </button>
 
-        {/* informações do clube por cima da parada tática: fechar volta para cá,
-            com o jogo ainda pausado */}
-        {infoClub && (
-          <ClubModal game={game} club={infoClub} onClose={() => setInfoClub(null)} />
-        )}
+        {/* prancheta do clube por cima da parada tática: mostra os titulares na
+            forma que está jogando e o banco; fechar volta para cá com o jogo pausado */}
+        {infoClub && (() => {
+          const boardSide = infoClub.id === match.homeId ? "home" : "away";
+          const boardLineup = boardSide === "home" ? match.homeLineup : match.awayLineup;
+          const boardTactics = boardSide === "home" ? match.homeTactics : match.awayTactics;
+          const boardSquad = game.players.filter((p) => p.clubId === infoClub.id);
+          return (
+            <div
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4"
+              onClick={() => setInfoClub(null)}
+            >
+              <ScrollLock />
+              <div
+                className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 p-5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-zinc-300">Prancheta</h3>
+                  <button onClick={() => setInfoClub(null)} className="text-zinc-400 hover:text-white text-lg font-bold leading-none">✕</button>
+                </div>
+                <ClubBoard club={infoClub} squad={boardSquad} lineup={boardLineup} mentality={boardTactics.mentality} />
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

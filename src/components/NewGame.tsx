@@ -6,15 +6,17 @@ import { ScrollLock } from "./useLockBodyScroll";
 
 // bandeiras em mini PNG (public/flags): emoji de bandeira não renderiza em
 // todo sistema (Windows/Chrome mostra só as letras do código do país)
-const COUNTRIES: Record<string, { name: string }> = {
+// Só o Brasil está liberado por enquanto — é o país com os elencos atualizados.
+// Os demais ficam bloqueados na tela inicial até terem seus elencos revisados.
+const COUNTRIES: Record<string, { name: string; locked?: boolean }> = {
   BR: { name: "Brasil" },
-  AR: { name: "Argentina" },
-  EN: { name: "Inglaterra" },
-  ES: { name: "Espanha" },
-  DE: { name: "Alemanha" },
-  FR: { name: "França" },
-  IT: { name: "Itália" },
-  PT: { name: "Portugal" },
+  AR: { name: "Argentina", locked: true },
+  EN: { name: "Inglaterra", locked: true },
+  ES: { name: "Espanha", locked: true },
+  DE: { name: "Alemanha", locked: true },
+  FR: { name: "França", locked: true },
+  IT: { name: "Itália", locked: true },
+  PT: { name: "Portugal", locked: true },
 };
 
 function Flag({ code }: { code: string }) {
@@ -70,8 +72,8 @@ export default function NewGame() {
   const startGame = useStore((s) => s.startGame);
   const clubs = clubsData as Club[];
   const [managerName, setManagerName] = useState("");
-  // null = nenhum país selecionado: o sorteio é geral (qualquer país)
-  const [country, setCountry] = useState<string | null>(null);
+  // só o Brasil está liberado: começa selecionado e o sorteio fica restrito a ele
+  const [country, setCountry] = useState<string | null>("BR");
   const [club, setClub] = useState<Club | null>(null);
   // bilhete premiado: rolado uma vez ao abrir a tela — clicar de novo no dado
   // não rola a sorte de novo, só sorteia outro clube dentro do mesmo pool
@@ -126,26 +128,32 @@ export default function NewGame() {
         className="mx-auto mb-6 block w-full max-w-xs border-b border-zinc-700 bg-transparent px-2 py-2 text-center font-semibold tracking-wide text-zinc-100 placeholder-zinc-600 outline-none transition-colors focus:border-emerald-500"
       />
 
-      {/* seleção de país em grade 3×3 simétrica: 8 países + a opção vazia (sorteio
-          geral), que ocupa a primeira célula com um ícone de bandeira em branco */}
+      {/* seleção de país em grade 3×3: só o Brasil está liberado — os demais
+          ficam bloqueados (cadeado) até terem os elencos atualizados */}
       <nav className="mx-auto mb-6 grid w-fit grid-cols-3 gap-x-4 gap-y-1 sm:gap-x-6">
-        {Object.entries(COUNTRIES).map(([code, { name }]) => (
+        {Object.entries(COUNTRIES).map(([code, { name, locked }]) => (
           <button
             key={code}
-            onClick={() => { setCountry(country === code ? null : code); setClub(null); }}
-            className={`country-tab text-left ${country === code ? "active" : ""}`}
+            disabled={locked}
+            onClick={() => { if (locked) return; setCountry(code); setClub(null); }}
+            className={`country-tab text-left ${country === code ? "active" : ""} ${locked ? "cursor-not-allowed opacity-40" : ""}`}
+            title={locked ? "Em breve: elencos deste país ainda serão atualizados" : undefined}
           >
             <Flag code={code} />
             {name}
+            {locked && <span className="ml-1 text-[9px]">🔒</span>}
           </button>
         ))}
+        {/* "Qualquer" (sorteio geral) fica bloqueado por ora — só mantido para
+            preencher a 9ª célula e manter o grid 3×3 simétrico */}
         <button
-          onClick={() => { setCountry(null); setClub(null); }}
-          className={`country-tab text-left ${country === null ? "active" : ""}`}
-          title="Nenhum país: sorteio geral"
+          disabled
+          className="country-tab text-left cursor-not-allowed opacity-40"
+          title="Em breve: sorteio geral quando outros países forem liberados"
         >
           <span className="mr-1.5 inline-flex h-3 w-[18px] items-center justify-center rounded-[1px] border border-zinc-600 align-middle text-[9px] leading-none text-zinc-400">?</span>
           Qualquer
+          <span className="ml-1 text-[9px]">🔒</span>
         </button>
       </nav>
 

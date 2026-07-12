@@ -55,7 +55,7 @@ export interface Player {
 
 export type TrainingIntensity = "leve" | "normal" | "pesada";
 
-export type Formation = "4-4-2" | "4-3-3" | "3-5-2" | "4-5-1" | "5-3-2" | "3-4-3" | "custom";
+export type Formation = "4-4-2" | "4-3-3" | "3-5-2" | "4-5-1" | "5-3-2" | "3-4-3" | "3-3-4" | "custom";
 
 export const FORMATIONS: Record<Exclude<Formation, "custom">, { DEF: number; MEI: number; ATA: number }> = {
   "4-4-2": { DEF: 4, MEI: 4, ATA: 2 },
@@ -64,6 +64,7 @@ export const FORMATIONS: Record<Exclude<Formation, "custom">, { DEF: number; MEI
   "4-5-1": { DEF: 4, MEI: 5, ATA: 1 },
   "5-3-2": { DEF: 5, MEI: 3, ATA: 2 },
   "3-4-3": { DEF: 3, MEI: 4, ATA: 3 },
+  "3-3-4": { DEF: 3, MEI: 3, ATA: 4 },
 };
 
 // Formação livre desenhada pelo usuário no editor: um slot por posição da linha
