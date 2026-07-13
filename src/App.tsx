@@ -175,17 +175,32 @@ function RoundNewsModal() {
               if (last) last.items.push(item.text);
               else groups.push({ clubId: item.clubId, items: [item.text] });
             }
-            // emoji abre a manchete no texto gerado; aqui ele migra para a direita
+            // emoji abre a manchete no texto gerado; aqui ele vira o ícone do
+            // jogo correspondente e migra para a direita da manchete
+            const EMOJI_ICON: Record<string, GameIconName> = {
+              "🔥": "allout", "⚽": "goal", "🚑": "injury",
+            };
             const splitEmoji = (text: string) => {
               const m = text.match(/^(\p{Extended_Pictographic}️?)\s*(.*)$/u);
               return m ? { emoji: m[1], body: m[2] } : { emoji: null, body: text };
             };
             const line = (text: string, key: number) => {
               const { emoji, body } = splitEmoji(text);
+              const icon = emoji ? EMOJI_ICON[emoji] : undefined;
               return (
                 <p key={key} className="flex items-start justify-between gap-2">
                   <span>{body}</span>
-                  {emoji && <span className="shrink-0">{emoji}</span>}
+                  {icon && (
+                    <GameIcon
+                      name={icon}
+                      size={22}
+                      className={`shrink-0 ${
+                        icon === "allout" || icon === "goal"
+                          ? "[filter:drop-shadow(0_0_2px_rgba(220,38,38,0.9))]"
+                          : "[filter:drop-shadow(0_1px_1.5px_rgba(0,0,0,0.6))]"
+                      }`}
+                    />
+                  )}
                 </p>
               );
             };
@@ -213,7 +228,7 @@ function RoundNewsModal() {
         <div className="flex justify-center">
           <button
             onClick={dismissNews}
-            className="btn-live btn-live--dark w-fit px-8 py-2 text-sm"
+            className="w-fit rounded-lg border border-zinc-700 bg-zinc-800 px-8 py-2 text-sm font-semibold text-zinc-200 hover:bg-zinc-700"
           >
             Fechar
           </button>

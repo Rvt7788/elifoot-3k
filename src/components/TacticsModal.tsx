@@ -711,9 +711,12 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
   const awayClub = game.clubs.find((c) => c.id === match.awayId)!;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 pt-28 pb-32" onClick={closeAndResume}>
+    // ancorado no topo (items-start): ao expandir "Ajustes", o conteúdo cresce
+    // para baixo dentro do próprio scroll, sem reposicionar/pular o modal. O
+    // pb-28 reserva espaço para o botão Jogar flutuante não ser coberto.
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-16 pb-28" onClick={closeAndResume}>
       <div
-        className="max-h-[68vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 p-5 pb-6"
+        className="max-h-[calc(100vh-11rem)] w-full max-w-2xl overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 p-5 pb-6"
         onClick={(e) => e.stopPropagation()}
       >
         {/* cabeçalho AMPLIADO: minuto no topo e o CONFRONTO em destaque — nomes
@@ -850,8 +853,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
         <div className="mb-3 flex justify-center">
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="metal-relief flex items-center gap-2 rounded-lg bg-zinc-800 px-4 py-2 text-sm font-bold text-zinc-200 hover:bg-zinc-700"
-            style={{ ["--relief-edge" as string]: "#52525b", ["--relief-base" as string]: "#18181b" }}
+            className="flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm font-bold text-zinc-200 shadow-sm hover:bg-zinc-700"
           >
             Ajustes
             <span className="text-[10px]">{expanded ? "▲" : "▼"}</span>
@@ -1018,7 +1020,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
                   tactics.mentality === m.key ? "" : "bg-zinc-800/60 hover:bg-zinc-700"
                 }`}
               >
-                {m.icon ? <GameIcon name={m.icon} size={18} /> : m.glyph}
+                {m.icon ? <GameIcon name={m.icon} size={18} className="[filter:drop-shadow(0_1px_1.5px_rgba(0,0,0,0.7))]" /> : m.glyph}
               </button>
             ))}
           </div>
@@ -1034,7 +1036,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
                   tactics.marking === m.key ? "" : "bg-zinc-800/60 hover:bg-zinc-700"
                 }`}
               >
-                {m.icon ? <GameIcon name={m.icon} size={18} /> : m.glyph}
+                {m.icon ? <GameIcon name={m.icon} size={18} className="[filter:drop-shadow(0_1px_1.5px_rgba(0,0,0,0.7))]" /> : m.glyph}
               </button>
             ))}
           </div>

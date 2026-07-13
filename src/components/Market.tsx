@@ -192,11 +192,11 @@ export default function Market() {
 
   return (
     <div className="mx-auto max-w-4xl p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-bold">Mercado de Transferências</h2>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="text-lg font-bold">Transferências</h2>
         <button
           onClick={() => setFinanceOpen(true)}
-          className="rounded px-2 py-1 text-sm text-zinc-400 hover:bg-zinc-800"
+          className="shrink-0 whitespace-nowrap rounded px-2 py-1 text-sm text-zinc-400 hover:bg-zinc-800"
           title="Ver o detalhamento financeiro completo do clube"
         >
           Orçamento: <b className="text-emerald-400">${(game.budget / 1e6).toFixed(1)}M</b> ›
