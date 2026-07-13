@@ -9,7 +9,7 @@ export type GameIconName =
   | "wasting" | "stats" | "siren" | "injury" | "dice" | "genius" | "search" | "whistle"
   | "trophy" | "globe" | "stadium" | "scorers" | "assists" | "medal" | "champion" | "crown"
   | "invite" | "proposal" | "contract" | "finance" | "bankruptcy" | "settings" | "save" | "load"
-  | "roster" | "training" | "board";
+  | "roster" | "training" | "board" | "home";
 
 export default function GameIcon({
   name,
