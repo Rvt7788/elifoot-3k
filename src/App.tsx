@@ -518,14 +518,9 @@ export default function App() {
           {/* mobile: 3 linhas empilhadas (logo, abas, iniciar rodada); md+: 1 linha centralizada */}
           <div className="mx-auto flex max-w-5xl flex-col items-center gap-1.5 px-3 py-2 md:flex-row md:flex-wrap md:justify-center md:gap-4">
             <img
-              src="/elifoot3k.png"
+              src="/elifoot3klogo.png"
               alt="Elifoot 3k"
               className="h-16 w-auto"
-              style={{
-                // feather: bordas da logo se dissolvem no fundo em todas as direções
-                WebkitMaskImage: "radial-gradient(ellipse 75% 75% at 50% 50%, black 60%, transparent 100%)",
-                maskImage: "radial-gradient(ellipse 75% 75% at 50% 50%, black 60%, transparent 100%)",
-              }}
             />
             <div className="flex w-full items-center gap-0.5 md:w-auto">
               {TABS.map((t) => (

@@ -93,14 +93,9 @@ export default function NewGame() {
     // tanto no desktop quanto no mobile (o rodapé com a engrenagem fica abaixo)
     <div className="mx-auto flex min-h-[88vh] w-full max-w-2xl flex-col justify-center px-8 pb-6 pt-12 sm:px-6">
       <img
-        src="/elifoot3k.png"
+        src="/elifoot3klogo.png"
         alt="Elifoot 3K — Manager de futebol do futuro"
         className="mx-auto mb-8 w-full max-w-md px-10 sm:px-0"
-        style={{
-          // feather: as bordas da logo se dissolvem no fundo em todas as direções
-          WebkitMaskImage: "radial-gradient(ellipse 70% 70% at 50% 50%, black 55%, transparent 100%)",
-          maskImage: "radial-gradient(ellipse 70% 70% at 50% 50%, black 55%, transparent 100%)",
-        }}
       />
 
       <div className="mx-auto mb-6 max-w-md text-center">
