@@ -14,7 +14,7 @@ import { bestXI, createLiveMatch, simulateMinute } from "./game/engine";
 import { applyResult, buildLeagueFixtures, initTable, sortTable } from "./game/schedule";
 import { mulberry32, pick } from "./game/rng";
 import { aiAcceptChance, askingPrice, canNegotiate, quickSellPrice } from "./game/market";
-import { createManagers, processManagerSeason, remapManagerNames, swapUserClub } from "./game/managers";
+import { createManagers, hireReplacementForUser, processManagerSeason, remapManagerNames, swapUserClub } from "./game/managers";
 
 export interface Settings {
   speed: number; // multiplicador: 0.5, 1, 2, 4
@@ -310,6 +310,9 @@ interface Store {
   dismissNews: () => void;
   finishMatchday: (userTieWinnerId?: string) => void;
   skipMatchday: () => void;
+  // demitido: avança todas as rodadas restantes de uma vez até a virada da
+  // temporada; false = calendário não progrediu (save inconsistente)
+  skipToSeasonEnd: () => boolean;
   acceptJobOffer: () => void;
   declineJobOffer: () => void;
   promotePlayer: (candidateId: string) => void;
@@ -629,7 +632,7 @@ export const useStore = create<Store>()(
           const posA = finalA.findIndex((r) => r.clubId === userClub.id) + 1;
           const posB = finalB.findIndex((r) => r.clubId === userClub.id) + 1;
           const offerChance =
-            g.fired ? 0.5 // demitido: um time em baixa pode apostar na reconstrução
+            g.fired ? 1 // demitido: um time em baixa SEMPRE aposta na reconstrução na virada
             : posA === 1 ? 0.6 // campeão da Série A: cobiçado, mas mercado é mercado
             : posA >= 2 && posA <= 4 ? 0.3 // G4 da A chama atenção
             : posB === 1 ? 0.45 // campeão da B: acesso com moral
@@ -811,6 +814,12 @@ export const useStore = create<Store>()(
             isUserTeam(f.awayId) ? g.captainId : undefined,
           ),
         );
+        // rodada sem NENHUM confronto (calendário inconsistente): não abre uma
+        // tela ao vivo vazia — apenas pula a semana para o jogo seguir andando
+        if (live.length === 0) {
+          set({ game: { ...g, week: g.week + 1 } });
+          return;
+        }
         // público de cada estádio definido na abertura da rodada (e exibido nela)
         for (const m of live) m.attendance = stadiumAttendance(g, m.homeId, week);
         set({
@@ -882,11 +891,59 @@ export const useStore = create<Store>()(
       // Pensado para rodadas sem o time do usuário (fases de copa, por exemplo).
       skipMatchday: () => {
         get().startMatchday();
-        if (!get().live) return;
-        // avança minuto a minuto até todos os jogos terminarem (com trava de segurança)
+        const { game, matchEntropy } = get();
+        if (!game || !get().live) return;
+        // simula todos os minutos FORA do store e grava uma única vez: passar cada
+        // tick pelo set() fazia o persist serializar o save inteiro no localStorage
+        // a cada minuto (~95x por rodada), travando a UI em pulos longos
+        const live: LiveMatch[] = JSON.parse(JSON.stringify(get().live));
+        const idx = Object.fromEntries(game.players.map((p) => [p.id, p]));
         let guard = 0;
-        while (get().live?.some((m) => !m.finished) && guard++ < 200) get().tick();
+        while (live.some((m) => !m.finished) && guard++ < 200) {
+          const rng = mulberry32(
+            (game.seed ^ matchEntropy ^ (game.week * 7919) ^ ((live[0]?.minute ?? 0) * 104729)) >>> 0,
+          );
+          for (const m of live) {
+            const userSide = game.fired ? null
+              : m.homeId === game.userClubId ? "home"
+              : m.awayId === game.userClubId ? "away"
+              : null;
+            simulateMinute(rng, m, idx, userSide as any);
+          }
+        }
+        set({ live, game: { ...game, players: [...game.players] } });
         get().finishMatchday();
+      },
+
+      // Pulo temporal do técnico demitido: simula todas as rodadas restantes da
+      // temporada de uma vez e dispara a virada — momento em que chega o convite
+      // de um clube em reconstrução. Devolve false se o calendário do save não
+      // progride (estado inconsistente), sem deixar rodada aberta para trás.
+      skipToSeasonEnd: () => {
+        if (get().live) return false; // rodada em andamento precisa ser encerrada antes
+        // progresso = temporada + jogos de liga pendentes + próxima semana jogável:
+        // se um pulo não muda nada disso, o calendário está travado — aborta em
+        // vez de rodar em falso e abrir uma rodada quebrada
+        const progressKey = (g: GameState) =>
+          `${g.season}|${g.fixtures.filter((f) => !f.played).length}|${nextPlayableWeek(g)}`;
+        let guard = 0;
+        while (
+          get().game && !get().live &&
+          nextPlayableWeek(get().game!) !== null &&
+          guard++ < 80
+        ) {
+          const before = progressKey(get().game!);
+          get().skipMatchday();
+          if (get().game && progressKey(get().game!) === before) return false;
+        }
+        // temporada toda disputada: startMatchday executa a virada (acesso e
+        // rebaixamento, novas copas, convite de volta) sem abrir rodada nova
+        const g = get().game;
+        if (g && nextPlayableWeek(g) === null) {
+          get().startMatchday();
+          return true;
+        }
+        return false;
       },
 
       // Aceitar o convite troca de clube: o técnico assume o novo time com o caixa
@@ -913,9 +970,11 @@ export const useStore = create<Store>()(
             debtWeeks: 0,
             morale: 50,
             prevMorale: 50,
-            // troca de cadeiras: o técnico deslocado do novo clube herda o antigo
+            // troca de cadeiras: o técnico deslocado do novo clube herda o antigo;
+            // se o usuário estava demitido, o ex-clube já tem dono — deslocado
+            // vai para o mercado (clubId null)
             managers: g.managers
-              ? swapUserClub(g.managers, g.userClubId, club.id)
+              ? swapUserClub(g.managers, g.fired ? null : g.userClubId, club.id)
               : g.managers,
           },
         });
@@ -1380,9 +1439,15 @@ export const useStore = create<Store>()(
           return sId;
         });
 
+        // demitido NESTA rodada: um técnico novo (nome inventado, integrado ao
+        // ecossistema) assume o ex-clube; o técnico do usuário vai para o mercado
+        const managersFinal =
+          fired && !game.fired && managers
+            ? hireReplacementForUser(game.seed, game.season, managers, game.clubs, players, game.userClubId)
+            : managers;
         set({
           game: {
-            ...game, fixtures, tables, players, cup, continental, managers, morale,
+            ...game, fixtures, tables, players, cup, continental, managers: managersFinal, morale,
             prevMorale: game.morale ?? 60,
             week: game.week + 1,
             budget,

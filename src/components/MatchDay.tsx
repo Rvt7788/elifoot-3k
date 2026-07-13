@@ -9,6 +9,7 @@ import { weekInfo, tiesForLeg, groupFixturesForMatchday, CUP_STAGE_NAMES, CONT_S
 import { cupName, continentalName } from "../data/leagues";
 import ClubModal from "./ClubModal";
 import { ScrollLock } from "./useLockBodyScroll";
+import { useFabDrag } from "./useFabDrag";
 
 // Título da rodada: liga, fase da copa ou da continental (ida/volta) em duas
 // partes (título/data), usando o nome real da competição do país do usuário.
@@ -457,17 +458,20 @@ function PenaltyModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <ScrollLock />
       <div className="w-full max-w-xs rounded-xl border border-zinc-700 bg-zinc-900 p-6 text-center">
-        {/* nome do clube no padrão da tabela: fundo na cor do time, texto legível */}
-        <div className="mb-4 flex items-center justify-center">
+        {/* bloco do time isolado: nome do clube no padrão da tabela (fundo na cor
+            do time, texto legível) + o minuto do lance */}
+        <div className="mb-8 flex flex-col items-center gap-1">
           <span
             className="rounded px-3 py-1 text-base font-bold"
             style={{ background: teamColor, color: readableOn(teamColor) }}
           >
             {teamName}
           </span>
+          <span className="text-xs font-mono text-zinc-500">{event.minute}&#39;</span>
         </div>
-        <p className="mb-8 text-sm font-bold uppercase tracking-wide text-amber-400">
-          Pênalti {forUser ? "a favor" : "contra"} · {event.minute}&#39;
+        {/* bloco da cobrança: "a favor/contra" na linha acima, batedor logo abaixo */}
+        <p className="mb-1 text-sm font-bold uppercase tracking-wide text-amber-400">
+          Pênalti {forUser ? "a favor" : "contra"}
         </p>
         <p className="mb-3 text-base font-bold text-zinc-100">{event.playerName} na bola</p>
         {!revealed ? (
@@ -490,8 +494,11 @@ function PenaltyModal({
   );
 }
 
-export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void }) {
+export default function MatchDay({ onFinishRound, onOpenSettings }: { onFinishRound?: () => void; onOpenSettings?: () => void }) {
   const { game, live, lastResults, paused, settings, setPaused, finishMatchday } = useStore();
+  // botão flutuante padrão: mesma posição arrastável da home (compartilhada via store),
+  // para ser o MESMO botão passeando entre as telas. Segurar move; toque simples age.
+  const { fabPos, fabRef, onFabDown, onFabMove, fabTapEnded } = useFabDrag();
   const [modalOpen, setModalOpen] = useState(false);
   const [detailMatch, setDetailMatch] = useState<LiveMatch | null>(null);
   const [halftimeNotice, setHalftimeNotice] = useState(false);
@@ -516,7 +523,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
   useEffect(() => {
     if (live) setBrowseWeek(null); // rodada nova ao vivo: volta o foco para a semana atual
     if (!live) { halftimePaused.current = false; return; }
-    if (userMatchMinute >= 45 && !halftimePaused.current) {
+    if (userMatchMinute >= 45 && !halftimePaused.current && !game?.fired) {
       halftimePaused.current = true;
       setPaused(true);
       setHalftimeNotice(true);
@@ -569,7 +576,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
     prevCounts.current = { userGoals, oppGoals, userReds, penalties };
     if (!prev) return;
     // pênalti no jogo do usuário (a favor ou contra): pausa e abre a cobrança automática
-    if (penalties > prev.penalties && userMatch && !userMatch.finished) {
+    if (penalties > prev.penalties && userMatch && !userMatch.finished && !game.fired) {
       const last = penaltyEvents[penaltyEvents.length - 1];
       playWhistle();
       setPaused(true);
@@ -583,7 +590,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
     if (oppGoals > prev.oppGoals && settings.soundGoal && !goalFromPenalty) playGoalConceded();
     if (userReds > prev.userReds) {
       if (settings.soundRed) playRed();
-      if (!userMatch?.finished) {
+      if (!userMatch?.finished && !game.fired) {
         setPaused(true);
         setModalOpen(true);
       }
@@ -599,7 +606,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
     restoreChecked.current = true;
     if (!live || !game) return;
     const um = live.find((m) => m.homeId === game.userClubId || m.awayId === game.userClubId);
-    if (um && !um.finished && um.minute > 0 && paused) {
+    if (um && !um.finished && um.minute > 0 && paused && !game.fired) {
       setModalOpen(true);
     }
   }, []);
@@ -999,9 +1006,9 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
   return (
     <div className="mx-auto max-w-4xl p-4 pb-28">
       {/* logo trazida para a tela ao vivo, sem borda/divisória: o cabeçalho se
-          funde ao corpo do ao vivo */}
+          funde ao corpo do ao vivo. */}
       <div className="mb-2 flex justify-center">
-        <img src="/elifoot3klogo.png" alt="Elifoot 3k" className="h-14 w-auto" />
+        <img src="/elifoot3klogo.png" alt="Elifoot 3k" className="h-14 w-auto [filter:drop-shadow(0_0_18px_rgba(34,211,238,0.55))]" />
       </div>
       {(() => {
         const wl = weekLabelHeader(game.week, game.season, userCountry);
@@ -1026,7 +1033,18 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
         );
       })()}
 
-      <div className="mb-6 flex flex-col items-center justify-center gap-4">
+      {/* engrenagem de configurações no canto superior direito da tela, colada
+          na quina mas com um respiro. */}
+      {onOpenSettings && (
+        <button
+          onClick={onOpenSettings}
+          className="fixed right-3 top-3 z-40 text-zinc-400 hover:text-zinc-200"
+          title="Configurações"
+        >
+          <GameIcon name="settings" size={22} />
+        </button>
+      )}
+      <div className="mb-6 flex items-center justify-center">
         <MatchClock
           minute={live[0]?.minute ?? 0}
           halftime={halftimeNotice}
@@ -1034,30 +1052,46 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
         />
       </div>
 
-      {/* Controles flutuantes: play/pausa durante o jogo, encerrar rodada ao fim.
-          Escondidos enquanto a parada tática (tem o seu próprio "Jogar") ou a
+      {/* Botão flutuante único do ao vivo — o mesmo botão padrão do app (canto
+          inferior direito, o "Jogar" da home). Aqui ele é play → pausa durante o
+          jogo e, ao terminar, vira o ícone "home" que encerra a rodada. Não há
+          mais controle central no rodapé. Escondido enquanto a parada tática ou a
           cobrança de pênalti (ação automática) estão na tela. */}
       {!modalOpen && !pendingPenalty && (
-        <div className="fixed bottom-10 left-1/2 z-40 -translate-x-1/2">
+        <div
+          ref={(el) => (fabRef.current = el)}
+          className="fixed bottom-6 right-5 z-40"
+          style={{ transform: `translate(${fabPos.dx}px, ${fabPos.dy}px)` }}
+        >
           {allDone ? (
             onFinishRound && (
               <button
-                onClick={onFinishRound}
-                className="btn-live btn-live--finish px-6 py-3 text-base shadow-lg shadow-black/50"
+                onPointerDown={onFabDown}
+                onPointerMove={onFabMove}
+                onPointerUp={() => { if (fabTapEnded()) onFinishRound(); }}
+                onPointerCancel={() => fabTapEnded()}
+                style={{ touchAction: "none" }}
+                className="btn-live btn-live--finish flex h-16 w-16 touch-none items-center justify-center !rounded-full shadow-lg shadow-black/50"
+                title="Encerrar rodada (segure para mover)"
               >
-                ✔ Encerrar rodada
+                <GameIcon name="home" size={30} />
               </button>
             )
           ) : (
             <button
-              onClick={() => {
+              onPointerDown={onFabDown}
+              onPointerMove={onFabMove}
+              onPointerUp={() => {
+                if (!fabTapEnded()) return;
                 setHalftimeNotice(false);
                 setPaused(!paused);
               }}
-              className={`btn-live h-16 w-16 text-2xl shadow-lg shadow-black/50 ${
+              onPointerCancel={() => fabTapEnded()}
+              style={{ touchAction: "none" }}
+              className={`btn-live flex h-16 w-16 touch-none items-center justify-center !rounded-full text-2xl shadow-lg shadow-black/50 ${
                 paused ? "btn-live--play" : "btn-live--pause"
               }`}
-              title={paused ? "Retomar jogos" : "Pausar jogos"}
+              title={paused ? "Retomar jogos (segure para mover)" : "Pausar jogos (segure para mover)"}
             >
               {paused ? "▶" : "⏸"}
             </button>

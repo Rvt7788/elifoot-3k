@@ -57,7 +57,7 @@ const PRES_LAST = [
   "Hidalgo", "Ibrahim", "Junqueira", "Klein", "Lacerda", "Meireles", "Nogueira",
   "Ottoni", "Pontes", "Queiroz", "Rangel", "Siqueira", "Teixeira", "Vasconcelos",
 ];
-function presidentName(clubId: string): string {
+export function presidentName(clubId: string): string {
   let h = 2166136261;
   for (let i = 0; i < clubId.length; i++) {
     h ^= clubId.charCodeAt(i);
@@ -120,7 +120,7 @@ export default function NewGame() {
       <img
         src="/elifoot3klogo.png"
         alt="Elifoot 3K — Manager de futebol do futuro"
-        className="mx-auto mb-8 w-full max-w-md px-10 sm:px-0"
+        className="mx-auto mb-8 w-full max-w-md px-10 sm:px-0 [filter:drop-shadow(0_0_18px_rgba(34,211,238,0.55))]"
       />
 
       <div className="mx-auto mb-6 max-w-md text-center">
@@ -139,7 +139,7 @@ export default function NewGame() {
         defaultValue={managerName}
         onInput={(e) => setManagerName((e.target as HTMLInputElement).value)}
         placeholder="Seu Nome"
-        maxLength={30}
+        maxLength={16}
         autoComplete="off"
         spellCheck={false}
         className="mx-auto mb-6 block w-full max-w-xs border-b border-zinc-700 bg-transparent px-2 py-2 text-center font-semibold tracking-wide text-zinc-100 placeholder-zinc-600 outline-none transition-colors focus:border-emerald-500"

@@ -465,11 +465,12 @@ export function HallOfFame() {
 export type TableView = "rodada" | "liga" | "copa" | "continental";
 
 export default function Standings({
-  view, setView, onFinishRound,
+  view, setView, onFinishRound, onOpenSettings,
 }: {
   view: TableView;
   setView: (v: TableView) => void;
   onFinishRound?: () => void;
+  onOpenSettings?: () => void;
 }) {
   const game = useStore((s) => s.game);
   const live = useStore((s) => s.live);
@@ -515,7 +516,7 @@ export default function Standings({
     return (
       <>
         {!liveRunning && <div className="mx-auto max-w-2xl px-4 pt-4">{tabs}</div>}
-        <MatchDay onFinishRound={onFinishRound} />
+        <MatchDay onFinishRound={onFinishRound} onOpenSettings={onOpenSettings} />
       </>
     );
   }

@@ -250,10 +250,39 @@ export function processManagerSeason(
   return { managers: next, award, userWonAward: !!winner.isUser };
 }
 
+// Demissão do usuário: um técnico novo, com nome inventado no mesmo gerador dos
+// demais (jogadores do país), assume o ex-clube e entra no ecossistema — nada de
+// "a IA assumiu". O técnico do usuário fica sem clube (clubId null) até o convite.
+export function hireReplacementForUser(
+  seed: number,
+  season: number,
+  managers: Manager[],
+  clubs: Club[],
+  players: Player[],
+  clubId: string,
+): Manager[] {
+  const rng = mulberry32((seed ^ (season * 104651) ^ 0xf17e) >>> 0);
+  const club = clubs.find((c) => c.id === clubId);
+  const namer = managerNamer(clubs, players);
+  const taken = new Set(managers.map((m) => m.name));
+  let name = namer(rng, club?.country ?? "BR");
+  for (let i = 0; taken.has(name) && i < 10; i++) name = namer(rng, club?.country ?? "BR");
+  const replacement: Manager = {
+    id: `mgr_${clubId}_s${season}`,
+    name,
+    clubId,
+    // interino apostando na reconstrução: chega com reputação mediana
+    reputation: Math.round(30 + rng() * 25),
+    titles: 0,
+  };
+  return [...managers.map((m) => (m.isUser ? { ...m, clubId: null } : m)), replacement];
+}
+
 // Troca de clube do usuário (convite aceito): o técnico do usuário assume o novo
 // clube e o técnico deslocado herda o clube antigo — ninguém some do ecossistema.
+// Se o usuário estava sem clube (demitido), o deslocado vai para o mercado.
 export function swapUserClub(
-  managers: Manager[], oldClubId: string, newClubId: string,
+  managers: Manager[], oldClubId: string | null, newClubId: string,
 ): Manager[] {
   return managers.map((m) => {
     if (m.isUser) return { ...m, clubId: newClubId };

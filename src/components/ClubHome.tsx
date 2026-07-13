@@ -16,6 +16,7 @@ import { isDarkColor, readableKit, readableOn } from "../game/color";
 import GameIcon, { type GameIconName } from "./GameIcon";
 import { formatMatchDate } from "../game/calendar";
 import { ScrollLock } from "./useLockBodyScroll";
+import { useFabDrag } from "./useFabDrag";
 
 // Nome nas listas de artilheiros: comprido demais vira só o primeiro nome
 const scorerName = (n: string) => (n.length > 16 ? n.split(" ")[0] : n);
@@ -177,27 +178,11 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
   const [viewClub, setViewClub] = useState<Club | null>(null);
   const [financeOpen, setFinanceOpen] = useState(false);
   // FAB "Jogar" arrastável: clicar e segurar move o botão; um toque simples ainda
-  // dispara o jogo. drag guarda o deslocamento aplicado via transform.
-  const [fabDrag, setFabDrag] = useState({ dx: 0, dy: 0 });
-  const fabPointer = useRef<{ startX: number; startY: number; baseDx: number; baseDy: number; moved: boolean } | null>(null);
-  const onFabPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    fabPointer.current = { startX: e.clientX, startY: e.clientY, baseDx: fabDrag.dx, baseDy: fabDrag.dy, moved: false };
-  };
-  const onFabPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
-    const p = fabPointer.current;
-    if (!p) return;
-    const dx = e.clientX - p.startX;
-    const dy = e.clientY - p.startY;
-    // limiar pequeno para não confundir toque com arrasto
-    if (!p.moved && Math.hypot(dx, dy) < 6) return;
-    p.moved = true;
-    setFabDrag({ dx: p.baseDx + dx, dy: p.baseDy + dy });
-  };
+  // dispara o jogo. A posição vem do store (fabPos) para ser a MESMA no ao vivo —
+  // é o mesmo botão passeando entre as telas.
+  const { fabPos: fabDrag, fabRef, onFabDown: onFabPointerDown, onFabMove: onFabPointerMove, fabTapEnded } = useFabDrag();
   const onFabPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
-    const p = fabPointer.current;
-    fabPointer.current = null;
-    if (!p || p.moved) return; // arrasto: não dispara o jogo
+    if (!fabTapEnded()) return; // arrasto: não dispara o jogo
     // toque sem arrasto: dispara o jogo. IMPORTANTE — a navegação NÃO pode
     // acontecer aqui no pointerup, senão a troca para a tela ao vivo põe um
     // confronto exatamente sob o dedo e o `click` sintético que o navegador
@@ -311,20 +296,6 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
 
   return (
     <div className="mx-auto max-w-4xl px-4 pb-10 pt-6">
-      {/* Falência: técnico demitido só observa — nenhum comando sobre o clube */}
-      {game.fired && (
-        <div className="mb-4 rounded-lg border border-red-800 bg-red-950/60 px-4 py-3">
-          <p className="flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-red-400">
-            <GameIcon name={game.firedReason === "moral" ? "bankruptcy" : "bankruptcy"} size={15} />
-            {game.firedReason === "moral" ? "Moral zerada — você foi demitido" : "Falência — você foi demitido"}
-          </p>
-          <p className="mt-1 text-xs text-zinc-400">
-            {game.firedReason === "moral"
-              ? `A sequência de maus resultados zerou a moral da torcida e a diretoria não resistiu à pressão. A IA assumiu o ${club.name}: agora você só observa — mas um clube em baixa pode te chamar no fim da temporada.`
-              : `O caixa ficou no vermelho por ${BANKRUPTCY_WEEKS} rodadas seguidas e a diretoria decretou falência. A IA assumiu o ${club.name}: agora você só observa os jogos acontecerem.`}
-          </p>
-        </div>
-      )}
       {/* Virada de temporada: só as saídas de graça, nas 2 primeiras rodadas */}
       {game.seasonNews && game.seasonNews.season === game.season && game.week <= 2 &&
         game.seasonNews.contractLosses.length > 0 && (
@@ -722,16 +693,19 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
       )}
       {financeOpen && <FinanceModal onClose={() => setFinanceOpen(false)} />}
 
-      {/* Jogar flutuante (canto inferior direito, ao alcance do polegar): só no
-          mobile e quando há próximo jogo do usuário para disputar. */}
+      {/* Jogar flutuante (canto inferior direito): o botão padrão do app, sempre
+          visível quando há próximo jogo do usuário para disputar. É o mesmo botão
+          que segue no ao vivo virando pausa/encerrar. */}
       {onStartMatchday && nextOpp && next && !game.fired && (
         <button
           onPointerDown={onFabPointerDown}
           onPointerMove={onFabPointerMove}
           onPointerUp={onFabPointerUp}
+          onPointerCancel={() => fabTapEnded()}
+          ref={(el) => (fabRef.current = el)}
           title="Jogar (segure para mover)"
           style={{ transform: `translate(${fabDrag.dx}px, ${fabDrag.dy}px)`, touchAction: "none" }}
-          className="btn-live btn-live--finish fixed bottom-6 right-5 z-40 flex h-16 w-16 touch-none items-center justify-center !rounded-full shadow-lg shadow-black/50 sm:hidden"
+          className="btn-live btn-live--finish fixed bottom-6 right-5 z-40 flex h-16 w-16 touch-none items-center justify-center !rounded-full shadow-lg shadow-black/50"
         >
           <svg viewBox="0 0 24 24" className="h-8 w-8 [filter:drop-shadow(0_1px_1px_rgba(255,255,255,0.35))]">
             <path d="M7 5v14l11-7-11-7Z" fill="#064e2b" />

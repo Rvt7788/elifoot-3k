@@ -6,8 +6,9 @@ import PenaltyShootout from "./components/PenaltyShootout";
 import SeasonHighlightsModal from "./components/SeasonHighlightsModal";
 import SettingsModal from "./components/SettingsModal";
 import { AppDialogHost } from "./components/AppDialog";
-import NewGame from "./components/NewGame";
+import NewGame, { presidentName } from "./components/NewGame";
 import ClubHome from "./components/ClubHome";
+import FiredScreen from "./components/FiredScreen";
 import Standings, { HallOfFame, type TableView } from "./components/Standings";
 import Squad from "./components/Squad";
 import Market from "./components/Market";
@@ -20,7 +21,7 @@ import { quickSellPrice } from "./game/market";
 type Tab = "clube" | "tabela" | "elenco" | "treino" | "mercado" | "ranking";
 
 // Convite de clube maior após temporada de sucesso: aceitar assume o novo time.
-function JobOfferModal() {
+function JobOfferModal({ onAccepted, onDeclined }: { onAccepted?: () => void; onDeclined?: () => void }) {
   const game = useStore((s) => s.game);
   const acceptJobOffer = useStore((s) => s.acceptJobOffer);
   const declineJobOffer = useStore((s) => s.declineJobOffer);
@@ -35,7 +36,7 @@ function JobOfferModal() {
         className="w-full max-w-md rounded-xl p-5"
         style={{ background: club.primaryColor, color: club.secondaryColor }}
       >
-        <h2 className="mb-2 flex items-center gap-2 font-display text-lg font-bold"><GameIcon name="invite" size={18} /> Convite recebido</h2>
+        <h2 className="mb-7 flex flex-col items-center gap-1.5 text-center font-display text-lg font-bold"><GameIcon name="invite" size={34} /> Convite recebido</h2>
         {game.fired ? (
           <>
             <p className="mb-2 text-pretty text-sm leading-relaxed">
@@ -64,21 +65,24 @@ function JobOfferModal() {
             </p>
           </>
         )}
-        <p className="mb-4 text-right text-xs italic opacity-80">
+        <p className="mb-0.5 mt-8 text-center font-display text-xl italic opacity-90">
+          {presidentName(club.id)}
+        </p>
+        <p className="mb-12 text-center text-xs italic opacity-80">
           Presidente do {club.name}
         </p>
-        <p className="mb-4 text-xs opacity-80">
-          Aceitar troca de clube imediatamente — a decisão é definitiva.
-        </p>
         <div className="flex gap-2">
-          <button onClick={acceptJobOffer} className="btn-live btn-live--finish flex-1 py-2 text-sm">
-            Aceitar
+          <button
+            onClick={() => { declineJobOffer(); onDeclined?.(); }}
+            className="btn-live btn-live--danger flex-1 py-2 text-sm"
+          >
+            Negar
           </button>
           <button
-            onClick={declineJobOffer}
-            className="btn-live btn-live--dark flex-1 py-2 text-sm"
+            onClick={() => { acceptJobOffer(); onAccepted?.(); }}
+            className="btn-live btn-live--finish flex-1 py-2 text-sm"
           >
-            Ficar onde estou
+            Aceitar
           </button>
         </div>
       </div>
@@ -440,6 +444,9 @@ export default function App() {
   const [tableView, setTableView] = useState<TableView>("rodada");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [shootoutOpen, setShootoutOpen] = useState(false);
+  // convite negado na tela de demissão: sinal para a FiredScreen rodar o pulo
+  // de temporada de novo até aparecer o convite de outro clube
+  const [firedSkip, setFiredSkip] = useState(0);
   const goToRound = () => {
     setTableView("rodada");
     setTab("tabela");
@@ -482,8 +489,26 @@ export default function App() {
         {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
       </>
     );
-  const liveRunning = live !== null;
+  // rodada vazia (estado anômalo de save inconsistente) NÃO conta como ao vivo:
+  // senão o cabeçalho some e o app fica preso numa tela sem jogos
+  const liveRunning = live !== null && live.length > 0;
   const liveFinished = liveRunning && live.every((m) => m.finished);
+
+  // demitido: tela própria, sem abas nem clube — só o pulo temporal até a virada.
+  // O convite de volta (JobOfferModal) e a retrospectiva aparecem por cima.
+  // Aceitar leva à home do novo clube; negar dispara outro pulo de temporada.
+  if (game.fired && !liveRunning)
+    return (
+      <>
+        <AppDialogHost />
+        <JobOfferModal
+          onAccepted={() => setTab("clube")}
+          onDeclined={() => setFiredSkip((n) => n + 1)}
+        />
+        <SeasonHighlightsModal />
+        <FiredScreen skipSignal={firedSkip} />
+      </>
+    );
 
   // ícones das abas: arte metálica nova (GameIcon). Elenco usa "glove" como
   // placeholder até gerarmos um ícone próprio de elenco/jogadores.
@@ -583,7 +608,7 @@ export default function App() {
 
       <AppDialogHost />
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
-      {!liveRunning && <JobOfferModal />}
+      {!liveRunning && <JobOfferModal onAccepted={() => setTab("clube")} />}
       {!liveRunning && <PendingPromotionsModal />}
       {!liveRunning && <IncomingOfferModal onOpenSquad={() => setTab("elenco")} />}
       {!liveRunning && <RoundNewsModal />}
@@ -623,6 +648,7 @@ export default function App() {
             finishMatchday();
             setTab("clube");
           }}
+          onOpenSettings={() => setSettingsOpen(true)}
         />
       )}
       {tab === "elenco" && <Squad />}

@@ -13,6 +13,7 @@ import { useLockBodyScroll } from "./useLockBodyScroll";
 import ClubBoard from "./ClubBoard";
 import { RoleBadges } from "./icons";
 import { ScrollLock } from "./useLockBodyScroll";
+import { useFabDrag } from "./useFabDrag";
 import type { Club } from "../types";
 
 // Escala de intensidade tática (4 passos): verde = mais cauteloso/defensivo,
@@ -23,6 +24,9 @@ const INTENSITY_COLORS = ["#16a34a", "#84cc16", "#f59e0b", "#dc2626"]; // green 
 export default function TacticsModal({ onClose }: { onClose: () => void }) {
   const { game, live, updateLive } = useStore();
   const setStoreSlotOrder = useStore((s) => s.setSlotOrder);
+  // botão flutuante padrão do app, também aqui na parada tática: mesma posição
+  // arrastável (compartilhada via store) — é o mesmo botão passeando entre as telas.
+  const { fabPos, fabRef, onFabDown, onFabMove, fabTapEnded } = useFabDrag();
   const [selectedOutId, setSelectedOutId] = useState<string | null>(null);
   const [selectedInId, setSelectedInId] = useState<string | null>(null);
   const [slotOrder, setSlotOrder] = useState<string[] | null>(null);
@@ -179,7 +183,11 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
   const bench = lineup
     .filter((l) => !l.onField && !l.subbedOut && !l.sentOff && !((pById[l.playerId]?.injuryWeeks ?? 0) > 0))
     .sort(byPos);
-  const hasKeeperOnField = onField.some((l) => (l.posOverride ?? pById[l.playerId].pos) === "GOL");
+  // rede de segurança: sem NENHUM jogador em campo (estado anômalo — ex-clube da
+  // IA, save corrompido), a exigência de goleiro não pode prender o usuário aqui
+  const hasKeeperOnField =
+    onField.length === 0 ||
+    onField.some((l) => (l.posOverride ?? pById[l.playerId].pos) === "GOL");
 
   // ── Cobrador de pênalti e capitão EM CAMPO (mesma regra do motor) ──
   const effPosOf = (l: LivePlayer) => l.posOverride ?? pById[l.playerId].pos;
@@ -1276,17 +1284,28 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
         })()}
       </div>
 
-      {/* Jogar flutuante no bottom da tela: fecha a parada e retoma o jogo.
+      {/* Botão flutuante padrão (canto inferior direito, arrastável): aqui na parada
+          tática ele retoma o jogo. É o MESMO botão do ao vivo/home, na mesma posição.
           Escondido enquanto a prancheta de um clube está aberta por cima. */}
       {!infoClub && (
-        <button
-          onClick={(e) => { e.stopPropagation(); closeAndResume(); }}
-          disabled={!hasKeeperOnField}
-          className="btn-live btn-live--play fixed bottom-10 left-1/2 z-[55] -translate-x-1/2 gap-2 px-9 py-3 text-base uppercase tracking-wide shadow-lg shadow-black/50 disabled:cursor-not-allowed disabled:opacity-40"
-          title={hasKeeperOnField ? "Voltar ao jogo" : "Você precisa escalar um goleiro ou jogador de linha no gol!"}
+        <div
+          ref={(el) => (fabRef.current = el)}
+          className="fixed bottom-6 right-5 z-[55]"
+          style={{ transform: `translate(${fabPos.dx}px, ${fabPos.dy}px)` }}
         >
-          <span className="text-[13px]">▶</span> Jogar
-        </button>
+          <button
+            onPointerDown={onFabDown}
+            onPointerMove={onFabMove}
+            onPointerUp={(e) => { e.stopPropagation(); if (fabTapEnded()) closeAndResume(); }}
+            onPointerCancel={() => fabTapEnded()}
+            disabled={!hasKeeperOnField}
+            style={{ touchAction: "none" }}
+            className="btn-live btn-live--play flex h-16 w-16 touch-none items-center justify-center !rounded-full text-2xl shadow-lg shadow-black/50 disabled:cursor-not-allowed disabled:opacity-40"
+            title={hasKeeperOnField ? "Voltar ao jogo (segure para mover)" : "Você precisa escalar um goleiro ou jogador de linha no gol!"}
+          >
+            ▶
+          </button>
+        </div>
       )}
     </div>
   );
