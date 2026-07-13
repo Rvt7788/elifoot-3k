@@ -1206,6 +1206,9 @@ export const useStore = create<Store>()(
         const isCupNac = info.type === "cup";
         const isCont = info.type === "continental" || info.type === "contgroup";
 
+        // só cumpriu a pena quem ficou FORA do XI nesta rodada; quem entrou em
+        // campo e foi expulso agora acabou de ganhar a suspensão — ela não pode
+        // ser zerada na mesma rodada, senão o cartão vermelho nunca suspende.
         const suspendedIds = new Set(
           game.players
             .filter((p) => (
@@ -1213,6 +1216,7 @@ export const useStore = create<Store>()(
               isCupNac ? p.suspendedCup :
               p.suspendedContinental
             ))
+            .filter((p) => !enteredField.has(p.id))
             .map((p) => p.id),
         );
         // lesões: rolagem determinística pós-rodada para quem entrou em campo —
