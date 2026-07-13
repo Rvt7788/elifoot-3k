@@ -248,14 +248,14 @@ function ContractWarningModal() {
           {expiring.map((p) => (
             <div
               key={p.id}
-              className="flex items-center justify-between gap-2 border-b border-zinc-800 py-1.5 text-sm"
+              className="flex flex-col gap-2 border-b border-zinc-800 py-2 text-sm"
             >
-              <span className="min-w-0 truncate text-zinc-200">
+              <span className="text-zinc-200">
                 <span className="mr-1 text-xs text-zinc-500">{p.pos}</span>
                 {p.name}
                 <span className="ml-1 text-xs text-amber-400">{p.strength}</span>
               </span>
-              <span className="flex shrink-0 items-center gap-1">
+              <span className="flex items-center gap-1.5">
                 <button
                   onClick={async () => {
                     const r = renewContract(p.id);
@@ -425,6 +425,17 @@ export default function App() {
     setTab("tabela");
   };
   const onRoundTab = tab === "tabela" && tableView === "rodada";
+
+  // ao abrir o app com uma rodada em andamento (retomada de um jogo salvo),
+  // cai direto na Rodada — o técnico volta ao jogo pausado onde parou
+  const [restoredLive, setRestoredLive] = useState(false);
+  useEffect(() => {
+    if (!restoredLive && live && live.some((m) => !m.finished)) {
+      setTableView("rodada");
+      setTab("tabela");
+      setRestoredLive(true);
+    }
+  }, [live, restoredLive]);
 
   // pull-to-refresh só na Home (e na tela inicial), nunca com jogo ao vivo:
   // permite forçar a atualização do app sem arriscar resetar uma rodada

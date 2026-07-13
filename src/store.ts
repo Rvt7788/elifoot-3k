@@ -212,6 +212,15 @@ export function seasonRevenue(baseBudget: number): number {
   return Math.round(baseBudget * 0.25);
 }
 
+// Premiação de campeão: valores FIXOS, iguais para qualquer clube — não dependem
+// do caixa nem do porte do time. Ganhar o título vale o mesmo pra todo mundo.
+export const CHAMPION_PRIZE = {
+  serieA: 10_000_000,
+  serieB: 3_000_000,
+  cup: 5_000_000,
+  continental: 15_000_000,
+} as const;
+
 // Agressividade tática da IA (0 conservador .. 1 agressivo), derivada da posição do
 // clube na tabela: quem está em crise/rebaixamento joga mais para frente e arrisca
 // mais cedo; quem está no G4/topo tem mais a perder e joga mais seguro.
@@ -641,14 +650,14 @@ export const useStore = create<Store>()(
             mgrRes.userWonAward && !g.fired
               ? Math.round(seasonRevenue(userClub.baseBudget) * 0.25)
               : 0;
-          // premiação de campeão: escada consistente — continental (5×) > Série A (4×)
-          // > copa nacional (3×) > Série B (1.5×), sempre em múltiplos do aporte anual
+          // premiação de campeão: valores fixos, iguais pra qualquer clube
+          // (Série A 10M, Série B 3M) — não escalam com o porte do time
           let leagueChampionBonus = 0;
           if (!g.fired) {
             if (finalA[0]?.clubId === g.userClubId) {
-              leagueChampionBonus = Math.round(seasonRevenue(userClub.baseBudget) * 4);
+              leagueChampionBonus = CHAMPION_PRIZE.serieA;
             } else if (finalB[0]?.clubId === g.userClubId) {
-              leagueChampionBonus = Math.round(seasonRevenue(userClub.baseBudget) * 1.5);
+              leagueChampionBonus = CHAMPION_PRIZE.serieB;
             }
           }
           g = {
@@ -1148,14 +1157,14 @@ export const useStore = create<Store>()(
                 const STAGE_PRIZE = [10, 15, 25];
                 cupPrize +=
                   info.stage === CONT_STAGES - 1
-                    ? seasonRevenue(userClub2.baseBudget) * 5 // campeão continental: topo da escada
+                    ? CHAMPION_PRIZE.continental // campeão continental: prêmio fixo, topo da escada
                     : gate * STAGE_PRIZE[info.stage];
               } else {
                 // preliminar, 32, oitavas, quartas, semi: multiplicador crescente da bilheteria
                 const STAGE_PRIZE = [3, 5, 8, 12, 20];
                 cupPrize +=
                   info.stage === 5
-                    ? seasonRevenue(userClub2.baseBudget) * 3 // campeão da copa nacional
+                    ? CHAMPION_PRIZE.cup // campeão da copa nacional: prêmio fixo
                     : gate * STAGE_PRIZE[info.stage];
               }
             }
@@ -1453,7 +1462,22 @@ export const useStore = create<Store>()(
         }
         return state;
       },
-      partialize: (s) => ({ game: s.game, settings: s.settings }),
+      // além do jogo: persiste a rodada ao vivo em andamento, para que sair e
+      // voltar retome exatamente onde estava. O jogo volta sempre pausado.
+      partialize: (s) => ({
+        game: s.game,
+        settings: s.settings,
+        live: s.live,
+        lastResults: s.lastResults,
+        liveDivision: s.liveDivision,
+      }),
+      // ao recarregar com uma rodada em andamento (não encerrada), volta pausado
+      // no instante em que o técnico saiu.
+      onRehydrateStorage: () => (state) => {
+        if (state && state.live && state.live.some((m) => !m.finished)) {
+          state.paused = true;
+        }
+      },
     },
   ),
 );

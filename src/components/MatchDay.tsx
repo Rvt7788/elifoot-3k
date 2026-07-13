@@ -628,6 +628,20 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
     }
   }, [live]);
 
+  // Retomada de jogo salvo: se ao montar já existe um jogo do usuário em
+  // andamento e pausado (veio do save), abre a parada tática no instante em que
+  // o técnico saiu, com o jogo parado.
+  const restoreChecked = useRef(false);
+  useEffect(() => {
+    if (restoreChecked.current) return;
+    restoreChecked.current = true;
+    if (!live || !game) return;
+    const um = live.find((m) => m.homeId === game.userClubId || m.awayId === game.userClubId);
+    if (um && !um.finished && um.minute > 0 && paused) {
+      setModalOpen(true);
+    }
+  }, []);
+
   if (!game) return null;
   const clubById = (id: string) => game.clubs.find((c) => c.id === id)!;
   const userCountry = game.clubs.find((c) => c.id === game.userClubId)!.country;

@@ -109,6 +109,60 @@ export function weekInfo(week: number): WeekInfo {
   return { type: "league", round: week - insertsBefore };
 }
 
+// Resultados recentes de um clube em TODAS as competições (liga, copa, continental),
+// ordenados cronologicamente pela semana em que aconteceram. Usado na home.
+export interface RecentMatch {
+  homeId: string;
+  awayId: string;
+  homeScore: number;
+  awayScore: number;
+  week: number;
+  comp: "league" | "cup" | "continental";
+}
+
+export function userRecentMatches(
+  game: {
+    userClubId: string;
+    fixtures: { week: number; homeId: string; awayId: string; homeScore?: number; awayScore?: number; played: boolean }[];
+    cup?: CupState;
+    continental?: CupState;
+  },
+  count = 5,
+): RecentMatch[] {
+  const id = game.userClubId;
+  const out: RecentMatch[] = [];
+
+  for (const f of game.fixtures) {
+    if (f.played && (f.homeId === id || f.awayId === id))
+      out.push({ homeId: f.homeId, awayId: f.awayId, homeScore: f.homeScore!, awayScore: f.awayScore!, week: f.week, comp: "league" });
+  }
+
+  const addKnockout = (state: CupState | undefined, weeks: (stage: number) => [number, number], comp: "cup" | "continental") => {
+    if (!state) return;
+    state.rounds.forEach((ties, stage) => {
+      const [idaW, voltaW] = weeks(stage);
+      for (const t of ties) {
+        if (t.homeId !== id && t.awayId !== id) continue;
+        if (t.g1h != null && t.g1a != null)
+          out.push({ homeId: t.homeId, awayId: t.awayId, homeScore: t.g1h, awayScore: t.g1a, week: idaW, comp });
+        if (t.g2h != null && t.g2a != null)
+          out.push({ homeId: t.awayId, awayId: t.homeId, homeScore: t.g2h, awayScore: t.g2a, week: voltaW, comp });
+      }
+    });
+  };
+  addKnockout(game.cup, cupStageWeeks, "cup");
+  addKnockout(game.continental, contStageWeeks, "continental");
+
+  if (game.continental?.groupFixtures) {
+    for (const f of game.continental.groupFixtures) {
+      if (f.played && (f.homeId === id || f.awayId === id))
+        out.push({ homeId: f.homeId, awayId: f.awayId, homeScore: f.homeScore!, awayScore: f.awayScore!, week: contGroupWeek(f.matchday), comp: "continental" });
+    }
+  }
+
+  return out.sort((a, b) => a.week - b.week).slice(-count);
+}
+
 function shuffle<T>(rng: Rng, arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {

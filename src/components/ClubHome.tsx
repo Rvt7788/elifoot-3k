@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useStore, nextPlayableWeek, clubAggression, isCupEliminated, squadWageBill, BANKRUPTCY_WEEKS } from "../store";
-import { weekInfo, tiesForLeg, groupFixturesForMatchday, CUP_STAGE_NAMES, CONT_STAGE_NAMES } from "../game/cup";
+import { weekInfo, tiesForLeg, groupFixturesForMatchday, userRecentMatches, CUP_STAGE_NAMES, CONT_STAGE_NAMES } from "../game/cup";
 import { sortTable } from "../game/schedule";
 import { aiPregameTactics } from "../game/engine";
 import { autoTacticsForOpponent } from "../game/autoTactics";
@@ -237,9 +237,7 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
     game.defaultTactics?.mentality === autoR.mentality &&
     game.defaultTactics?.marking === autoR.marking;
 
-  const lastResults = game.fixtures
-    .filter((f) => f.played && (f.homeId === club.id || f.awayId === club.id))
-    .slice(-5);
+  const lastResults = userRecentMatches(game, 5);
 
   const topScorers = [...squad].sort((a, b) => b.goals - a.goals).slice(0, 10);
   const squadValue = squad.reduce((s, p) => s + p.value, 0);
@@ -578,13 +576,15 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
               const home = game.clubs.find((c) => c.id === f.homeId)!;
               const away = game.clubs.find((c) => c.id === f.awayId)!;
               const isHome = f.homeId === club.id;
-              const gf = isHome ? f.homeScore! : f.awayScore!;
-              const ga = isHome ? f.awayScore! : f.homeScore!;
+              const gf = isHome ? f.homeScore : f.awayScore;
+              const ga = isHome ? f.awayScore : f.homeScore;
               const badge = gf > ga ? "bg-emerald-500" : gf < ga ? "bg-red-500" : "bg-zinc-500";
+              const compIcon = f.comp === "cup" ? "🏆" : f.comp === "continental" ? "🌎" : "";
               return (
                 <div key={i} className="flex w-fit max-w-full items-center gap-1.5 py-1 md:py-1.5 pr-6 text-xs md:text-sm text-zinc-200">
                   <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${badge}`} />
                   <span className="truncate">
+                    {compIcon && <span className="mr-0.5">{compIcon}</span>}
                     {home.name}{" "}
                     <span className="font-display font-semibold text-zinc-50">
                       {f.homeScore}-{f.awayScore}
