@@ -445,7 +445,8 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
                 <button
                   onClick={onStartMatchday}
                   disabled={skipping}
-                  className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-zinc-800 border-2 border-zinc-700 px-3 py-1 text-xs font-semibold text-zinc-300 hover:bg-zinc-700 disabled:opacity-50"
+                  style={{ ["--relief-edge" as string]: "#52525b", ["--relief-base" as string]: "#18181b" }}
+                  className="metal-relief flex flex-1 items-center justify-center gap-1 rounded-lg bg-zinc-800 px-3 py-1 text-xs font-semibold text-zinc-300 hover:bg-zinc-700 disabled:opacity-50"
                   title="Acompanha os jogos da rodada ao vivo"
                 >
                   <IconPlay className="h-5 w-5" />
@@ -454,7 +455,8 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
                 <button
                   onClick={handleSkip}
                   disabled={skipping}
-                  className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-zinc-800 border-2 border-zinc-700 px-3 py-1 text-xs font-semibold text-zinc-300 hover:bg-zinc-700 disabled:cursor-wait disabled:opacity-60"
+                  style={{ ["--relief-edge" as string]: "#52525b", ["--relief-base" as string]: "#18181b" }}
+                  className="metal-relief flex flex-1 items-center justify-center gap-1 rounded-lg bg-zinc-800 px-3 py-1 text-xs font-semibold text-zinc-300 hover:bg-zinc-700 disabled:cursor-wait disabled:opacity-60"
                   title="Simula todos os jogos da rodada instantaneamente"
                 >
                   {skipping ? "Simulando…" : "Pular »"}
