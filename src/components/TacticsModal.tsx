@@ -1292,6 +1292,10 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
           ref={(el) => (fabRef.current = el)}
           className="fixed bottom-6 right-5 z-[55]"
           style={{ transform: `translate(${fabPos.dx}px, ${fabPos.dy}px)` }}
+          // o botão age no onPointerUp; o click sintético que o navegador dispara
+          // em seguida NÃO deve borbulhar até o overlay (onClick={closeAndResume}),
+          // senão closeAndResume roda duas vezes e o fluxo de confirmação quebra
+          onClick={(e) => e.stopPropagation()}
         >
           <button
             onPointerDown={onFabDown}
