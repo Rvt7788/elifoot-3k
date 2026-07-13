@@ -19,6 +19,21 @@ import { ScrollLock } from "./useLockBodyScroll";
 // Nome nas listas de artilheiros: comprido demais vira só o primeiro nome
 const scorerName = (n: string) => (n.length > 16 ? n.split(" ")[0] : n);
 
+// Nome do time nos resultados: se for muito grande, abrevia para uma só palavra
+// (para o placar caber na linha). Prefixos genéricos (Real, Club, Atlético…) não
+// distinguem o time — nesse caso vale mais a última palavra; senão, a primeira.
+const TEAM_STOPWORDS = new Set([
+  "real", "club", "clube", "atlético", "atletico", "athletic", "sporting",
+  "racing", "deportivo", "cd", "cf", "fc", "sc", "ac", "de", "do", "da",
+]);
+const teamName = (n: string) => {
+  if (n.length <= 12) return n;
+  const words = n.split(" ").filter(Boolean);
+  if (words.length === 1) return n;
+  const first = words[0].toLowerCase();
+  return TEAM_STOPWORDS.has(first) ? words[words.length - 1] : words[0];
+};
+
 const sectorAvg = (squad: Player[], poss: string[]) => {
   const ps = squad.filter((p) => poss.includes(p.pos));
   return ps.length
@@ -122,7 +137,7 @@ function OpponentModal({
                 return (
                   <div key={i} className="flex items-center gap-2 border-b border-[rgba(30,42,56,0.6)] py-1.5 text-sm text-zinc-200">
                     <span className={`inline-block h-2 w-2 rounded-full ${badge}`} />
-                    <span>{home.name} {f.homeScore} - {f.awayScore} {away.name}</span>
+                    <span>{teamName(home.name)} {f.homeScore} - {f.awayScore} {teamName(away.name)}</span>
                   </div>
                 );
               })}
@@ -585,11 +600,11 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
                   <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${badge}`} />
                   <span className="truncate">
                     {compIcon && <span className="mr-0.5">{compIcon}</span>}
-                    {home.name}{" "}
+                    {teamName(home.name)}{" "}
                     <span className="font-display font-semibold text-zinc-50">
                       {f.homeScore}-{f.awayScore}
                     </span>{" "}
-                    {away.name}
+                    {teamName(away.name)}
                   </span>
                 </div>
               );
