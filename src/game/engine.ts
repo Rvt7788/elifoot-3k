@@ -430,6 +430,20 @@ function countSector(lineup: LivePlayer[], idx: PlayersIndex, pos: Position): nu
   ).length;
 }
 
+// Peso do meia na FASE DE ATAQUE, para as contas de vantagem numérica: um 4-5-1
+// não ataca só com o centroavante — os meias sobem e municiam. Cada meia vale uma
+// fração de atacante (mais quando o time propõe o jogo), então a linha de 5 meias
+// deixa de ser tratada como "1 homem no ataque" e passa a gerar/finalizar chances.
+const MID_ATTACK_WEIGHT: Record<Mentality, number> = {
+  defensivo: 0.35, equilibrado: 0.5, ofensivo: 0.65, tudo_ou_nada: 0.75,
+};
+// "Corpos" que efetivamente atacam: atacantes cheios + meias com peso pela mentalidade.
+function attackingBodies(
+  lineup: LivePlayer[], idx: PlayersIndex, mentality: Mentality,
+): number {
+  return countSector(lineup, idx, "ATA") + MID_ATTACK_WEIGHT[mentality] * countSector(lineup, idx, "MEI");
+}
+
 // Jogadores a menos em campo (expulsões): base de todas as penalidades de
 // inferioridade numérica — 9 homens não cobrem o campo de 11.
 function menDown(lineup: LivePlayer[]): number {
@@ -595,7 +609,8 @@ function tryShot(
   // ataque a linha está desarrumada e o bônus numérico não vale.
   if (!counter) {
     const nDef = countSector(defLineup, idx, "DEF");
-    const nAtk = countSector(atkLineup, idx, "ATA");
+    // atacantes efetivos = ATA + meias que sobem: 4-5-1 ataca com muito mais que 1 corpo
+    const nAtk = attackingBodies(atkLineup, idx, atkTactics.mentality);
     gk *= 1 + Math.max(-0.21, Math.min(0.3, 0.08 * (nDef - nAtk)));
   }
   // time desfalcado defende com espaços abertos: cada expulso facilita a
@@ -977,9 +992,11 @@ export function simulateMinute(
     // rival com a linha lá na frente deixa espaço: atacar contra tudo-ou-nada rende
     if (opp.mentality === "tudo_ou_nada") p *= 1.3;
     else if (opp.mentality === "ofensivo") p *= 1.08;
-    // superioridade numérica na defesa rival (5 DEF x 2-3 ATA) abafa a criação
+    // superioridade numérica na defesa rival abafa a criação — mas contra os
+    // atacantes EFETIVOS (ATA + meias que sobem), não só o centroavante: um 4-5-1
+    // leva os 5 meias ao ataque, então não sofre a punição de "1 x 4 zagueiros"
     const nDefOpp = countSector(oppLineup, idx, "DEF");
-    const nAtkMine = countSector(lineup, idx, "ATA");
+    const nAtkMine = attackingBodies(lineup, idx, t.mentality);
     if (nDefOpp > nAtkMine) p *= Math.max(0.85, 1 - 0.04 * (nDefOpp - nAtkMine));
     // criativos fabricam chances do nada (meio e ataque)
     const nCriativo = lineup.filter(

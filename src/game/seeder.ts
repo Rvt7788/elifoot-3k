@@ -109,8 +109,10 @@ function capFor(tier: Tier): number {
 }
 
 export function playerValue(p: { strength: number; age: number }): number {
-  const base = p.strength * p.strength * 900;
-  const ageFactor = p.age <= 23 ? 1.4 : p.age <= 28 ? 1.0 : p.age <= 32 ? 0.7 : 0.4;
+  // curva quadrática acentuada: cada ponto de força no topo encarece muito mais
+  // que na base, então montar um elenco forte exige caixa de verdade
+  const base = p.strength * p.strength * 1600;
+  const ageFactor = p.age <= 23 ? 1.35 : p.age <= 29 ? 1.1 : p.age <= 32 ? 0.85 : 0.5;
   return Math.round((base * ageFactor) / 1000) * 1000;
 }
 
@@ -413,16 +415,16 @@ export function newGame(seed: number, userClubId: string): GameState {
 }
 
 // Curva suave de aposentadoria: sobe ano a ano sem virar certeza cedo — a maioria
-// para entre 33 e 37, mas ~4% dos jogadores de linha chegam aos 40 (goleiros duram
-// ~2 anos a mais). Só aos 41/43 a chuteira é pendurada compulsoriamente.
-const RETIRE_CHANCE = [0.01, 0.02, 0.04, 0.08, 0.14, 0.22, 0.3, 0.4, 0.5, 0.65, 0.8]; // idades 30..40
+// só pendura a chuteira entre 35 e 39, e ~5% dos jogadores de linha ainda chegam aos
+// 42 (goleiros duram ~2 anos a mais). Só aos 43/45 a aposentadoria é compulsória.
+const RETIRE_CHANCE = [0.005, 0.01, 0.02, 0.04, 0.08, 0.14, 0.22, 0.32, 0.45, 0.6, 0.78, 0.9]; // idades 31..42
 export function rollRetirement(rng: Rng, pos: Position, age: number): boolean {
-  if (age < 30) {
-    return rng() < 0.002; // Aposentadoria precoce (0.2%)
+  if (age < 31) {
+    return rng() < 0.001; // Aposentadoria precoce, bem rara (0.1%)
   }
   const effAge = pos === "GOL" ? age - 2 : age; // goleiro envelhece mais devagar
-  if (effAge >= 41) return true;
-  const p = RETIRE_CHANCE[Math.max(0, Math.min(RETIRE_CHANCE.length - 1, effAge - 30))];
+  if (effAge >= 43) return true;
+  const p = RETIRE_CHANCE[Math.max(0, Math.min(RETIRE_CHANCE.length - 1, effAge - 31))];
   return rng() < p;
 }
 

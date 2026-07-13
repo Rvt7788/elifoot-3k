@@ -43,6 +43,30 @@ function serieBPool(clubs: Club[], lucky: boolean, country?: string): Club[] {
   return lucky ? b.slice(-Math.min(10, b.length)) : b.slice(0, Math.min(10, b.length));
 }
 
+// Nome do presidente: sorteado de forma determinística a partir do id do clube,
+// para que o mesmo clube tenha sempre o mesmo presidente (assinatura estável) sem
+// precisar persistir nada — cada save/time ganha o seu.
+const PRES_FIRST = [
+  "Aldair", "Benedito", "Cláudio", "Douglas", "Edmundo", "Fábio", "Gilberto",
+  "Hélio", "Ivan", "Jorge", "Laércio", "Marcelo", "Nélson", "Osvaldo", "Paulo",
+  "Ricardo", "Sérgio", "Tarcísio", "Valdir", "Wagner",
+];
+const PRES_LAST = [
+  "Andrade", "Bezerra", "Carvalho", "Dantas", "Esteves", "Furtado", "Gonçalves",
+  "Hidalgo", "Ibrahim", "Junqueira", "Klein", "Lacerda", "Meireles", "Nogueira",
+  "Ottoni", "Pontes", "Queiroz", "Rangel", "Siqueira", "Teixeira", "Vasconcelos",
+];
+function presidentName(clubId: string): string {
+  let h = 2166136261;
+  for (let i = 0; i < clubId.length; i++) {
+    h ^= clubId.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  const first = PRES_FIRST[(h >>> 0) % PRES_FIRST.length];
+  const last = PRES_LAST[((h >>> 8) >>> 0) % PRES_LAST.length];
+  return `${first} ${last}`;
+}
+
 // Boas-vindas do presidente: 5 variações no mesmo tom, sorteadas a cada abertura
 // do modal para a recepção nunca ser igual. {name} vira o nome do técnico.
 const WELCOME_MESSAGES: { p1: string; p2: string }[] = [
@@ -204,16 +228,19 @@ export default function NewGame() {
             >
               ✕
             </button>
-            <h2 className="mb-3 text-center font-display text-lg font-bold">
+            <h2 className="mb-7 text-center font-display text-lg font-bold">
               Bem-vindo ao {club.name}
             </h2>
             <p className="mb-2 text-pretty text-sm leading-relaxed">
               {welcomeMsg.p1.replace("{name}", managerName.trim())}
             </p>
-            <p className="mb-4 text-pretty text-sm leading-relaxed">
+            <p className="mb-8 text-pretty text-sm leading-relaxed">
               {welcomeMsg.p2}
             </p>
-            <p className="mb-4 text-right text-xs italic opacity-80">
+            <p className="mb-0.5 text-center font-display text-xl italic opacity-90">
+              {presidentName(club.id)}
+            </p>
+            <p className="mb-12 text-center text-xs italic opacity-80">
               Presidente do {club.name}
             </p>
             <div className="flex justify-center">

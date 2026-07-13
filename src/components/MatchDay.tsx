@@ -214,16 +214,17 @@ function MatchRow({
 }
 
 function MatchClock({
-  minute, paused, halftime, onToggle, showPlay = true,
-}: { minute: number; paused: boolean; halftime: boolean; onToggle: () => void; showPlay?: boolean }) {
-  // Relógio de 0 a 90. O círculo preenche continuamente.
+  minute, halftime, showPlay = true,
+}: { minute: number; halftime: boolean; showPlay?: boolean }) {
+  // Relógio de 0 a 90. O círculo preenche continuamente. (Os controles de
+  // play/pausa e encerrar rodada ficam em botões flutuantes, fora do relógio.)
   const displayMin = Math.min(minute, 90);
   const pct = Math.min(1, displayMin / 90);
   const r = 15;
   const c = 2 * Math.PI * r;
   return (
     <div className="flex items-center justify-center gap-3">
-      <svg width="36" height="36" viewBox="0 0 36 36" className="shrink-0 -rotate-90">
+      <svg width="44" height="44" viewBox="0 0 36 36" className="shrink-0 -rotate-90">
         <circle cx="18" cy="18" r={r} fill="none" stroke="#3f3f46" strokeWidth="3" />
         <circle
           cx="18" cy="18" r={r} fill="none"
@@ -240,17 +241,7 @@ function MatchClock({
       {halftime && (
         <span className="text-sm font-bold uppercase tracking-wide text-amber-400">Intervalo</span>
       )}
-      {showPlay ? (
-        <button
-          onClick={onToggle}
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-            paused ? "bg-emerald-600 hover:bg-emerald-500" : "bg-zinc-800 hover:bg-zinc-700"
-          }`}
-          title={paused ? "Retomar jogos" : "Pausar jogos"}
-        >
-          {paused ? "▶" : "⏸"}
-        </button>
-      ) : (
+      {!showPlay && (
         <span className="text-sm font-bold uppercase tracking-wide text-emerald-400">Fim de jogo</span>
       )}
     </div>
@@ -500,11 +491,8 @@ function PenaltyModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <ScrollLock />
       <div className="w-full max-w-xs rounded-xl border border-zinc-700 bg-zinc-900 p-6 text-center">
-        <p className="mb-1 text-sm font-bold uppercase tracking-wide text-amber-400">
-          Pênalti {forUser ? "a favor" : "contra"} · {event.minute}&#39;
-        </p>
         {/* nome do clube no padrão da tabela: fundo na cor do time, texto legível */}
-        <div className="mb-3 flex items-center justify-center">
+        <div className="mb-4 flex items-center justify-center">
           <span
             className="rounded px-3 py-1 text-base font-bold"
             style={{ background: teamColor, color: readableOn(teamColor) }}
@@ -512,6 +500,9 @@ function PenaltyModal({
             {teamName}
           </span>
         </div>
+        <p className="mb-8 text-sm font-bold uppercase tracking-wide text-amber-400">
+          Pênalti {forUser ? "a favor" : "contra"} · {event.minute}&#39;
+        </p>
         <p className="mb-3 text-base font-bold text-zinc-100">{event.playerName} na bola</p>
         {!revealed ? (
           <div className="flex flex-col items-center gap-2 py-2">
@@ -540,6 +531,8 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
   const [halftimeNotice, setHalftimeNotice] = useState(false);
   // pênalti do jogo do usuário: abre o modal de cobrança automática e pausa o jogo
   const [pendingPenalty, setPendingPenalty] = useState<{ event: MatchEvent; forUser: boolean } | null>(null);
+  // chave do último pênalti já dispensado pelo modal: o placar volta a mostrar o gol
+  const [dismissedPenaltyKey, setDismissedPenaltyKey] = useState<string | null>(null);
   // navegação pelas rodadas do calendário (setas no título); null = semana atual
   const [browseWeek, setBrowseWeek] = useState<number | null>(null);
   // clique no nome de um time abre a ficha do clube
@@ -561,6 +554,9 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
       halftimePaused.current = true;
       setPaused(true);
       setHalftimeNotice(true);
+      // abre a parada tática automaticamente no intervalo, para o técnico
+      // ajustar a equipe antes do segundo tempo (a menos que já esteja aberta)
+      setModalOpen(true);
     }
   }, [userMatchMinute, live !== null]);
 
@@ -977,12 +973,27 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
     (m) => m.homeId === game.userClubId || m.awayId === game.userClubId,
   );
 
-  // Spoiler do pênalti: o modal de cobrança tem fundo translúcido e o motor já
-  // gravou o gol no mesmo tick — enquanto o veredito não sai, o card exibe o
-  // placar e os eventos SEM esse gol, para não entregar o resultado antes da batida.
+  // Spoiler do pênalti: o motor grava o gol no MESMO tick da cobrança, e o efeito
+  // que abre o modal só roda depois do commit — haveria um frame em que o placar
+  // já mostra o gol antes do modal aparecer ("gol aparece e some"). Para evitar
+  // isso, o gating é derivado direto da partida: enquanto houver um pênalti
+  // convertido ainda não liberado (não dispensado pelo modal), o placar e os
+  // eventos escondem esse gol. Assim a ocultação e o incremento do placar caem no
+  // mesmo render.
+  const lastScoredPenalty = (() => {
+    if (!userMatch) return null;
+    for (let i = userMatch.events.length - 1; i >= 0; i--) {
+      const ev = userMatch.events[i];
+      if (ev.type === "penalty") return ev.scored ? ev : null; // só o último pênalti importa
+    }
+    return null;
+  })();
+  const penaltyKey = (e: MatchEvent) => `${e.minute}-${e.side}-${e.playerName}`;
+  const penaltyPending =
+    !!lastScoredPenalty && penaltyKey(lastScoredPenalty) !== dismissedPenaltyKey;
   const displayUserMatch = (() => {
-    if (!userMatch || !pendingPenalty?.event.scored) return userMatch;
-    const pe = pendingPenalty.event;
+    if (!userMatch || !lastScoredPenalty || !penaltyPending) return userMatch;
+    const pe = lastScoredPenalty;
     const events = [...userMatch.events];
     for (let i = events.length - 1; i >= 0; i--) {
       const ev = events[i];
@@ -1018,7 +1029,12 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
 
 
   return (
-    <div className="mx-auto max-w-4xl p-4">
+    <div className="mx-auto max-w-4xl p-4 pb-28">
+      {/* logo trazida para a tela ao vivo, sem borda/divisória: o cabeçalho se
+          funde ao corpo do ao vivo */}
+      <div className="mb-2 flex justify-center">
+        <img src="/elifoot3klogo.png" alt="Elifoot 3k" className="h-14 w-auto" />
+      </div>
       <div className="mb-4 text-center">
         <p className={`text-lg font-bold tracking-wide ${liveIsCup ? "text-amber-400" : "text-zinc-200"}`}>
           {weekLabelHeader(game.week, game.season, userCountry).title}
@@ -1036,23 +1052,41 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
       <div className="mb-6 flex flex-col items-center justify-center gap-4">
         <MatchClock
           minute={live[0]?.minute ?? 0}
-          paused={paused}
           halftime={halftimeNotice}
-          onToggle={() => {
-            setHalftimeNotice(false);
-            setPaused(!paused);
-          }}
           showPlay={!allDone}
         />
-        {allDone && onFinishRound && (
-          <button
-            onClick={onFinishRound}
-            className="btn-ghost-amber !border !border-amber-600/50 rounded-lg px-5 py-2.5 text-base font-semibold"
-          >
-            ✔ Encerrar rodada
-          </button>
-        )}
       </div>
+
+      {/* Controles flutuantes: play/pausa durante o jogo, encerrar rodada ao fim.
+          Escondidos enquanto a parada tática (tem o seu próprio "Jogar") ou a
+          cobrança de pênalti (ação automática) estão na tela. */}
+      {!modalOpen && !pendingPenalty && (
+        <div className="fixed bottom-10 left-1/2 z-40 -translate-x-1/2">
+          {allDone ? (
+            onFinishRound && (
+              <button
+                onClick={onFinishRound}
+                className="btn-live btn-live--finish px-6 py-3 text-base shadow-lg shadow-black/50"
+              >
+                ✔ Encerrar rodada
+              </button>
+            )
+          ) : (
+            <button
+              onClick={() => {
+                setHalftimeNotice(false);
+                setPaused(!paused);
+              }}
+              className={`btn-live h-16 w-16 text-2xl shadow-lg shadow-black/50 ${
+                paused ? "btn-live--play" : "btn-live--pause"
+              }`}
+              title={paused ? "Retomar jogos" : "Pausar jogos"}
+            >
+              {paused ? "▶" : "⏸"}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Confronto do usuário em destaque no topo */}
       {userMatch && (
@@ -1129,6 +1163,7 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
             teamColor={penClub.primaryColor}
             soundOn={settings.soundGoal}
             onDone={() => {
+              if (pendingPenalty.event.scored) setDismissedPenaltyKey(penaltyKey(pendingPenalty.event));
               setPendingPenalty(null);
               if (!userMatch.finished) setPaused(false);
             }}

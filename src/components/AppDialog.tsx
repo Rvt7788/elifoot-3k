@@ -48,11 +48,11 @@ export function AppDialogHost() {
     >
       <ScrollLock />
       <div
-        className="w-full max-w-sm rounded-xl border border-zinc-700 bg-zinc-900 p-5"
+        className="w-full max-w-[260px] rounded-xl border border-zinc-700 bg-zinc-900 p-5"
         onClick={(e) => e.stopPropagation()}
       >
-        <p className="mb-4 text-sm leading-relaxed text-zinc-200">{message}</p>
-        <div className="flex justify-end gap-2">
+        <p className="mb-4 text-center text-sm leading-relaxed text-zinc-200">{message}</p>
+        <div className="flex justify-center gap-2">
           {kind === "confirm" && (
             <button
               onClick={() => close(false)}
@@ -63,7 +63,7 @@ export function AppDialogHost() {
           )}
           <button
             onClick={() => close(true)}
-            className="btn-play px-5 py-1.5 text-sm"
+            className="btn-live btn-live--finish px-5 py-1.5 text-sm"
             autoFocus
           >
             {labels.ok ?? "OK"}

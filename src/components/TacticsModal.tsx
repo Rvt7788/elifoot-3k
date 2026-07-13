@@ -27,6 +27,9 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
   const [rejectedSubs, setRejectedSubs] = useState<string[]>([]);
   // substituições feitas NESTA parada: cada uma pode ser cancelada individualmente
   const [sessionSubs, setSessionSubs] = useState<{ out: string; in: string }[]>([]);
+  // a parada abre COLAPSADA: só o cabeçalho e as informações do jogo ficam à
+  // vista; o técnico expande para mexer em subs/táticas/formação/prancheta
+  const [expanded, setExpanded] = useState(false);
   // titulares começam colapsados: a interação principal é pela prancheta e pelo banco
   const [startersOpen, setStartersOpen] = useState(false);
   // reservas colapsáveis, padrão aberto — é a lista mais usada na parada
@@ -132,7 +135,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
       return;
     }
     if (hasChanges()) {
-      const keep = await appConfirm("Aplicar as alterações da intervenção tática?", {
+      const keep = await appConfirm("Aplicar alterações?", {
         ok: "Confirmar",
         cancel: "Desfazer",
       });
@@ -702,55 +705,44 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
   const awayClub = game.clubs.find((c) => c.id === match.awayId)!;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={closeAndResume}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 pt-28 pb-32" onClick={closeAndResume}>
       <div
-        className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 p-5"
+        className="max-h-[68vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 p-5 pb-6"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* cabeçalho no padrão compacto da tela: título 11px em maiúsculo à
-            esquerda; ações (resetar, jogar, fechar) agrupadas à direita */}
-        <div className="mb-4 flex items-stretch gap-3">
-          {/* min-w-0 + overflow-hidden: título e placar truncam antes de tocar o Jogar */}
-          <div className="min-w-0 overflow-hidden">
-            <h2 className="truncate text-[11px] font-bold text-zinc-400">⏸ PARADA TÁTICA — {match.minute}&#39;</h2>
-            {/* confronto com placar: cada nome na cor do time; o adversário
+        {/* cabeçalho AMPLIADO: minuto no topo e o CONFRONTO em destaque — nomes
+            dos times grandes, na cor de cada clube, com o placar no centro. As
+            ações (fechar, desfazer) ficam no canto superior direito. */}
+        <div className="relative mb-4">
+          <div className="mx-auto text-center">
+            <h2 className="text-xs font-bold uppercase tracking-wide text-zinc-500">⏸ Parada tática — {match.minute}&#39;</h2>
+            {/* confronto: cada nome grande na cor do time; o adversário
                 sublinhado para destacar que é clicável (abre sua prancheta) */}
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-zinc-400">
+            <div className="mt-1.5 flex items-center justify-center gap-3">
               {([homeClub, awayClub] as const).map((c, idx) => {
                 const isOpp = c.id !== game.userClubId;
                 return (
                   <span key={c.id} className="contents">
                     <span
                       onClick={() => setInfoClub(c)}
-                      // cor escura (time de preto) some no fundo: nome ganha chip claro
-                      className={`cursor-pointer truncate font-semibold ${isOpp ? "underline decoration-2 underline-offset-2" : ""} hover:opacity-80${
-                        isDarkColor(c.primaryColor) ? " rounded bg-zinc-300 px-1" : ""
+                      className={`max-w-[38%] cursor-pointer truncate font-display text-xl font-black sm:text-2xl ${isOpp ? "underline decoration-2 underline-offset-4" : ""} hover:opacity-80${
+                        isDarkColor(c.primaryColor) ? " rounded bg-zinc-200 px-1.5" : ""
                       }`}
-                      style={{ color: c.primaryColor, textDecorationColor: c.primaryColor }}
+                      style={{ color: c.primaryColor, textDecorationColor: c.primaryColor, textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}
                     >
                       {c.shortName}
                     </span>
                     {idx === 0 && (
-                      <span className="shrink-0 rounded bg-zinc-800 px-1.5 py-0.5 font-mono text-xs font-bold text-zinc-100">
+                      <span className="shrink-0 rounded-md bg-zinc-800 px-2.5 py-1 font-mono text-lg font-black text-zinc-100 sm:text-xl">
                         {match.homeScore}-{match.awayScore}
                       </span>
                     )}
                   </span>
                 );
               })}
-            </p>
+            </div>
           </div>
-          {/* Jogar ocupa todo o espaço vazio, na altura das duas linhas (título +
-              confronto), encostando na coluna ✕/↺ */}
-          <button
-            onClick={closeAndResume}
-            disabled={!hasKeeperOnField}
-            className="flex min-w-0 flex-1 items-center justify-center gap-1.5 self-stretch rounded-lg bg-emerald-600 px-4 text-sm font-bold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
-            title={hasKeeperOnField ? "Voltar ao jogo" : "Você precisa escalar um goleiro ou jogador de linha no gol!"}
-          >
-            <span className="text-[12px]">▶</span> Jogar
-          </button>
-          <div className="flex shrink-0 items-center">
+          <div className="absolute right-0 top-0 flex shrink-0 items-center">
             {/* coluna: fechar (✕) em cima, desfazer (↺) abaixo */}
             <div className="flex flex-col items-center gap-2">
               {/* ✕: mesmo fluxo — sem alteração sai direto; com alteração pede confirmação */}
@@ -844,6 +836,20 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
           );
         })()}
 
+        {/* botão para expandir/recolher a parte editável (subs/táticas/formação/
+            prancheta): colapsada, a parada mostra só as informações do jogo */}
+        <div className="mb-3 flex justify-center">
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="metal-relief flex items-center gap-2 rounded-lg bg-zinc-800 px-4 py-2 text-sm font-bold text-zinc-200 hover:bg-zinc-700"
+            style={{ ["--relief-edge" as string]: "#52525b", ["--relief-base" as string]: "#18181b" }}
+          >
+            Ajustes
+            <span className="text-[10px]">{expanded ? "▲" : "▼"}</span>
+          </button>
+        </div>
+
+        {(expanded || !hasKeeperOnField) && (<>
         {/* ── 2. SUBSTITUIÇÕES: rápida e automática, mesma hierarquia ── */}
         <div className="mb-3 rounded-lg bg-zinc-800/60 px-3 py-2">
           <div className="mb-2 flex items-center justify-between">
@@ -1225,13 +1231,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
             </div>
           </div>
         </div>
-
-        <button
-          onClick={closeAndResume}
-          className="mt-4 w-full rounded-lg bg-emerald-600 py-2 font-bold hover:bg-emerald-500"
-        >
-          ▶ Voltar ao jogo
-        </button>
+        </>)}
 
         {/* prancheta do clube por cima da parada tática: mostra os titulares na
             forma que está jogando e o banco; fechar volta para cá com o jogo pausado */}
@@ -1260,6 +1260,19 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
           );
         })()}
       </div>
+
+      {/* Jogar flutuante no bottom da tela: fecha a parada e retoma o jogo.
+          Escondido enquanto a prancheta de um clube está aberta por cima. */}
+      {!infoClub && (
+        <button
+          onClick={(e) => { e.stopPropagation(); closeAndResume(); }}
+          disabled={!hasKeeperOnField}
+          className="btn-live btn-live--play fixed bottom-10 left-1/2 z-[55] -translate-x-1/2 gap-2 px-9 py-3 text-base uppercase tracking-wide shadow-lg shadow-black/50 disabled:cursor-not-allowed disabled:opacity-40"
+          title={hasKeeperOnField ? "Voltar ao jogo" : "Você precisa escalar um goleiro ou jogador de linha no gol!"}
+        >
+          <span className="text-[13px]">▶</span> Jogar
+        </button>
+      )}
     </div>
   );
 }

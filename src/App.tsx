@@ -70,12 +70,12 @@ function JobOfferModal() {
           Aceitar troca de clube imediatamente — a decisão é definitiva.
         </p>
         <div className="flex gap-2">
-          <button onClick={acceptJobOffer} className="btn-cta btn-cta--plain flex-1 py-2">
+          <button onClick={acceptJobOffer} className="btn-live btn-live--finish flex-1 py-2 text-sm">
             Aceitar
           </button>
           <button
             onClick={declineJobOffer}
-            className="flex-1 rounded bg-zinc-800 py-2 text-sm text-zinc-300 hover:bg-zinc-700"
+            className="btn-live btn-live--dark flex-1 py-2 text-sm"
           >
             Ficar onde estou
           </button>
@@ -129,7 +129,7 @@ function IncomingOfferModal({ onOpenSquad }: { onOpenSquad: () => void }) {
         </p>
         <button
           onClick={() => { setHiddenFor(player.id); onOpenSquad(); }}
-          className="mb-2 w-full rounded bg-zinc-800 py-2 text-sm text-sky-300 hover:bg-zinc-700"
+          className="btn-live btn-live--info mb-3 w-full py-2 text-sm"
           title="Consulta o elenco e as informações do jogador antes de decidir — a proposta fica esperando"
         >
           Ver elenco antes de decidir
@@ -137,13 +137,13 @@ function IncomingOfferModal({ onOpenSquad }: { onOpenSquad: () => void }) {
         <div className="flex gap-2">
           <button
             onClick={acceptIncomingOffer}
-            className="flex-1 rounded bg-emerald-600 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
+            className="btn-live btn-live--finish flex-1 py-2 text-sm"
           >
             Aceitar
           </button>
           <button
             onClick={declineIncomingOffer}
-            className="flex-1 rounded bg-zinc-800 py-2 text-sm text-zinc-300 hover:bg-zinc-700"
+            className="btn-live btn-live--dark flex-1 py-2 text-sm !text-red-400"
           >
             Recusar
           </button>
@@ -163,7 +163,7 @@ function RoundNewsModal() {
     <div className="fixed inset-0 z-50 flex justify-center overflow-y-auto bg-black/70 p-4">
       <ScrollLock />
       <div className="my-auto w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-900 p-5">
-        <h2 className="mb-3 text-center font-display text-lg font-bold text-zinc-100">📰 Notícias da rodada</h2>
+        <h2 className="mb-3 text-center font-display text-lg font-bold text-zinc-100 [text-shadow:0_2px_4px_rgba(0,0,0,0.6)]">Notícias da rodada</h2>
         <div className="mb-5 flex flex-col gap-2 text-sm leading-relaxed text-zinc-300">
           {(() => {
             // agrupa manchetes do mesmo clube num container só, na ordem em que aparecem
@@ -195,10 +195,12 @@ function RoundNewsModal() {
               return (
                 <div
                   key={i}
-                  className="flex flex-col gap-1.5 rounded-lg px-3 py-2"
+                  className="metal-relief flex flex-col gap-1.5 rounded-lg px-3 py-2"
                   style={{
                     background: club.primaryColor,
                     color: readableKit(club.primaryColor, club.secondaryColor),
+                    ["--relief-edge" as string]: club.secondaryColor,
+                    ["--relief-base" as string]: "rgba(0,0,0,0.45)",
                   }}
                 >
                   {gr.items.map(line)}
@@ -207,12 +209,14 @@ function RoundNewsModal() {
             });
           })()}
         </div>
-        <button
-          onClick={dismissNews}
-          className="btn-cta mx-auto block w-fit px-8 py-2 text-sm font-bold"
-        >
-          Fechar
-        </button>
+        <div className="flex justify-center">
+          <button
+            onClick={dismissNews}
+            className="btn-live btn-live--dark w-fit px-8 py-2 text-sm"
+          >
+            Fechar
+          </button>
+        </div>
       </div>
     </div>
   );

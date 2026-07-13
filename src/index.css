@@ -167,6 +167,84 @@ h1, h2, h3, .font-display {
 .btn-play:hover { background: #10b981; } /* emerald-500 */
 .btn-play:active { transform: scale(0.97); }
 
+/* ── Botões de ação flutuantes do AO VIVO ──
+   Estilo "arcade": relevo brilhante, borda dourada e texto branco em maiúsculo.
+   O brilho vem de um gradiente vertical (topo claro → base escura) + realce
+   interno no topo via box-shadow inset; sem glow externo. */
+.btn-live {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #fff;
+  border-radius: 10px; /* raio padrão dos botões: menos redondo que um pill */
+  /* borda e base de profundidade herdam a cor da variante (var --live-edge),
+     para não haver nenhum tom dourado/amarelo fixo */
+  border: 2px solid var(--live-edge, rgba(255, 255, 255, 0.25));
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  box-shadow:
+    inset 0 2px 3px rgba(255, 255, 255, 0.4),
+    inset 0 -3px 5px rgba(0, 0, 0, 0.3),
+    0 3px 0 var(--live-base, rgba(0, 0, 0, 0.4)), /* base escura: profundidade */
+    0 5px 8px rgba(0, 0, 0, 0.45);                /* sombra projetada */
+  transition: filter 0.15s, transform 0.08s, box-shadow 0.08s;
+}
+.btn-live:hover { filter: brightness(1.06); }
+.btn-live:active {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 2px 3px rgba(255, 255, 255, 0.35),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.3),
+    0 1px 0 var(--live-base, rgba(0, 0, 0, 0.4)),
+    0 2px 4px rgba(0, 0, 0, 0.45);
+}
+
+/* Play/retomar: verde vivo */
+.btn-live--play {
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 45%, #15803d 100%);
+  --live-edge: #4ade80;
+  --live-base: #0f5a2c;
+}
+/* Pausar: verde escuro sombreado (contrasta com o verde vivo do play) */
+.btn-live--pause {
+  background: linear-gradient(180deg, #1f8a52 0%, #146b3e 45%, #0b4526 100%);
+  --live-edge: #34a06a;
+  --live-base: #06301a;
+}
+/* Encerrar rodada: mesmo verde vivo da paleta de prosseguimento */
+.btn-live--finish {
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 45%, #15803d 100%);
+  --live-edge: #4ade80;
+  --live-base: #0f5a2c;
+}
+/* Neutro/escuro: ações secundárias (Recusar) — mesmo relevo, tom cinza-grafite */
+.btn-live--dark {
+  background: linear-gradient(180deg, #52525b 0%, #3f3f46 45%, #27272a 100%);
+  --live-edge: #71717a;
+  --live-base: #18181b;
+}
+/* Informativo: "Ver elenco" — cinza-grafite com texto azul (mantém a cor atual) */
+.btn-live--info {
+  background: linear-gradient(180deg, #52525b 0%, #3f3f46 45%, #27272a 100%);
+  color: #7dd3fc; /* sky-300: mesma cor de texto de antes */
+  --live-edge: #71717a;
+  --live-base: #18181b;
+}
+
+/* Relevo metalizado reutilizável (não-botão): mesma linguagem do .btn-live —
+   borda, realce interno no topo e base de profundidade. A cor da borda/base vem
+   de --relief-edge/--relief-base (default dourado da tarja da home). */
+.metal-relief {
+  border: 2px solid var(--relief-edge, #cfa717);
+  box-shadow:
+    inset 0 2px 3px rgba(255, 255, 255, 0.4),
+    inset 0 -3px 5px rgba(0, 0, 0, 0.3),
+    0 3px 0 var(--relief-base, #a8790f),
+    0 5px 8px rgba(0, 0, 0, 0.4);
+}
+
 /* Vermelho retro: Ao vivo */
 .btn-metal-red {
   color: #ffffff;

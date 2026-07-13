@@ -136,8 +136,13 @@ export default function Squad() {
                   </div>
                   {/* Idade */}
                   <div className="w-[8%] sm:w-[6%] shrink-0 text-center">{p.age}a</div>
-                  {/* Força */}
-                  <div className="w-[8%] sm:w-[6%] shrink-0 text-center font-bold">{p.strength}</div>
+                  {/* Força (● = já atingiu o teto de potencial: não evolui mais) */}
+                  <div className="w-[8%] sm:w-[6%] shrink-0 text-center font-bold">
+                    {p.strength}
+                    {p.strength >= p.cap && (
+                      <span className="ml-0.5 text-amber-400" title="Potencial máximo atingido">●</span>
+                    )}
+                  </div>
                   {/* Energia */}
                   <div className={`w-[10%] sm:w-[8%] shrink-0 text-center ${p.energy < 60 ? "text-red-400" : "text-emerald-400"}`}>
                     {p.energy}%

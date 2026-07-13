@@ -88,6 +88,16 @@ export function PlayerPin({
           em fluxo e permanece centrada em (x,y), alinhada com as demais — os
           badges deslocam pra baixo sem empurrar a bolinha pra cima. */}
       <span className="absolute top-full left-1/2 flex -translate-x-1/2 flex-col items-center">
+        {!compact && (
+          <>
+            <span className="mt-0.5 max-w-[44px] truncate rounded bg-black/60 px-1 text-[8px] leading-tight text-white">
+              {p.foot === "canhoto" && <span className="text-red-400">◂</span>}
+              {p.name.split(" ").slice(-1)[0]}
+              {p.foot === "destro" && <span className="text-sky-400">▸</span>}
+            </span>
+            <EnergyBar value={energy} className="mt-0.5 scale-75" />
+          </>
+        )}
         {(penaltyTaker || captain) && (
           <span className="mt-0.5 flex items-center gap-1 leading-none">
             {captain && (
@@ -113,16 +123,6 @@ export function PlayerPin({
               />
             )}
           </span>
-        )}
-        {!compact && (
-          <>
-            <span className="mt-0.5 max-w-[44px] truncate rounded bg-black/60 px-1 text-[8px] leading-tight text-white">
-              {p.foot === "canhoto" && <span className="text-red-400">◂</span>}
-              {p.name.split(" ").slice(-1)[0]}
-              {p.foot === "destro" && <span className="text-sky-400">▸</span>}
-            </span>
-            <EnergyBar value={energy} className="mt-0.5 scale-75" />
-          </>
         )}
       </span>
     </button>

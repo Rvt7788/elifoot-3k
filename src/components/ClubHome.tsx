@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useStore, nextPlayableWeek, clubAggression, isCupEliminated, squadWageBill, BANKRUPTCY_WEEKS } from "../store";
 import { weekInfo, tiesForLeg, groupFixturesForMatchday, userRecentMatches, CUP_STAGE_NAMES, CONT_STAGE_NAMES } from "../game/cup";
 import { sortTable } from "../game/schedule";
@@ -174,6 +174,30 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
   const [analyzing, setAnalyzing] = useState(false);
   const [viewClub, setViewClub] = useState<Club | null>(null);
   const [financeOpen, setFinanceOpen] = useState(false);
+  // FAB "Jogar" arrastável: clicar e segurar move o botão; um toque simples ainda
+  // dispara o jogo. drag guarda o deslocamento aplicado via transform.
+  const [fabDrag, setFabDrag] = useState({ dx: 0, dy: 0 });
+  const fabPointer = useRef<{ startX: number; startY: number; baseDx: number; baseDy: number; moved: boolean } | null>(null);
+  const onFabPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    fabPointer.current = { startX: e.clientX, startY: e.clientY, baseDx: fabDrag.dx, baseDy: fabDrag.dy, moved: false };
+  };
+  const onFabPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const p = fabPointer.current;
+    if (!p) return;
+    const dx = e.clientX - p.startX;
+    const dy = e.clientY - p.startY;
+    // limiar pequeno para não confundir toque com arrasto
+    if (!p.moved && Math.hypot(dx, dy) < 6) return;
+    p.moved = true;
+    setFabDrag({ dx: p.baseDx + dx, dy: p.baseDy + dy });
+  };
+  const onFabPointerUp = () => {
+    const p = fabPointer.current;
+    fabPointer.current = null;
+    // toque sem arrasto: dispara o jogo
+    if (p && !p.moved) onStartMatchday?.();
+  };
   // feedback do "Pular rodada": a simulação trava a UI por um instante — marca o
   // clique na hora (botão desabilitado + rótulo) e roda a simulação no frame seguinte
   const [skipping, setSkipping] = useState(false);
@@ -192,6 +216,17 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
   const table = sortTable(game.tables[club.division] ?? []);
   const pos = table.findIndex((r) => r.clubId === club.id) + 1;
   const row = table[pos - 1];
+
+  // sombra dos textos da tarja: como a cor do texto varia (claro no time escuro,
+  // escuro no time claro), a sombra acompanha — escura sob texto claro dá relevo;
+  // sob texto escuro, uma sombra clara mantém a leitura sem "sujar".
+  const bannerTextDark = readableOn(club.primaryColor) !== "#ffffff";
+  const nameShadow = bannerTextDark
+    ? "0 1px 2px rgba(255,255,255,0.55)"
+    : "0 2px 4px rgba(0,0,0,0.55)";
+  const subShadow = bannerTextDark
+    ? "0 1px 1px rgba(255,255,255,0.5)"
+    : "0 1px 2px rgba(0,0,0,0.5)";
 
   // próximo compromisso do clube: rodada da liga, copa ou continental, o que vier antes
   const morale = game.morale ?? 60;
@@ -305,37 +340,46 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
         {/* Bandeira do clube - preenche toda a linha no mobile */}
         <div className="w-full sm:flex-1">
           <div
-            className="relative overflow-hidden rounded-md border border-black/40 shadow-inner h-24 sm:h-28"
-            style={{ background: club.primaryColor }}
+            className="metal-relief relative overflow-hidden rounded-md h-24 sm:h-28"
+            style={{
+              background: `linear-gradient(180deg, color-mix(in srgb, ${club.primaryColor} 80%, white) 0%, ${club.primaryColor} 45%, color-mix(in srgb, ${club.primaryColor} 82%, black) 100%)`,
+              ["--relief-edge" as string]: club.secondaryColor,
+              ["--relief-base" as string]: "rgba(0,0,0,0.45)",
+            }}
           >
             {/* faixa vertical na cor secundária, como o mastro de uma bandeira */}
             <div
               className="absolute inset-y-0 left-0 w-2"
               style={{ background: club.secondaryColor }}
             />
-            <div className="relative px-4 py-2.5 pl-6 sm:h-full sm:flex sm:flex-col sm:justify-center sm:pl-10 sm:py-4 sm:gap-1.5">
+            {/* bandeira do país ancorada à direita, ocupando toda a altura da
+                tarja com respiro no topo/base e à direita — a imagem cresce em
+                altura (h-full) e a largura acompanha a proporção */}
+            <div className="pointer-events-none absolute inset-y-0 right-6 flex items-center py-4">
+              <img
+                src={`/flags/${club.country.toLowerCase()}.png`}
+                alt={club.country}
+                className="h-full w-auto rounded-sm opacity-95 [filter:drop-shadow(0_1px_3px_rgba(0,0,0,0.5))]"
+              />
+            </div>
+            <div className="relative px-4 py-2.5 pl-6 sm:h-full sm:flex sm:flex-col sm:justify-center sm:pl-10 sm:py-4 sm:gap-0.5">
               <h1
-                className="ui-title leading-tight drop-shadow"
+                className="ui-title leading-tight"
                 // nome cresce com a tela, mas com teto no desktop
-                style={{ color: readableOn(club.primaryColor), fontSize: "clamp(1.6rem, 6vw, 2.4rem)" }}
+                style={{ color: readableOn(club.primaryColor), fontSize: "clamp(1.6rem, 6vw, 2.4rem)", textShadow: nameShadow }}
               >
                 {club.name}
               </h1>
               <p
-                className="text-sm opacity-90"
-                style={{ color: readableOn(club.primaryColor) }}
+                className="text-sm leading-tight opacity-90"
+                style={{ color: readableOn(club.primaryColor), textShadow: subShadow }}
               >
                 {leagueName(club.country)}
-                <img
-                  src={`/flags/${club.country.toLowerCase()}.png`}
-                  alt={club.country}
-                  className="ml-1.5 inline-block h-3 w-auto rounded-[1px] align-baseline"
-                />
               </p>
               {game.managerName && (
                 <p
-                  className="text-sm opacity-90"
-                  style={{ color: readableOn(club.primaryColor) }}
+                  className="text-sm leading-tight opacity-90"
+                  style={{ color: readableOn(club.primaryColor), textShadow: subShadow }}
                 >
                   Técnico {game.managerName}
                 </p>
@@ -348,25 +392,28 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
         <div className="flex flex-row items-stretch justify-between gap-3 text-left w-full sm:w-auto sm:justify-start sm:gap-6">
           {/* min-w-0: sem isso o conteúdo (flex min-width:auto) não encolhe e empurra
               o botão Jogar para fora da linha do cartão no mobile */}
-          <div className="min-w-0 overflow-hidden flex-1 rounded-lg border-2 border-[#cfa717] bg-[#e5be30] px-3 shadow-lg shadow-yellow-950/15 flex flex-row items-center justify-between gap-2 h-24 sm:h-28 sm:mx-0 sm:flex-initial sm:w-auto sm:max-w-none sm:justify-start sm:gap-10 sm:px-8">
-            {/* três blocos com a mesma grade de linhas (rótulo / valor / duas
-                sublinhas), para rótulos e números ficarem sempre alinhados */}
+          <div
+            className="metal-relief min-w-0 overflow-hidden flex-1 rounded-lg px-3 flex flex-row items-center justify-between gap-2 h-24 sm:h-28 sm:mx-0 sm:flex-initial sm:w-auto sm:max-w-none sm:justify-start sm:gap-10 sm:px-8"
+            style={{ background: "linear-gradient(180deg, #f2d24e 0%, #e5be30 45%, #c9a520 100%)" }}
+          >
+            {/* três blocos alinhados: rótulo escuro em cima, valor branco com
+                sombra embaixo — todos no MESMO tamanho para hierarquia limpa */}
             <button onClick={onOpenTable} className="text-left hover:opacity-70" title="Ver a tabela">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1">Posição</p>
-              <p className="flex h-8 items-end sm:h-9 text-3xl sm:text-4xl font-black leading-none text-white mb-0.5">{pos}º</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#2b220a]/80">Posição</p>
+              <p className="flex items-end font-display text-2xl sm:text-3xl font-black leading-none text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]">{pos}º</p>
             </button>
             <button onClick={() => setFinanceOpen(true)} className="text-left hover:opacity-70" title="Ver as finanças">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1">Orçamento</p>
-              <p className={`flex h-8 items-end sm:h-9 text-xl sm:text-2xl font-black leading-none mb-0.5 ${game.budget < 0 ? "text-red-950" : "text-white"}`}>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#2b220a]/80">Orçamento</p>
+              <p className={`flex items-end font-display text-2xl sm:text-3xl font-black leading-none [text-shadow:0_1px_2px_rgba(0,0,0,0.45)] ${game.budget < 0 ? "text-red-950" : "text-white"}`}>
                 ${(game.budget / 1e6).toFixed(1)}M
               </p>
             </button>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#3c320d] mb-1">Moral</p>
-              <p className="flex h-8 items-end gap-1 sm:h-9 text-lg sm:text-xl font-black leading-none text-white mb-0.5">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#2b220a]/80">Moral</p>
+              <p className="flex items-end gap-1 font-display text-2xl sm:text-3xl font-black leading-none text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]">
                 {morale}%
-                {morale > (game.prevMorale ?? morale) && <span className="text-sm text-[#00e676]">▲</span>}
-                {morale < (game.prevMorale ?? morale) && <span className="text-sm text-[#e50914]">▼</span>}
+                {morale > (game.prevMorale ?? morale) && <span className="text-base text-[#00e676] [text-shadow:0_1px_1px_rgba(0,0,0,0.5)]">▲</span>}
+                {morale < (game.prevMorale ?? morale) && <span className="text-base text-[#e50914] [text-shadow:0_1px_1px_rgba(0,0,0,0.5)]">▼</span>}
               </p>
             </div>
           </div>
@@ -384,9 +431,11 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
             ) : nextOpp && next && !game.fired ? (
               <button
                 onClick={onStartMatchday}
-                className="btn-play flex flex-col justify-center items-center gap-1 px-4 sm:px-5 text-sm sm:text-xs w-24 sm:w-28 self-stretch shrink-0"
+                className="btn-live btn-live--finish flex flex-col justify-center items-center gap-0 px-4 sm:px-5 text-sm sm:text-xs w-24 sm:w-28 self-stretch shrink-0"
               >
-                <IconPlay className="h-6 w-6 sm:h-8 sm:w-8" />
+                <svg viewBox="0 0 24 24" className="h-7 w-7 sm:h-9 sm:w-9 [filter:drop-shadow(0_1px_1px_rgba(255,255,255,0.35))]">
+                  <path d="M7 5v14l11-7-11-7Z" fill="#064e2b" />
+                </svg>
                 <span>Jogar</span>
               </button>
             ) : (
@@ -645,6 +694,23 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
         <ClubModal game={game} club={viewClub} onClose={() => setViewClub(null)} />
       )}
       {financeOpen && <FinanceModal onClose={() => setFinanceOpen(false)} />}
+
+      {/* Jogar flutuante (canto inferior direito, ao alcance do polegar): só no
+          mobile e quando há próximo jogo do usuário para disputar. */}
+      {onStartMatchday && nextOpp && next && !game.fired && (
+        <button
+          onPointerDown={onFabPointerDown}
+          onPointerMove={onFabPointerMove}
+          onPointerUp={onFabPointerUp}
+          title="Jogar (segure para mover)"
+          style={{ transform: `translate(${fabDrag.dx}px, ${fabDrag.dy}px)`, touchAction: "none" }}
+          className="btn-live btn-live--finish fixed bottom-6 right-5 z-40 flex h-16 w-16 touch-none items-center justify-center !rounded-full shadow-lg shadow-black/50 sm:hidden"
+        >
+          <svg viewBox="0 0 24 24" className="h-8 w-8 [filter:drop-shadow(0_1px_1px_rgba(255,255,255,0.35))]">
+            <path d="M7 5v14l11-7-11-7Z" fill="#064e2b" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }
