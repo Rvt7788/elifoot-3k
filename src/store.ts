@@ -221,6 +221,34 @@ export const CHAMPION_PRIZE = {
   continental: 15_000_000,
 } as const;
 
+// Premiação da COPA NACIONAL por fase alcançada: valor fixo, igual para qualquer
+// clube (sem depender do porte/bilheteria), pago uma vez ao avançar para aquela
+// fase. Cada fase paga mais que a anterior. Não há prêmio por vitória, gol ou
+// qualquer variável — só o mérito de chegar até ali. A Final coincide com o
+// prêmio de campeão (CHAMPION_PRIZE.cup) quando o clube vence.
+// Índices batem com CUP_STAGE_NAMES: Preliminar, 32, Oitavas, Quartas, Semi, Final.
+export const CUP_STAGE_PRIZE = [
+  150_000,   // Preliminar
+  300_000,   // Fase de 32
+  600_000,   // Oitavas
+  1_200_000, // Quartas
+  2_200_000, // Semifinal
+  3_500_000, // Final (chegar à decisão; campeão recebe o prêmio de título à parte)
+] as const;
+
+// Premiação da COPA CONTINENTAL por fase: mesma lógica fixa e crescente, em
+// patamar mais alto (competição mais rica). Índices: Oitavas, Quartas, Semi, Final.
+export const CONT_STAGE_PRIZE = [
+  1_500_000, // Oitavas
+  3_000_000, // Quartas
+  5_000_000, // Semifinal
+  8_000_000, // Final (campeão recebe CHAMPION_PRIZE.continental à parte)
+] as const;
+
+// Premiação por participar de cada rodada da FASE DE GRUPOS continental: valor
+// fixo por rodada disputada, sem depender de vitória nem do porte do clube.
+export const CONT_GROUP_MATCH_PRIZE = 500_000;
+
 // Agressividade tática da IA (0 conservador .. 1 agressivo), derivada da posição do
 // clube na tabela: quem está em crise/rebaixamento joga mais para frente e arrisca
 // mais cedo; quem está no G4/topo tem mais a perder e joga mais seguro.
@@ -248,6 +276,10 @@ interface Store {
   paused: boolean;
   settings: Settings;
   setSettings: (s: Partial<Settings>) => void;
+  // deslocamento (px) do botão flutuante padrão, arrastado pelo usuário. Compartilhado
+  // entre a home e o ao vivo para que o botão fique no MESMO lugar da tela ao navegar.
+  fabPos: { dx: number; dy: number };
+  setFabPos: (p: { dx: number; dy: number }) => void;
   loadGame: (g: GameState) => void;
   releasePlayer: (id: string) => void;
   startGame: (seed: number, clubId: string, managerName?: string) => void;
@@ -392,11 +424,12 @@ function maybeIncomingOffer(g: GameState): GameState["incomingOffer"] {
     if (roll <= 0) { target = squad[i]; break; }
   }
   const buyer = buyers[Math.floor(Math.random() * buyers.length)];
-  const contractFactor = (target.contract ?? 2) <= 1 ? 0.65 : 1;
-  // proposta em torno do valor de mercado (0.75×–1.35×): segurar com paciência
-  // pode render acima do valor, mas sem os exageros do preço pedido de compra
+  // proposta sempre a PARTIR do valor de mercado para cima (1.0×–1.35×): nunca
+  // abaixo, pois nesse caso o usuário venderia o jogador pelo valor cheio em
+  // Transferências — uma oferta menor não faria sentido. Segurar com paciência
+  // pode render mais, mas sem os exageros do preço pedido de compra.
   const amount =
-    Math.round((target.value * (0.75 + Math.random() * 0.6) * contractFactor) / 1000) * 1000;
+    Math.round((target.value * (1.0 + Math.random() * 0.35)) / 1000) * 1000;
   return { clubId: buyer.id, playerId: target.id, amount };
 }
 
@@ -410,6 +443,8 @@ export const useStore = create<Store>()(
       liveDivision: null,
       paused: false,
       settings: { speed: 1, soundGoal: true, soundRed: true },
+      fabPos: { dx: 0, dy: 0 },
+      setFabPos: (p) => set({ fabPos: p }),
 
       setSettings: (s) => set({ settings: { ...get().settings, ...s } }),
 
@@ -1102,16 +1137,12 @@ export const useStore = create<Store>()(
               homeScore: m.homeScore, awayScore: m.awayScore,
             })),
           );
-          // vitória em jogo de grupo rende um prêmio de uma bilheteria de referência
-          const userClubG = game.clubs.find((c) => c.id === game.userClubId)!;
+          // fase de grupos: prêmio fixo por rodada disputada, sem variável de gol
+          // ou vitória — só participar já paga o mesmo valor para qualquer clube
           const userMatchG = live.find(
             (m) => m.homeId === game.userClubId || m.awayId === game.userClubId,
           );
-          if (userMatchG) {
-            const my = userMatchG.homeId === game.userClubId ? userMatchG.homeScore : userMatchG.awayScore;
-            const opp = userMatchG.homeId === game.userClubId ? userMatchG.awayScore : userMatchG.homeScore;
-            if (my > opp) cupPrize += matchdayRevenue(userClubG.baseBudget);
-          }
+          if (userMatchG) cupPrize += CONT_GROUP_MATCH_PRIZE;
         } else if (isCup && (info.type === "cup" || info.type === "continental")) {
           // grava os placares no mata-mata (copa ou continental); ao fechar a volta
           // define classificados (pênaltis em agregado empatado) e sorteia a fase seguinte
@@ -1135,38 +1166,24 @@ export const useStore = create<Store>()(
                 .map(({ i }) => ({ tieIndex: i, winnerId: userTieWinnerId }))
             : undefined;
           applyCupResults(rng, knockout, info.stage, info.leg, results, decided, totalStages);
-          const userClub2 = game.clubs.find((c) => c.id === game.userClubId)!;
-          const gate = matchdayRevenue(userClub2.baseBudget);
-          // premiação por jogo: vencer uma partida de mata-mata rende mais que um jogo normal
+          // premiação por fase alcançada: valor FIXO tabelado, igual para qualquer
+          // clube (sem porte, bilheteria, vitória ou gol). Pago uma única vez por
+          // fase, na IDA — quem disputa aquela fase já garante o prêmio dela.
           const userMatch = live.find(
             (m) => m.homeId === game.userClubId || m.awayId === game.userClubId,
           );
-          if (userMatch) {
-            const myScore = userMatch.homeId === game.userClubId ? userMatch.homeScore : userMatch.awayScore;
-            const oppScore = userMatch.homeId === game.userClubId ? userMatch.awayScore : userMatch.homeScore;
-            if (myScore > oppScore) cupPrize += Math.round(gate * (isContinental ? 2 : 1.5));
+          if (userMatch && info.leg === 1) {
+            const table = isContinental ? CONT_STAGE_PRIZE : CUP_STAGE_PRIZE;
+            cupPrize += table[info.stage] ?? 0;
           }
-          // premiação por chaveamento: avançar de fase paga forte e escala até a final
+          // prêmio de campeão: creditado à parte quando o clube vence a final (volta)
           if (info.leg === 2) {
             const userTie = knockout.rounds[info.stage].find(
               (t) => t.homeId === game.userClubId || t.awayId === game.userClubId,
             );
-            if (userTie?.winnerId === game.userClubId) {
-              if (isContinental) {
-                // oitavas, quartas, semi: prêmios continentais são os mais gordos do jogo
-                const STAGE_PRIZE = [10, 15, 25];
-                cupPrize +=
-                  info.stage === CONT_STAGES - 1
-                    ? CHAMPION_PRIZE.continental // campeão continental: prêmio fixo, topo da escada
-                    : gate * STAGE_PRIZE[info.stage];
-              } else {
-                // preliminar, 32, oitavas, quartas, semi: multiplicador crescente da bilheteria
-                const STAGE_PRIZE = [3, 5, 8, 12, 20];
-                cupPrize +=
-                  info.stage === 5
-                    ? CHAMPION_PRIZE.cup // campeão da copa nacional: prêmio fixo
-                    : gate * STAGE_PRIZE[info.stage];
-              }
+            const isFinal = info.stage === (isContinental ? CONT_STAGES - 1 : 5);
+            if (isFinal && userTie?.winnerId === game.userClubId) {
+              cupPrize += isContinental ? CHAMPION_PRIZE.continental : CHAMPION_PRIZE.cup;
             }
           }
         } else {
@@ -1471,6 +1488,7 @@ export const useStore = create<Store>()(
       partialize: (s) => ({
         game: s.game,
         settings: s.settings,
+        fabPos: s.fabPos,
         live: s.live,
         lastResults: s.lastResults,
         liveDivision: s.liveDivision,

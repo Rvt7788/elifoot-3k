@@ -498,6 +498,18 @@ function pickPenaltyTaker(lineup: LivePlayer[], idx: PlayersIndex, takerId?: str
   return cands.map((c) => c.p).sort((a, b) => score(b) - score(a))[0];
 }
 
+// Intervalo mínimo entre gols na MESMA partida (qualquer time): nenhum gol pode
+// sair a menos de 2 minutos do gol anterior. Evita a enxurrada de gols no mesmo
+// minuto e dá respiro ao jogo. Pênaltis convertidos também contam como gol aqui.
+const MIN_GOAL_GAP = 2;
+function goalTooSoon(m: LiveMatch): boolean {
+  for (let i = m.events.length - 1; i >= 0; i--) {
+    const e = m.events[i];
+    if (e.type === "goal") return m.minute - e.minute < MIN_GOAL_GAP;
+  }
+  return false;
+}
+
 // Cobrança automática de pênalti: converte com probabilidade alta (~75% base),
 // ajustada pela força do cobrador contra o goleiro. Grava o gol e o evento.
 function takePenalty(rng: Rng, m: LiveMatch, idx: PlayersIndex, side: "home" | "away") {
@@ -515,7 +527,9 @@ function takePenalty(rng: Rng, m: LiveMatch, idx: PlayersIndex, side: "home" | "
   if (taker.traits.includes("Goleador")) pConv += 0.05;
   if (keeper?.traits.includes("Paredão")) pConv -= 0.08;
   pConv = Math.min(0.92, Math.max(0.5, pConv));
-  const scored = chance(rng, pConv);
+  // respeita o intervalo mínimo entre gols: pênalti que sairia cedo demais é
+  // defendido pelo goleiro (mesmo desfecho de uma cobrança perdida)
+  const scored = !goalTooSoon(m) && chance(rng, pConv);
   if (scored) {
     if (atkStats) atkStats.onTarget++;
     if (side === "home") m.homeScore++;
@@ -623,6 +637,13 @@ function tryShot(
   if (defTactics.mentality === "tudo_ou_nada") gk *= 0.7;
   const pGoal = Math.min(0.6, Math.max(0.05, (atk / (atk + gk)) * 0.5));
   if (chance(rng, pGoal)) {
+    // intervalo mínimo entre gols: a chance de gol vira defesa do goleiro,
+    // preservando a estatística de finalização sem estourar o placar no mesmo minuto
+    if (goalTooSoon(m)) {
+      if (atkStats) atkStats.onTarget++;
+      if (defStats) defStats.saves++;
+      return;
+    }
     if (atkStats) atkStats.onTarget++; // gol conta como chute no alvo
     if (side === "home") m.homeScore++;
     else m.awayScore++;
