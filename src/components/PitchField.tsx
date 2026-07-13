@@ -83,43 +83,48 @@ export function PlayerPin({
           </span>
         )}
       </div>
-      {/* badges de função abaixo da bolinha: não cobrem o alvo do clique de troca de posição */}
-      {(penaltyTaker || captain) && (
-        <span className="mt-0.5 flex items-center gap-1 leading-none">
-          {captain && (
-            <span
-              onClick={onRoleClick ? (e) => { e.stopPropagation(); onRoleClick("captain"); } : undefined}
-              className={`rounded-[2px] border border-white/80 bg-black shadow ${
-                compact ? "h-2 w-2" : "h-2.5 w-2.5"
-              }${onRoleClick ? " cursor-pointer hover:ring-2 hover:ring-emerald-400" : ""}${
-                armedRole === "captain" ? " ring-2 ring-emerald-400 animate-pulse" : ""
-              }`}
-              title={onRoleClick ? "Capitão — clique e escolha o novo capitão" : "Capitão"}
-            />
-          )}
-          {penaltyTaker && (
-            <span
-              onClick={onRoleClick ? (e) => { e.stopPropagation(); onRoleClick("penalty"); } : undefined}
-              className={`rounded-full border border-white/80 bg-sky-500 shadow ${
-                compact ? "h-2 w-2" : "h-2.5 w-2.5"
-              }${onRoleClick ? " cursor-pointer hover:ring-2 hover:ring-emerald-400" : ""}${
-                armedRole === "penalty" ? " ring-2 ring-emerald-400 animate-pulse" : ""
-              }`}
-              title={onRoleClick ? "Cobrador de pênalti — clique e escolha o novo cobrador" : "Cobrador de pênalti"}
-            />
-          )}
-        </span>
-      )}
-      {!compact && (
-        <>
-          <span className="mt-0.5 max-w-[44px] truncate rounded bg-black/60 px-1 text-[8px] leading-tight text-white">
-            {p.foot === "canhoto" && <span className="text-red-400">◂</span>}
-            {p.name.split(" ").slice(-1)[0]}
-            {p.foot === "destro" && <span className="text-sky-400">▸</span>}
+      {/* Tudo que fica abaixo da bolinha (badges, nome, energia) vai numa coluna
+          absoluta ancorada no pé da bolinha: assim a bolinha é o único elemento
+          em fluxo e permanece centrada em (x,y), alinhada com as demais — os
+          badges deslocam pra baixo sem empurrar a bolinha pra cima. */}
+      <span className="absolute top-full left-1/2 flex -translate-x-1/2 flex-col items-center">
+        {(penaltyTaker || captain) && (
+          <span className="mt-0.5 flex items-center gap-1 leading-none">
+            {captain && (
+              <span
+                onClick={onRoleClick ? (e) => { e.stopPropagation(); onRoleClick("captain"); } : undefined}
+                className={`rounded-[2px] border border-white/80 bg-black shadow ${
+                  compact ? "h-2 w-2" : "h-2.5 w-2.5"
+                }${onRoleClick ? " cursor-pointer hover:ring-2 hover:ring-emerald-400" : ""}${
+                  armedRole === "captain" ? " ring-2 ring-emerald-400 animate-pulse" : ""
+                }`}
+                title={onRoleClick ? "Capitão — clique e escolha o novo capitão" : "Capitão"}
+              />
+            )}
+            {penaltyTaker && (
+              <span
+                onClick={onRoleClick ? (e) => { e.stopPropagation(); onRoleClick("penalty"); } : undefined}
+                className={`rounded-full border border-white/80 bg-sky-500 shadow ${
+                  compact ? "h-2 w-2" : "h-2.5 w-2.5"
+                }${onRoleClick ? " cursor-pointer hover:ring-2 hover:ring-emerald-400" : ""}${
+                  armedRole === "penalty" ? " ring-2 ring-emerald-400 animate-pulse" : ""
+                }`}
+                title={onRoleClick ? "Cobrador de pênalti — clique e escolha o novo cobrador" : "Cobrador de pênalti"}
+              />
+            )}
           </span>
-          <EnergyBar value={energy} className="mt-0.5 scale-75" />
-        </>
-      )}
+        )}
+        {!compact && (
+          <>
+            <span className="mt-0.5 max-w-[44px] truncate rounded bg-black/60 px-1 text-[8px] leading-tight text-white">
+              {p.foot === "canhoto" && <span className="text-red-400">◂</span>}
+              {p.name.split(" ").slice(-1)[0]}
+              {p.foot === "destro" && <span className="text-sky-400">▸</span>}
+            </span>
+            <EnergyBar value={energy} className="mt-0.5 scale-75" />
+          </>
+        )}
+      </span>
     </button>
   );
 }
