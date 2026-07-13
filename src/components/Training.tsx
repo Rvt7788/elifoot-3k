@@ -5,6 +5,7 @@ import { ageFactor, weeklyXp, xpNeeded, RECOVERY, XP_MATCH, XP_TRAINING } from "
 import { userSquadRoles } from "../game/roles";
 import { RoleBadges } from "./icons";
 import { ScrollLock } from "./useLockBodyScroll";
+import GameIcon from "./GameIcon";
 
 const TIER_BADGE: Record<string, string> = {
   bagre: "", bom: "★", craque: "★★", extra: "💎",
@@ -31,7 +32,7 @@ function HelpModal({ onClose }: { onClose: () => void }) {
           </p>
           <p>
             <b>Jogar vale muito mais:</b> quem entra em campo ganha +{XP_MATCH} XP de
-            partida (marcado com ⚽). Reservas evoluem só com o treino, bem mais devagar.
+            partida (marcado com <GameIcon name="goal" size={12} className="inline-block align-middle" />). Reservas evoluem só com o treino, bem mais devagar.
           </p>
           <p>
             <b>Regime individual:</b> cada jogador tem seu ritmo de treino, com um

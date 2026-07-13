@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useStore } from "../store";
 import type { Player } from "../types";
 import { ScrollLock } from "./useLockBodyScroll";
+import GameIcon from "./GameIcon";
 
 // Disputa de pênaltis interativa: uma cobrança por clique, alternando os times
 // (usuário bate primeiro). Melhor de 5 com morte súbita. A chance de gol depende
@@ -88,12 +89,14 @@ export default function PenaltyShootout({
     setLast(k);
   };
 
-  // linha de bolinhas por time (mínimo 5 espaços)
+  // linha de marcadores por time (mínimo 5 espaços): gol = bola, erro = X
   const dots = (side: 0 | 1) => {
     const mine = kicks.filter((k) => k.side === side);
     const total = Math.max(5, mine.length + (winner === null ? 1 : 0));
     return Array.from({ length: total }, (_, i) =>
-      i < mine.length ? (mine[i].scored ? "⚽" : "❌") : "·",
+      i < mine.length
+        ? <GameIcon key={i} name={mine[i].scored ? "goal" : "reject"} size={14} />
+        : <span key={i} className="text-zinc-600">·</span>,
     );
   };
 
@@ -101,7 +104,7 @@ export default function PenaltyShootout({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
       <ScrollLock />
       <div className="w-full max-w-md rounded-xl border border-zinc-700 bg-zinc-900 p-5">
-        <h2 className="mb-1 text-center text-lg font-bold text-amber-400">🥅 Disputa de pênaltis</h2>
+        <h2 className="mb-1 flex items-center justify-center gap-2 text-center text-lg font-bold text-amber-400"><GameIcon name="net" size={20} /> Disputa de pênaltis</h2>
         <p className="mb-4 text-center text-xs text-zinc-500">
           Agregado empatado — quem vencer avança de fase
         </p>
@@ -117,14 +120,14 @@ export default function PenaltyShootout({
             <span className={`w-12 shrink-0 font-bold ${side === 0 ? "text-emerald-400" : "text-zinc-300"}`}>
               {clubName(clubIds[side])}
             </span>
-            <span className="tracking-widest">{dots(side).join(" ")}</span>
+            <span className="flex items-center gap-1">{dots(side)}</span>
           </div>
         ))}
 
         <div className="mt-3 min-h-10 text-center text-sm">
           {last && (
-            <p className={last.scored ? "text-emerald-400" : "text-red-400"}>
-              {last.scored ? "⚽ GOL!" : "🧤 Defendeu!"} {last.shooter}
+            <p className={`inline-flex items-center justify-center gap-1.5 ${last.scored ? "text-emerald-400" : "text-red-400"}`}>
+              <GameIcon name={last.scored ? "goal" : "glove"} size={16} /> {last.scored ? "GOL!" : "Defendeu!"} {last.shooter}
             </p>
           )}
           {winner === null ? (
@@ -132,8 +135,8 @@ export default function PenaltyShootout({
               Vez de <b className={nextSide === 0 ? "text-emerald-400" : "text-zinc-300"}>{clubName(clubIds[nextSide])}</b>
             </p>
           ) : (
-            <p className="mt-1 font-bold text-amber-400">
-              🏆 {clubName(clubIds[winner])} venceu nos pênaltis!
+            <p className="mt-1 inline-flex items-center justify-center gap-1.5 font-bold text-amber-400">
+              <GameIcon name="trophy" size={16} /> {clubName(clubIds[winner])} venceu nos pênaltis!
             </p>
           )}
         </div>
@@ -141,9 +144,9 @@ export default function PenaltyShootout({
         {winner === null ? (
           <button
             onClick={kick}
-            className="mt-3 w-full rounded-lg bg-emerald-600 py-2 font-bold hover:bg-emerald-500"
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 py-2 font-bold hover:bg-emerald-500"
           >
-            ⚽ Cobrar pênalti
+            <GameIcon name="goal" size={16} /> Cobrar pênalti
           </button>
         ) : (
           <button

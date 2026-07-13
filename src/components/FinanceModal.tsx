@@ -1,6 +1,7 @@
 import { useStore, squadWageBill, stadiumUpgradeCost, tvQuota, stadiumCapacity, STADIUM_MAX_LEVEL, STADIUM_SEATS_PER_LEVEL } from "../store";
 import { appAlert } from "./AppDialog";
 import { ScrollLock } from "./useLockBodyScroll";
+import GameIcon from "./GameIcon";
 
 const fmtM = (v: number) => `$${(v / 1e6).toFixed(2)}M`;
 const fmtK = (v: number) => (v >= 1e6 ? fmtM(v) : `$${Math.round(v / 1e3)}k`);
@@ -34,7 +35,7 @@ export default function FinanceModal({ onClose }: { onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-display text-lg font-bold text-emerald-400">💰 Finanças do {club.name}</h2>
+          <h2 className="flex items-center gap-2 font-display text-lg font-bold text-emerald-400"><GameIcon name="finance" size={18} /> Finanças do {club.name}</h2>
           <button onClick={onClose} className="rounded px-2 py-1 text-zinc-500 hover:bg-zinc-800">✕</button>
         </div>
 

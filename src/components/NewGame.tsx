@@ -3,6 +3,7 @@ import clubsData from "../data/clubs.json";
 import type { Club } from "../types";
 import { useStore } from "../store";
 import { ScrollLock } from "./useLockBodyScroll";
+import GameIcon from "./GameIcon";
 
 // bandeiras em mini PNG (public/flags): emoji de bandeira não renderiza em
 // todo sistema (Windows/Chrome mostra só as letras do código do país)
@@ -179,7 +180,7 @@ export default function NewGame() {
           className="country-tab"
           title={country ? "Sorteia um clube pequeno da Série B do país selecionado" : "Sorteia um clube pequeno da Série B de qualquer país"}
         >
-          <span className="mr-1.5">🎲</span>
+          <span className="mr-1.5 inline-flex align-middle"><GameIcon name="dice" size={15} /></span>
           Sortear clube
         </button>
       </div>

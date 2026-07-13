@@ -1,4 +1,5 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, type ReactNode } from "react";
+import GameIcon from "./GameIcon";
 import { useStore } from "../store";
 import { appAlert, appConfirm } from "./AppDialog";
 import { listSlots, saveToSlot, loadFromSlot, deleteSlot, type SlotMeta } from "../game/saveSlots";
@@ -91,7 +92,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   /* ── Toggle sub-component ── */
   const Toggle = ({
     label, value, onChange,
-  }: { label: string; value: boolean; onChange: (v: boolean) => void }) => (
+  }: { label: ReactNode; value: boolean; onChange: (v: boolean) => void }) => (
     <button
       onClick={() => onChange(!value)}
       className={`flex w-full items-center justify-between rounded px-3 py-2 text-sm ${
@@ -113,7 +114,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold">⚙ Configurações</h2>
+          <h2 className="flex items-center gap-2 text-lg font-bold"><GameIcon name="settings" size={18} /> Configurações</h2>
           <button onClick={onClose} className="text-zinc-400 hover:text-white">✕</button>
         </div>
 
@@ -137,12 +138,12 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         <p className="mb-1 text-xs text-zinc-500">ALERTAS SONOROS</p>
         <div className="mb-4 flex flex-col gap-2">
           <Toggle
-            label="⚽ Som de gol"
+            label={<span className="inline-flex items-center gap-1.5"><GameIcon name="goal" size={14} /> Som de gol</span>}
             value={settings.soundGoal}
             onChange={(v) => setSettings({ soundGoal: v })}
           />
           <Toggle
-            label="🟥 Som de cartão vermelho"
+            label={<span className="inline-flex items-center gap-1.5"><GameIcon name="red" size={14} /> Som de cartão vermelho</span>}
             value={settings.soundRed}
             onChange={(v) => setSettings({ soundRed: v })}
           />
@@ -159,44 +160,48 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
             return (
             <div
               key={i}
-              className="flex items-center gap-2 rounded border border-zinc-300 bg-zinc-100 px-3 py-2 text-sm text-zinc-800"
+              className="flex items-center gap-2 rounded border border-zinc-700 bg-zinc-800/60 px-3 py-2 text-zinc-200"
             >
+              <span className="shrink-0 text-sm font-bold text-zinc-500">{i + 1}.</span>
               <div className="flex-1 min-w-0">
                 {meta ? (
-                  <p className="truncate">
-                    <span className="font-bold text-zinc-600">{i + 1}.</span>{" "}
-                    {meta.clubName}{" "}
-                    <span className="text-zinc-500">— Ano {meta.season} — {formatDate(meta.savedAt)}</span>
-                  </p>
+                  <div className="flex flex-col leading-tight">
+                    <span className="truncate text-sm font-bold text-zinc-100">{meta.clubName}</span>
+                    <span className="text-[11px] text-zinc-400">{formatDate(meta.savedAt)}</span>
+                    {meta.managerName && (
+                      <span className="truncate text-[11px] text-zinc-400">Téc. {meta.managerName}</span>
+                    )}
+                    <span className="text-[11px] text-zinc-500">
+                      {meta.position ? `${meta.position}º · ${meta.division ?? ""}` : `Ano ${meta.season}`}
+                    </span>
+                  </div>
                 ) : (
-                  <p>
-                    <span className="font-bold">{i + 1}.</span> vazio
-                  </p>
+                  <span className="text-sm text-zinc-500">vazio</span>
                 )}
               </div>
 
-              <div className="flex gap-1 shrink-0">
+              <div className="flex gap-2 shrink-0">
                 {game && (
                   <button
                     onClick={() => handleSaveSlot(i)}
-                    className="rounded bg-emerald-700 px-2 py-1 text-xs text-white hover:bg-emerald-600"
+                    className="[filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.6))] hover:brightness-125"
                     title="Salvar"
                   >
-                    💾
+                    <GameIcon name="save" size={20} />
                   </button>
                 )}
                 {meta && (
                   <>
                     <button
                       onClick={() => handleLoadSlot(i)}
-                      className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-500"
+                      className="[filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.6))] hover:brightness-125"
                       title="Carregar"
                     >
-                      📂
+                      <GameIcon name="load" size={20} />
                     </button>
                     <button
                       onClick={() => handleDeleteSlot(i)}
-                      className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-500"
+                      className="text-lg leading-none text-red-400 [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.6))] hover:text-red-300"
                       title="Apagar"
                     >
                       🗑
@@ -215,15 +220,15 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
           <button
             onClick={saveToFile}
             disabled={!game}
-            className="rounded bg-zinc-800 px-3 py-2 text-left text-sm hover:bg-zinc-700 disabled:opacity-40"
+            className="inline-flex items-center gap-2 rounded bg-zinc-800 px-3 py-2 text-left text-sm hover:bg-zinc-700 disabled:opacity-40"
           >
-            💾 Salvar jogo (baixar arquivo)
+            <GameIcon name="save" size={15} /> Salvar jogo (baixar arquivo)
           </button>
           <button
             onClick={() => fileRef.current?.click()}
-            className="rounded bg-zinc-800 px-3 py-2 text-left text-sm hover:bg-zinc-700"
+            className="inline-flex items-center gap-2 rounded bg-zinc-800 px-3 py-2 text-left text-sm hover:bg-zinc-700"
           >
-            📂 Carregar jogo
+            <GameIcon name="load" size={15} /> Carregar jogo
           </button>
           <input
             ref={fileRef}

@@ -1,6 +1,7 @@
 import type { CustomFormation, Formation, Player, Position } from "../types";
 import { FORMATIONS } from "../types";
 import EnergyBar, { energyStepColors } from "./EnergyBar";
+import GameIcon from "./GameIcon";
 import { readableOn } from "../game/color";
 
 const row = (n: number, y: number) =>
@@ -73,13 +74,13 @@ export function PlayerPin({
           {compact ? p.number : p.strength}
         </span>
         {!compact && yellowsMatch !== undefined && yellowsMatch > 0 && (
-          <span className="absolute -right-1 -top-1 flex gap-0.5 text-[8px] leading-none">
-            {"🟨".repeat(yellowsMatch)}
+          <span className="absolute -right-1 -top-1 flex gap-0.5 leading-none">
+            {Array.from({ length: yellowsMatch }).map((_, i) => <GameIcon key={i} name="yellow" size={10} />)}
           </span>
         )}
         {!compact && goalsMatch !== undefined && goalsMatch > 0 && (
-          <span className="absolute -left-1.5 -top-1 text-[8px] leading-none" title={`${goalsMatch} gol(s)`}>
-            ⚽
+          <span className="absolute -left-1.5 -top-1 leading-none" title={`${goalsMatch} gol(s)`}>
+            <GameIcon name="goal" size={10} />
           </span>
         )}
       </div>
@@ -103,24 +104,24 @@ export function PlayerPin({
             {captain && (
               <span
                 onClick={onRoleClick ? (e) => { e.stopPropagation(); onRoleClick("captain"); } : undefined}
-                className={`rounded-[2px] border border-white/80 bg-black shadow ${
-                  compact ? "h-2 w-2" : "h-2.5 w-2.5"
-                }${onRoleClick ? " cursor-pointer hover:ring-2 hover:ring-emerald-400" : ""}${
-                  armedRole === "captain" ? " ring-2 ring-emerald-400 animate-pulse" : ""
-                }`}
+                className={`inline-flex items-center justify-center rounded-full${
+                  onRoleClick ? " cursor-pointer hover:ring-2 hover:ring-emerald-400" : ""
+                }${armedRole === "captain" ? " ring-2 ring-emerald-400 animate-pulse" : ""}`}
                 title={onRoleClick ? "Capitão — clique e escolha o novo capitão" : "Capitão"}
-              />
+              >
+                <GameIcon name="crown" size={compact ? 11 : 14} />
+              </span>
             )}
             {penaltyTaker && (
               <span
                 onClick={onRoleClick ? (e) => { e.stopPropagation(); onRoleClick("penalty"); } : undefined}
-                className={`rounded-full border border-white/80 bg-sky-500 shadow ${
-                  compact ? "h-2 w-2" : "h-2.5 w-2.5"
-                }${onRoleClick ? " cursor-pointer hover:ring-2 hover:ring-emerald-400" : ""}${
-                  armedRole === "penalty" ? " ring-2 ring-emerald-400 animate-pulse" : ""
-                }`}
+                className={`inline-flex items-center justify-center rounded-full${
+                  onRoleClick ? " cursor-pointer hover:ring-2 hover:ring-emerald-400" : ""
+                }${armedRole === "penalty" ? " ring-2 ring-emerald-400 animate-pulse" : ""}`}
                 title={onRoleClick ? "Cobrador de pênalti — clique e escolha o novo cobrador" : "Cobrador de pênalti"}
-              />
+              >
+                <GameIcon name="net" size={compact ? 11 : 14} />
+              </span>
             )}
           </span>
         )}

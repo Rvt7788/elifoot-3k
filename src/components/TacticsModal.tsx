@@ -4,6 +4,7 @@ import { makeSub } from "../game/engine";
 import { appConfirm, appAlert } from "./AppDialog";
 import Toggle from "./Toggle";
 import EnergyBar from "./EnergyBar";
+import GameIcon, { type GameIconName } from "./GameIcon";
 import type { Marking, Mentality, Player, Position, LivePlayer, Formation } from "../types";
 import { shapeOf } from "../types";
 import { pitchLayout, PlayerPin, EmptySlot, PitchBackground } from "./PitchField";
@@ -13,6 +14,11 @@ import ClubBoard from "./ClubBoard";
 import { RoleBadges } from "./icons";
 import { ScrollLock } from "./useLockBodyScroll";
 import type { Club } from "../types";
+
+// Escala de intensidade tática (4 passos): verde = mais cauteloso/defensivo,
+// vermelho = mais agressivo/arriscado. Usada para colorir o botão selecionado de
+// mentalidade e de marcação conforme sua posição na escala.
+const INTENSITY_COLORS = ["#16a34a", "#84cc16", "#f59e0b", "#dc2626"]; // green → lime → amber → red
 
 export default function TacticsModal({ onClose }: { onClose: () => void }) {
   const { game, live, updateLive } = useStore();
@@ -665,18 +671,18 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
     s.energy = ap.energy;
   }
 
-  const MENT: { key: Mentality; label: string }[] = [
-    { key: "defensivo", label: "🛡 Defensivo" },
-    { key: "equilibrado", label: "⚖ Equilibrado" },
-    { key: "ofensivo", label: "⚔ Ofensivo" },
-    { key: "tudo_ou_nada", label: "🔥 Tudo ou nada" },
+  const MENT: { key: Mentality; label: string; icon: GameIconName | null; glyph?: string }[] = [
+    { key: "defensivo", label: "Defensivo", icon: "shield" },
+    { key: "equilibrado", label: "Equilibrado", icon: "balance" },
+    { key: "ofensivo", label: "Ofensivo", icon: "offense" },
+    { key: "tudo_ou_nada", label: "Tudo ou nada", icon: "allout" },
   ];
 
-  const MARK: { key: Marking; label: string }[] = [
-    { key: "leve", label: "🪶 Leve" },
-    { key: "frouxa", label: "〰 Frouxa" },
-    { key: "apertada", label: "🔒 Apertada" },
-    { key: "extrema", label: "⛓ Extrema" },
+  const MARK: { key: Marking; label: string; icon: GameIconName | null; glyph?: string }[] = [
+    { key: "leve", label: "Leve", icon: "light" },
+    { key: "frouxa", label: "Frouxa", icon: null, glyph: "〰" },
+    { key: "apertada", label: "Apertada", icon: "tight" },
+    { key: "extrema", label: "Extrema", icon: "extreme" },
   ];
 
   const cardedPlayers = (side2: "home" | "away") =>
@@ -782,8 +788,8 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
                   {goals.map((g) => (
                     <div key={g.name} className="flex items-center justify-between">
                       <span>{g.name}</span>
-                      <span>
-                        {"⚽".repeat(g.minutes.length)}
+                      <span className="inline-flex items-center gap-0.5">
+                        {Array.from({ length: g.minutes.length }).map((_, k) => <GameIcon key={k} name="goal" size={11} />)}
                         <span className="ml-1 text-zinc-500">{g.minutes.map((m) => `${m}'`).join(" ")}</span>
                       </span>
                     </div>
@@ -791,12 +797,15 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
                   {carded.map(({ p, lp }) => (
                     <div key={p.id} className="flex items-center justify-between">
                       <span className={lp.sentOff ? "text-zinc-500 line-through" : ""}>{p.name}</span>
-                      <span>{"🟨".repeat(Math.min(lp.yellowsMatch, 2))}{lp.sentOff ? "🟥" : ""}</span>
+                      <span className="inline-flex items-center gap-0.5">
+                        {Array.from({ length: Math.min(lp.yellowsMatch, 2) }).map((_, k) => <GameIcon key={k} name="yellow" size={11} />)}
+                        {lp.sentOff && <GameIcon name="red" size={11} />}
+                      </span>
                     </div>
                   ))}
                   {subs.map((e, i) => (
                     <div key={i} className="flex items-center justify-between text-zinc-400">
-                      <span>🔄 {e.playerName}</span>
+                      <span className="inline-flex items-center gap-1"><GameIcon name="sub" size={11} /> {e.playerName}</span>
                       <span className="text-zinc-500">{e.minute}'</span>
                     </div>
                   ))}
@@ -823,7 +832,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
               {/* abreviações com a mesma largura/alinhamento das colunas de números */}
               <div className="mb-1 flex items-center justify-between text-[10px] text-zinc-500">
                 <span className="w-10 text-right font-semibold">{homeClub.shortName}</span>
-                <span className="font-bold">📊 VOLUME DE JOGO</span>
+                <span className="inline-flex items-center gap-1 font-bold"><GameIcon name="stats" size={13} /> VOLUME DE JOGO</span>
                 <span className="w-10 text-left font-semibold">{awayClub.shortName}</span>
               </div>
               {row("Posse (%)", homePoss, 100 - homePoss)}
@@ -853,7 +862,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
         {/* ── 2. SUBSTITUIÇÕES: rápida e automática, mesma hierarquia ── */}
         <div className="mb-3 rounded-lg bg-zinc-800/60 px-3 py-2">
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-[11px] font-bold text-zinc-400">🔁 SUBSTITUIÇÕES</p>
+            <p className="inline-flex items-center gap-1 text-[11px] font-bold text-zinc-400"><GameIcon name="sub" size={13} /> SUBSTITUIÇÕES</p>
             <span className="text-[11px] text-zinc-600">{subsLeft}/5 subs</span>
           </div>
           <div className="mb-1.5 flex items-center gap-2">
@@ -994,34 +1003,38 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* atalho: mentalidade e marcação em badges compactos — o estado completo
-            (com rótulos) segue na seção MENTALIDADE/MARCAÇÃO no fim do modal */}
+            (com rótulos) segue na seção MENTALIDADE/MARCAÇÃO no fim do modal.
+            Cor do selecionado é gradual pela intensidade: verde (mais cauteloso)
+            → vermelho (mais agressivo/arriscado), 4 passos. */}
         <div className="mb-3 flex items-center gap-2">
           <div className="flex flex-1 items-center gap-1" title="Mentalidade">
-            {MENT.map((m) => (
+            {MENT.map((m, i) => (
               <button
                 key={m.key}
                 onClick={() => setTactic((t) => (t.mentality = m.key))}
                 title={m.label}
-                className={`flex-1 rounded px-1 py-1.5 text-center text-sm leading-none ${
-                  tactics.mentality === m.key ? "bg-emerald-600" : "bg-zinc-800/60 hover:bg-zinc-700"
+                style={tactics.mentality === m.key ? { background: INTENSITY_COLORS[i] } : undefined}
+                className={`flex flex-1 items-center justify-center rounded px-1 py-1.5 text-center text-sm leading-none ${
+                  tactics.mentality === m.key ? "" : "bg-zinc-800/60 hover:bg-zinc-700"
                 }`}
               >
-                {m.label.split(" ")[0]}
+                {m.icon ? <GameIcon name={m.icon} size={18} /> : m.glyph}
               </button>
             ))}
           </div>
           <span className="h-6 w-px shrink-0 bg-zinc-700" />
           <div className="flex flex-1 items-center gap-1" title="Marcação">
-            {MARK.map((m) => (
+            {MARK.map((m, i) => (
               <button
                 key={m.key}
                 onClick={() => setTactic((t) => (t.marking = m.key))}
                 title={m.label}
-                className={`flex-1 rounded px-1 py-1.5 text-center text-sm leading-none ${
-                  tactics.marking === m.key ? "bg-emerald-600" : "bg-zinc-800/60 hover:bg-zinc-700"
+                style={tactics.marking === m.key ? { background: INTENSITY_COLORS[i] } : undefined}
+                className={`flex flex-1 items-center justify-center rounded px-1 py-1.5 text-center text-sm leading-none ${
+                  tactics.marking === m.key ? "" : "bg-zinc-800/60 hover:bg-zinc-700"
                 }`}
               >
-                {m.label.split(" ")[0]}
+                {m.icon ? <GameIcon name={m.icon} size={18} /> : m.glyph}
               </button>
             ))}
           </div>
@@ -1032,14 +1045,14 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
           <Toggle
             checked={tactics.truculencia}
             onChange={() => setTactic((t) => (t.truculencia = !t.truculencia))}
-            label="🦵 Truculência"
+            label={<span className="inline-flex items-center gap-1"><GameIcon name="aggression" size={15} /> Truculência</span>}
             color="#b91c1c"
             hint="Bônus pesado de desarme, mas 3× mais cartões"
           />
           <Toggle
             checked={tactics.cera}
             onChange={() => setTactic((t) => (t.cera = !t.cera))}
-            label="🐢 Catimba"
+            label={<span className="inline-flex items-center gap-1"><GameIcon name="wasting" size={15} /> Catimba</span>}
             color="#b45309"
             hint="Trava o ritmo do jogo; cede um pouco de volume e arrisca cartões"
           />
@@ -1065,8 +1078,8 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {!hasKeeperOnField && (
-          <p className="mb-3 rounded-lg bg-red-950 px-3 py-2 text-xs text-red-400 font-semibold border border-red-800/80 animate-pulse text-center">
-            🚨 Você está sem goleiro!
+          <p className="mb-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-red-950 px-3 py-2 text-xs text-red-400 font-semibold border border-red-800/80 animate-pulse text-center">
+            <GameIcon name="siren" size={14} /> Você está sem goleiro!
           </p>
         )}
 
@@ -1217,7 +1230,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
                     >
                       <span>
                         <span className="tabular-nums">{p.number}</span> {p.pos} {p.name} ({p.strength})
-                        <span className="ml-1" title="Substituído: já saiu de campo">🔄</span>
+                        <span className="ml-1 inline-flex align-middle" title="Substituído: já saiu de campo"><GameIcon name="sub" size={11} /></span>
                       </span>
                       <EnergyBar value={l.energy} />
                     </div>

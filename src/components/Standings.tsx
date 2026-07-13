@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useStore } from "../store";
 import MatchDay from "./MatchDay";
+import GameIcon from "./GameIcon";
 import { sortTable } from "../game/schedule";
 import {
   CONT_STAGES, CONT_STAGE_NAMES, CUP_STAGE_NAMES, CUP_STAGES,
@@ -45,8 +46,8 @@ function CupBracket({
   return (
     <div className="mb-6">
       {champion && (
-        <p className="mb-3 rounded bg-amber-950/40 px-3 py-2 text-center text-sm font-bold text-amber-400">
-          🏆 {championLabel}: {name(champion)}
+        <p className="mb-3 flex items-center justify-center gap-1.5 rounded bg-amber-950/40 px-3 py-2 text-center text-sm font-bold text-amber-400">
+          <GameIcon name="trophy" size={15} /> {championLabel}: {name(champion)}
         </p>
       )}
       {cup.rounds.map((ties, s) => (
@@ -161,7 +162,7 @@ function ScopeToggle({ scope, setScope }: { scope: RankScope; setScope: (s: Rank
 function RankSection({
   title, count, children, limit, setLimit, headerExtra,
 }: {
-  title: string;
+  title: React.ReactNode;
   count: number;
   children: React.ReactNode;
   limit: number;
@@ -171,7 +172,7 @@ function RankSection({
   return (
     <div className="mb-6">
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-base font-bold text-amber-400">{title}</h3>
+        <h3 className="flex items-center gap-1.5 text-base font-bold text-amber-400">{title}</h3>
         {headerExtra}
         {count > RANK_LIMITS[0] && (
           <div className="flex gap-1">
@@ -265,7 +266,7 @@ export function HallOfFame() {
   const sections: { key: string; count: number; node: React.ReactNode }[] = [
     { key: "clubes", count: clubs.length, node: (
       <RankSection
-        title="🏆 Clubes vitoriosos"
+        title={<><GameIcon name="trophy" size={16} /> Clubes vitoriosos</>}
         count={clubs.length}
         limit={clubLimit}
         setLimit={setClubLimit}
@@ -304,7 +305,7 @@ export function HallOfFame() {
     ) },
     { key: "artilheiros", count: scorers.length, node: (
       <RankSection
-        title="🥅 Maiores artilheiros"
+        title={<><GameIcon name="scorers" size={16} /> Maiores artilheiros</>}
         count={scorers.length}
         headerExtra={<ScopeToggle scope={scorerScope} setScope={setScorerScope} />}
         limit={scorerLimit}
@@ -344,7 +345,7 @@ export function HallOfFame() {
     ) },
     { key: "garcons", count: assisters.length, node: (
       <RankSection
-        title="🎯 Maiores garçons"
+        title={<><GameIcon name="assists" size={16} /> Maiores garçons</>}
         count={assisters.length}
         headerExtra={<ScopeToggle scope={assisterScope} setScope={setAssisterScope} />}
         limit={assisterLimit}
@@ -384,7 +385,7 @@ export function HallOfFame() {
     ) },
     { key: "tecnicos", count: managers.length, node: (
       <RankSection
-        title="🏅 Melhores técnicos"
+        title={<><GameIcon name="medal" size={16} /> Melhores técnicos</>}
         count={managers.length}
         headerExtra={<ScopeToggle scope={mgrScope} setScope={setMgrScope} />}
         limit={managerLimit}
@@ -426,7 +427,7 @@ export function HallOfFame() {
     ) },
     { key: "premio", count: awards.length, node: (
       <div className="mb-6">
-        <h3 className="mb-2 text-base font-bold text-amber-400">🎖 Melhor Técnico da temporada</h3>
+        <h3 className="mb-2 flex items-center gap-1.5 text-base font-bold text-amber-400"><GameIcon name="medal" size={16} /> Melhor Técnico da temporada</h3>
         {awards.length === 0 ? null : (
           <div className="mb-4">
             {awards.map((a) => (
@@ -490,18 +491,22 @@ export default function Standings({
   // A Rodada usa o layout largo do MatchDay; as demais sub-abas ficam no
   // container estreito de tabelas.
   const tabs = (
-    <div className="mb-4 flex w-full justify-between gap-1.5">
-      <button onClick={() => setView("rodada")} className={tabCls("rodada")}>
-        ⚽ Rodada
-      </button>
-      <button onClick={() => setView("liga")} className={tabCls("liga")}>
-        Liga
-      </button>
-      <button onClick={() => setView("copa")} className={tabCls("copa")}>
-        🏆 {nationalCupName}
-      </button>
-      <button onClick={() => setView("continental")} className={tabCls("continental")}>
-        🌎 {contName}
+    <div className="mb-4 flex w-full flex-col gap-1.5">
+      {/* linha de cima: as três competições */}
+      <div className="flex w-full gap-1.5">
+        <button onClick={() => setView("liga")} className={`${tabCls("liga")} inline-flex items-center justify-center gap-1`}>
+          <GameIcon name="board" size={14} /> Liga
+        </button>
+        <button onClick={() => setView("copa")} className={`${tabCls("copa")} inline-flex min-w-0 items-center justify-center gap-1`}>
+          <GameIcon name="trophy" size={14} className="shrink-0" /> <span className="truncate">{nationalCupName}</span>
+        </button>
+        <button onClick={() => setView("continental")} className={`${tabCls("continental")} inline-flex min-w-0 items-center justify-center gap-1`}>
+          <GameIcon name="globe" size={14} className="shrink-0" /> <span className="truncate">{contName}</span>
+        </button>
+      </div>
+      {/* linha de baixo: a rodada, ocupando a largura toda */}
+      <button onClick={() => setView("rodada")} className={`${tabCls("rodada")} inline-flex w-full items-center justify-center gap-1`}>
+        <GameIcon name="goal" size={14} /> Rodada
       </button>
     </div>
   );

@@ -1,5 +1,6 @@
 // Ícones SVG line-art, traço fino, no espírito do circuito/neon da logo Elifoot 3k.
 // Todos aceitam className para herdar cor via currentColor e tamanho via text-*/w-*/h-*.
+import GameIcon from "./GameIcon";
 
 type IconProps = { className?: string };
 
@@ -122,20 +123,24 @@ export function RoleBadges({ penalty, captain, armed, onPick }: {
       {penalty && (
         <span
           onClick={pick("penalty")}
-          className={`inline-block h-2 w-2 shrink-0 rounded-full border border-white/70 bg-sky-500${
+          className={`inline-flex shrink-0 items-center justify-center rounded-full${
             onPick ? " cursor-pointer hover:ring-2 hover:ring-emerald-400" : ""
           }${armed === "penalty" ? " ring-2 ring-emerald-400 animate-pulse" : ""}`}
           title={onPick ? "Cobrador de pênalti — clique e escolha o novo cobrador" : "Cobrador de pênalti"}
-        />
+        >
+          <GameIcon name="net" size={13} />
+        </span>
       )}
       {captain && (
         <span
           onClick={pick("captain")}
-          className={`inline-block h-2 w-2 shrink-0 rounded-[2px] border border-white/70 bg-black${
+          className={`inline-flex shrink-0 items-center justify-center rounded-full${
             onPick ? " cursor-pointer hover:ring-2 hover:ring-emerald-400" : ""
           }${armed === "captain" ? " ring-2 ring-emerald-400 animate-pulse" : ""}`}
           title={onPick ? "Capitão — clique e escolha o novo capitão" : "Capitão"}
-        />
+        >
+          <GameIcon name="crown" size={13} />
+        </span>
       )}
     </>
   );

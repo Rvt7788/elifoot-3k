@@ -1,4 +1,5 @@
 import type { GameState } from "../types";
+import { sortTable } from "./schedule";
 
 // Slots de save em IndexedDB: o GameState serializado passa de 3MB (320 clubes,
 // ~6400 jogadores) e o localStorage tem cota de ~5MB no total — que o autosave
@@ -16,6 +17,9 @@ export interface SlotMeta {
   season: number;
   week: number;
   savedAt: string; // ISO date
+  managerName?: string; // nome do técnico
+  division?: string; // divisão do clube (Série A/B)
+  position?: number; // posição na tabela da divisão
 }
 
 function openDB(): Promise<IDBDatabase> {
@@ -102,11 +106,19 @@ export async function listSlots(): Promise<(SlotMeta | null)[]> {
 /** Save the current game into a numbered slot. Returns false when the write fails. */
 export async function saveToSlot(index: number, game: GameState): Promise<boolean> {
   const club = game.clubs.find((c) => c.id === game.userClubId);
+  const division = club?.division;
+  const table = division ? game.tables[division] : undefined;
+  const position = table
+    ? sortTable(table).findIndex((r) => r.clubId === game.userClubId) + 1 || undefined
+    : undefined;
   const meta: SlotMeta = {
     clubName: club?.name ?? "???",
     season: game.season,
     week: game.week,
     savedAt: new Date().toISOString(),
+    managerName: game.managerName,
+    division,
+    position,
   };
   try {
     // IndexedDB clona estruturas, mas o game vem do zustand com possíveis

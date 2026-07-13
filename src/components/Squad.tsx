@@ -5,6 +5,7 @@ import { appAlert, appConfirm } from "./AppDialog";
 import { askingPrice, quickSellPrice } from "../game/market";
 import { userSquadRoles } from "../game/roles";
 import { RoleBadges } from "./icons";
+import GameIcon from "./GameIcon";
 
 const TIER_BADGE: Record<string, string> = {
   bagre: "", bom: "★", craque: "★★", extra: "💎",
@@ -114,23 +115,23 @@ export default function Squad() {
                       <RoleBadges penalty={p.id === roles.penaltyTakerId} captain={p.id === roles.captainId} />
                     </span>
                     {(p.injuryWeeks ?? 0) > 0 && (
-                      <span className="whitespace-nowrap rounded bg-orange-950 px-1 text-[9px] sm:text-[10px] text-orange-400" title={`Lesionado: volta em ${p.injuryWeeks} rodada${(p.injuryWeeks ?? 0) > 1 ? "s" : ""}`}>
-                        🚑 lesão {p.injuryWeeks}r
+                      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded bg-orange-950 px-1 text-[9px] sm:text-[10px] text-orange-400" title={`Lesionado: volta em ${p.injuryWeeks} rodada${(p.injuryWeeks ?? 0) > 1 ? "s" : ""}`}>
+                        <GameIcon name="injury" size={11} /> lesão {p.injuryWeeks}r
                       </span>
                     )}
                     {p.suspendedLeague && (
-                      <span className="whitespace-nowrap rounded bg-red-950 px-1 text-[9px] sm:text-[10px] text-red-400" title="Suspenso na liga: cumpre 1 rodada fora">
-                        🟥 susp. liga
+                      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded bg-red-950 px-1 text-[9px] sm:text-[10px] text-red-400" title="Suspenso na liga: cumpre 1 rodada fora">
+                        <GameIcon name="red" size={11} /> susp. liga
                       </span>
                     )}
                     {p.suspendedCup && (
-                      <span className="whitespace-nowrap rounded bg-red-950 px-1 text-[9px] sm:text-[10px] text-red-400" title="Suspenso na copa: cumpre 1 partida fora">
-                        🟥 susp. copa
+                      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded bg-red-950 px-1 text-[9px] sm:text-[10px] text-red-400" title="Suspenso na copa: cumpre 1 partida fora">
+                        <GameIcon name="red" size={11} /> susp. copa
                       </span>
                     )}
                     {p.suspendedContinental && (
-                      <span className="whitespace-nowrap rounded bg-red-950 px-1 text-[9px] sm:text-[10px] text-red-400" title="Suspenso na continental: cumpre 1 partida fora">
-                        🟥 susp. cont
+                      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded bg-red-950 px-1 text-[9px] sm:text-[10px] text-red-400" title="Suspenso na continental: cumpre 1 partida fora">
+                        <GameIcon name="red" size={11} /> susp. cont
                       </span>
                     )}
                   </div>
@@ -170,10 +171,10 @@ export default function Squad() {
                       </p>
                       <p>Gols: <span className="text-zinc-200">{p.goals}</span></p>
                       <p>Assistências: <span className="text-zinc-200">{p.assists}</span></p>
-                      <p>Cartões: <span className="text-zinc-200">🟨 {p.yellows} · 🟥 {p.reds}</span></p>
+                      <p className="flex items-center gap-1">Cartões: <span className="inline-flex items-center gap-1 text-zinc-200"><GameIcon name="yellow" size={11} /> {p.yellows} · <GameIcon name="red" size={11} /> {p.reds}</span></p>
                       <p>Evolução no ano: <span className={p.gained > 0 ? "text-emerald-400" : "text-zinc-200"}>{p.gained > 0 ? `+${p.gained}` : p.gained}</span></p>
                       <p>Treino: <span className="text-zinc-200 capitalize">{p.training}</span></p>
-                      <p>Títulos: <span className="text-amber-400">{p.titles ?? 0} 🏆</span></p>
+                      <p className="flex items-center gap-1">Títulos: <span className="inline-flex items-center gap-1 text-amber-400">{p.titles ?? 0} <GameIcon name="trophy" size={11} /></span></p>
                       <p className="col-span-2 sm:col-span-4 flex items-center gap-2">
                         Contrato:{" "}
                         <span className={(p.contract ?? 1) <= 1 ? "font-bold text-amber-400" : "text-zinc-200"}>

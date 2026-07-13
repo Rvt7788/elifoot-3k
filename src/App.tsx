@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useStore, needsUserShootout, renewalCost } from "./store";
 import { appAlert } from "./components/AppDialog";
+import GameIcon, { type GameIconName } from "./components/GameIcon";
 import PenaltyShootout from "./components/PenaltyShootout";
 import SeasonHighlightsModal from "./components/SeasonHighlightsModal";
 import SettingsModal from "./components/SettingsModal";
@@ -11,7 +12,7 @@ import Standings, { HallOfFame, type TableView } from "./components/Standings";
 import Squad from "./components/Squad";
 import Market from "./components/Market";
 import Training from "./components/Training";
-import { IconClub, IconTable, IconSquad, IconMarket, IconTraining, IconTrophy, IconGear, IconPlay, IconLive } from "./components/icons";
+import { IconGear, IconPlay, IconLive } from "./components/icons";
 import { ScrollLock } from "./components/useLockBodyScroll";
 import { readableKit } from "./game/color";
 import { quickSellPrice } from "./game/market";
@@ -34,7 +35,7 @@ function JobOfferModal() {
         className="w-full max-w-md rounded-xl p-5"
         style={{ background: club.primaryColor, color: club.secondaryColor }}
       >
-        <h2 className="mb-2 font-display text-lg font-bold">📞 Convite recebido</h2>
+        <h2 className="mb-2 flex items-center gap-2 font-display text-lg font-bold"><GameIcon name="invite" size={18} /> Convite recebido</h2>
         {game.fired ? (
           <>
             <p className="mb-2 text-pretty text-sm leading-relaxed">
@@ -104,16 +105,16 @@ function IncomingOfferModal({ onOpenSquad }: { onOpenSquad: () => void }) {
     return (
       <button
         onClick={() => setHiddenFor(null)}
-        className="fixed bottom-4 right-4 z-50 rounded-lg border border-sky-700/60 bg-zinc-900 px-4 py-2 text-sm font-semibold text-sky-300 shadow-lg hover:bg-zinc-800"
+        className="fixed bottom-4 right-4 z-50 inline-flex items-center gap-2 rounded-lg border border-sky-700/60 bg-zinc-900 px-4 py-2 text-sm font-semibold text-sky-300 shadow-lg hover:bg-zinc-800"
       >
-        📠 Responder proposta
+        <GameIcon name="proposal" size={16} /> Responder proposta
       </button>
     );
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <ScrollLock />
       <div className="w-full max-w-xs sm:max-w-sm rounded-xl border border-sky-700/60 bg-zinc-900 p-5">
-        <h2 className="mb-2 font-display text-lg font-bold text-sky-400">📠 Proposta recebida</h2>
+        <h2 className="mb-2 flex items-center gap-2 font-display text-lg font-bold text-sky-400"><GameIcon name="proposal" size={18} /> Proposta recebida</h2>
         <p className="mb-2 text-pretty text-sm leading-relaxed text-zinc-300">
           O <b className="text-zinc-100">{buyer.name}</b> enviou uma proposta oficial por{" "}
           <b className="text-zinc-100">{player.name}</b> ({player.pos}, {player.age} anos,
@@ -242,7 +243,7 @@ function ContractWarningModal() {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <ScrollLock />
       <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-xl border border-amber-700/60 bg-zinc-900 p-5">
-        <h2 className="mb-2 font-display text-lg font-bold text-amber-400">📝 Contratos a vencer</h2>
+        <h2 className="mb-2 flex items-center gap-2 font-display text-lg font-bold text-amber-400"><GameIcon name="contract" size={18} /> Contratos a vencer</h2>
         <p className="mb-3 text-pretty text-sm leading-relaxed text-zinc-300">
           A temporada está acabando ({roundsLeft} rodada{roundsLeft > 1 ? "s" : ""} restante
           {roundsLeft > 1 ? "s" : ""} na liga) e estes jogadores estão no último ano de
@@ -469,13 +470,15 @@ export default function App() {
   const liveRunning = live !== null;
   const liveFinished = liveRunning && live.every((m) => m.finished);
 
-  const TABS: { key: Tab; label: string; Icon: typeof IconClub }[] = [
-    { key: "clube", label: "Clube", Icon: IconClub },
-    { key: "tabela", label: "Tabela", Icon: IconTable },
-    { key: "elenco", label: "Elenco", Icon: IconSquad },
-    { key: "treino", label: "Treino", Icon: IconTraining },
-    { key: "mercado", label: "Mercado", Icon: IconMarket },
-    { key: "ranking", label: "Ranking", Icon: IconTrophy },
+  // ícones das abas: arte metálica nova (GameIcon). Elenco usa "glove" como
+  // placeholder até gerarmos um ícone próprio de elenco/jogadores.
+  const TABS: { key: Tab; label: string; icon: GameIconName }[] = [
+    { key: "clube", label: "Clube", icon: "shield" },
+    { key: "tabela", label: "Tabela", icon: "board" },
+    { key: "elenco", label: "Elenco", icon: "roster" },
+    { key: "treino", label: "Treino", icon: "training" },
+    { key: "mercado", label: "Mercado", icon: "finance" },
+    { key: "ranking", label: "Ranking", icon: "trophy" },
   ];
 
   let headerBtnLabel = "Jogar";
@@ -536,7 +539,7 @@ export default function App() {
                   }`}
                   title={t.label}
                 >
-                  <t.Icon className="h-5 w-5" />
+                  <GameIcon name={t.icon} size={22} />
                   <span className="hidden lg:inline">{t.label}</span>
                 </button>
               ))}
@@ -545,7 +548,7 @@ export default function App() {
                 className="ml-1 flex-1 tab-button rounded px-2 py-2.5 text-sm text-zinc-400 md:flex-none"
                 title="Configurações"
               >
-                <IconGear className="h-5 w-5" />
+                <GameIcon name="settings" size={22} />
               </button>
             </div>
             {/* Botão só aparece no cabeçalho durante a rodada ao vivo (Ao vivo / Encerrar).

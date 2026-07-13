@@ -3,3 +3,6 @@ dist/
 *.tsbuildinfo
 *.tmp.mjs
 Captura de tela*.png
+
+# spritesheets fonte dos ícones (recortados para public/icons/)
+spirtes*.png

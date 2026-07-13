@@ -2,84 +2,49 @@ import { useEffect, useRef, useState } from "react";
 import { useStore, nextPlayableWeek, weekFixtures } from "../store";
 import type { Club, Fixture, LiveMatch, MatchEvent } from "../types";
 import TacticsModal from "./TacticsModal";
+import GameIcon, { type GameIconName } from "./GameIcon";
 import { playGoal, playGoalConceded, playRed, playWhistle } from "../game/sound";
 import { distinctPair, readableOn } from "../game/color";
 import { weekInfo, tiesForLeg, groupFixturesForMatchday, CUP_STAGE_NAMES, CONT_STAGE_NAMES, TOTAL_WEEKS } from "../game/cup";
-import { formatMatchDateLong } from "../game/calendar";
 import { cupName, continentalName } from "../data/leagues";
 import ClubModal from "./ClubModal";
 import { ScrollLock } from "./useLockBodyScroll";
 
-const ORDINAL_ROUNDS = [
-  "",
-  "Primeira Rodada",
-  "Segunda Rodada",
-  "Terceira Rodada",
-  "Quarta Rodada",
-  "Quinta Rodada",
-  "Sexta Rodada",
-  "Sétima Rodada",
-  "Oitava Rodada",
-  "Nona Rodada",
-  "Décima Rodada",
-  "Décima Primeira Rodada",
-  "Décima Segunda Rodada",
-  "Décima Terceira Rodada",
-  "Décima Quarta Rodada",
-  "Décima Quinta Rodada",
-  "Décima Sexta Rodada",
-  "Décima Sétima Rodada",
-  "Décima Oitava Rodada",
-  "Décima Nona Rodada",
-  "Vigésima Rodada",
-  "Vigésima Primeira Rodada",
-  "Vigésima Segunda Rodada",
-  "Vigésima Terceira Rodada",
-  "Vigésima Quarta Rodada",
-  "Vigésima Quinta Rodada",
-  "Vigésima Sexta Rodada",
-  "Vigésima Sétima Rodada",
-  "Vigésima Oitava Rodada",
-  "Vigésima Nona Rodada",
-  "Trigésima Rodada",
-  "Trigésima Primeira Rodada",
-  "Trigésima Segunda Rodada",
-  "Trigésima Terceira Rodada",
-  "Trigésima Quarta Rodada",
-  "Trigésima Quinta Rodada",
-  "Trigésima Sexta Rodada",
-  "Trigésima Sétima Rodada",
-  "Trigésima Oitava Rodada",
-];
-
 // Título da rodada: liga, fase da copa ou da continental (ida/volta) em duas
 // partes (título/data), usando o nome real da competição do país do usuário.
-function weekLabelHeader(week: number, season: number, country: string): { title: string; subtitle: string } {
+function weekLabelHeader(week: number, season: number, country: string): { title: string; subtitle: string; icon?: GameIconName; stage?: string } {
   const info = weekInfo(week);
-  const dateStr = formatMatchDateLong(season, week);
+  // data removida do cabeçalho (liga e copas); será exibida em outro lugar
   if (info.type === "cup") {
     return {
-      title: `🏆 ${cupName(country)} — ${CUP_STAGE_NAMES[info.stage]} (${info.leg === 1 ? "Ida" : "Volta"})`,
-      subtitle: dateStr,
+      icon: "trophy" as GameIconName,
+      title: cupName(country),
+      stage: `${CUP_STAGE_NAMES[info.stage]} (${info.leg === 1 ? "Ida" : "Volta"})`,
+      subtitle: "",
     };
   }
   if (info.type === "contgroup") {
     return {
-      title: `🌎 ${continentalName(country)} — Grupos · Rodada ${info.matchday + 1}`,
-      subtitle: dateStr,
+      icon: "globe" as GameIconName,
+      title: continentalName(country),
+      stage: `Grupos · Rodada ${info.matchday + 1}`,
+      subtitle: "",
     };
   }
   if (info.type === "continental") {
     return {
-      title: `🌎 ${continentalName(country)} — ${CONT_STAGE_NAMES[info.stage]} (${info.leg === 1 ? "Ida" : "Volta"})`,
-      subtitle: dateStr,
+      icon: "globe" as GameIconName,
+      title: continentalName(country),
+      stage: `${CONT_STAGE_NAMES[info.stage]} (${info.leg === 1 ? "Ida" : "Volta"})`,
+      subtitle: "",
     };
   }
-  
-  const roundName = ORDINAL_ROUNDS[info.round] || `${info.round}ª Rodada`;
+
+  // liga: "Liga Nacional" em cima, rodada abaixo. Numeral: "10ª Rodada".
   return {
-    title: roundName,
-    subtitle: dateStr,
+    title: "Liga Nacional",
+    stage: `${info.round}ª Rodada`,
+    subtitle: "",
   };
 }
 
@@ -90,7 +55,8 @@ const DIVISION_COLOR: Record<string, string> = {
   "Série B": "text-sky-400",
 };
 
-const EVENT_ICON = { goal: "⚽", yellow: "🟨", red: "🟥", sub: "🔄", penalty: "🥅" } as const;
+// tipo de evento → ícone do jogo (arte metálica própria)
+const EVENT_ICON: Record<string, GameIconName> = { goal: "goal", yellow: "yellow", red: "red", sub: "sub", penalty: "net" };
 
 // Nome completo do clube quando cabe ("São Paulo", "Real Madrid"); nomes muito
 // longos caem para os primeiros 15 caracteres, e o truncate do CSS cuida do resto.
@@ -118,7 +84,7 @@ function EventStrip({ events }: { events: MatchEvent[] }) {
       {shown.map((e, i) => (
         <span key={i} title={e.playerName} className="flex items-center gap-0.5 whitespace-nowrap">
           <span className="text-[10px] text-zinc-500">{e.minute}&#39;</span>
-          <span>{EVENT_ICON[e.type]}</span>
+          <GameIcon name={EVENT_ICON[e.type]} size={14} />
           {e.type === "goal" && (
             <span className="max-w-[72px] truncate text-[10px] text-zinc-300">
               {shortPlayerName(e.playerName)}
@@ -352,13 +318,13 @@ function MatchDetailModal({
           <div>
             {homeGoals.length === 0 && <p className="text-zinc-600">—</p>}
             {homeGoals.map((e, i) => (
-              <p key={i} className="text-zinc-300">⚽ {e.playerName} <span className="text-zinc-500">{e.minute}'</span></p>
+              <p key={i} className="flex items-center gap-1 text-zinc-300"><GameIcon name="goal" size={13} /> {e.playerName} <span className="text-zinc-500">{e.minute}'</span></p>
             ))}
           </div>
           <div className="text-right">
             {awayGoals.length === 0 && <p className="text-zinc-600">—</p>}
             {awayGoals.map((e, i) => (
-              <p key={i} className="text-zinc-300"><span className="text-zinc-500">{e.minute}'</span> {e.playerName} ⚽</p>
+              <p key={i} className="flex items-center justify-end gap-1 text-zinc-300"><span className="text-zinc-500">{e.minute}'</span> {e.playerName} <GameIcon name="goal" size={13} /></p>
             ))}
           </div>
         </div>
@@ -385,15 +351,15 @@ function MatchDetailModal({
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div>
                 {[...yellows.filter((e) => e.side === "home"), ...reds.filter((e) => e.side === "home")].map((e, i) => (
-                  <p key={i} className="text-zinc-300">
-                    {e.type === "yellow" ? "🟨" : "🟥"} {e.playerName} <span className="text-zinc-500">{e.minute}'</span>
+                  <p key={i} className="flex items-center gap-1 text-zinc-300">
+                    <GameIcon name={e.type === "yellow" ? "yellow" : "red"} size={13} /> {e.playerName} <span className="text-zinc-500">{e.minute}'</span>
                   </p>
                 ))}
               </div>
               <div className="text-right">
                 {[...yellows.filter((e) => e.side === "away"), ...reds.filter((e) => e.side === "away")].map((e, i) => (
-                  <p key={i} className="text-zinc-300">
-                    <span className="text-zinc-500">{e.minute}'</span> {e.playerName} {e.type === "yellow" ? "🟨" : "🟥"}
+                  <p key={i} className="flex items-center justify-end gap-1 text-zinc-300">
+                    <span className="text-zinc-500">{e.minute}'</span> {e.playerName} <GameIcon name={e.type === "yellow" ? "yellow" : "red"} size={13} />
                   </p>
                 ))}
               </div>
@@ -506,14 +472,14 @@ function PenaltyModal({
         <p className="mb-3 text-base font-bold text-zinc-100">{event.playerName} na bola</p>
         {!revealed ? (
           <div className="flex flex-col items-center gap-2 py-2">
-            <span className="animate-bounce text-4xl">⚽</span>
+            <span className="animate-bounce"><GameIcon name="goal" size={40} /></span>
             <p className="text-xs uppercase tracking-widest text-zinc-500 animate-pulse">
               Cobrança autorizada…
             </p>
           </div>
         ) : (
-          <div className="py-2">
-            <p className="text-4xl">{scored ? "⚽" : "🧤"}</p>
+          <div className="flex flex-col items-center py-2">
+            <GameIcon name={scored ? "goal" : "glove"} size={40} />
             <p className={`mt-1 text-3xl font-black ${scored ? "text-emerald-400" : "text-red-500"}`}>
               {scored ? "GOL!" : "DEFENDEU!"}
             </p>
@@ -695,28 +661,30 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
 
   // ── navegação pelas rodadas: setas ao lado do título percorrem o calendário ──
   const weekNav = (w: number) => {
-    const { title, subtitle } = weekLabelHeader(w, game.season, userCountry);
+    const { title, subtitle, stage } = weekLabelHeader(w, game.season, userCountry);
     const isCupW = weekInfo(w).type !== "league";
     return (
-      <div className="mb-4 flex items-center justify-center gap-1 sm:gap-3">
+      // setas ancoradas por posição absoluta e fixas nas laterais: mudar o texto
+      // (copa com mais linhas) não as desloca
+      <div className="relative mb-4 px-12 text-center">
         <button
           onClick={() => setBrowseWeek(Math.max(1, w - 1))}
           disabled={w <= 1}
-          className="shrink-0 rounded px-2 py-1 text-xl leading-none text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 disabled:opacity-20"
+          className="absolute left-0 bottom-0 flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 text-xl leading-none text-zinc-300 shadow-sm hover:bg-zinc-700 disabled:opacity-25"
           title="Rodada anterior"
         >
           ‹
         </button>
-        <div className="min-w-0 text-center">
-          <p className={`text-lg font-bold tracking-wide ${isCupW ? "text-amber-400" : "text-zinc-200"}`}>
-            {title}
-          </p>
-          <p className="mt-1 text-sm text-zinc-500">{subtitle}</p>
-        </div>
+        {/* nome da competição sozinho na linha; fase/rodada vêm abaixo */}
+        <p className={`font-display text-xl font-black leading-tight tracking-wide sm:text-2xl ${isCupW ? "text-amber-400" : "text-zinc-100"}`} style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>
+          {title}
+        </p>
+        {stage && <p className="mt-0.5 text-sm font-semibold text-zinc-300">{stage}</p>}
+        {subtitle && <p className="mt-0.5 text-xs uppercase tracking-widest text-zinc-500">{subtitle}</p>}
         <button
           onClick={() => setBrowseWeek(Math.min(TOTAL_WEEKS, w + 1))}
           disabled={w >= TOTAL_WEEKS}
-          className="shrink-0 rounded px-2 py-1 text-xl leading-none text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 disabled:opacity-20"
+          className="absolute right-0 bottom-0 flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 text-xl leading-none text-zinc-300 shadow-sm hover:bg-zinc-700 disabled:opacity-25"
           title="Próxima rodada"
         >
           ›
@@ -1035,19 +1003,28 @@ export default function MatchDay({ onFinishRound }: { onFinishRound?: () => void
       <div className="mb-2 flex justify-center">
         <img src="/elifoot3klogo.png" alt="Elifoot 3k" className="h-14 w-auto" />
       </div>
-      <div className="mb-4 text-center">
-        <p className={`text-lg font-bold tracking-wide ${liveIsCup ? "text-amber-400" : "text-zinc-200"}`}>
-          {weekLabelHeader(game.week, game.season, userCountry).title}
-        </p>
-        {live && !allDone && (
-          <p className="mt-0.5">
-            <span className="text-red-500 text-xs animate-pulse font-bold uppercase">● Ao vivo</span>
-          </p>
-        )}
-        <p className="text-sm text-zinc-500 mt-1">
-          {weekLabelHeader(game.week, game.season, userCountry).subtitle}
-        </p>
-      </div>
+      {(() => {
+        const wl = weekLabelHeader(game.week, game.season, userCountry);
+        return (
+          <div className="mb-4 text-center">
+            {wl.icon && (
+              <div className="mb-1 flex justify-center">
+                <GameIcon name={wl.icon} size={24} />
+              </div>
+            )}
+            <p className={`text-lg font-bold tracking-wide ${liveIsCup ? "text-amber-400" : "text-zinc-200"}`}>
+              {wl.title}
+            </p>
+            {wl.stage && <p className="mt-0.5 text-sm font-semibold text-zinc-300">{wl.stage}</p>}
+            {live && !allDone && (
+              <p className="mt-0.5">
+                <span className="text-red-500 text-xs animate-pulse font-bold uppercase">● Ao vivo</span>
+              </p>
+            )}
+            {wl.subtitle && <p className="text-sm text-zinc-500 mt-1">{wl.subtitle}</p>}
+          </div>
+        );
+      })()}
 
       <div className="mb-6 flex flex-col items-center justify-center gap-4">
         <MatchClock

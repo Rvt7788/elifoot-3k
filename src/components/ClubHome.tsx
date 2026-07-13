@@ -12,7 +12,8 @@ import { leagueName, cupName, continentalName } from "../data/leagues";
 import { IconPlay } from "./icons";
 import ClubModal from "./ClubModal";
 import FinanceModal from "./FinanceModal";
-import { isDarkColor, readableOn } from "../game/color";
+import { isDarkColor, readableKit, readableOn } from "../game/color";
+import GameIcon, { type GameIconName } from "./GameIcon";
 import { formatMatchDate } from "../game/calendar";
 import { ScrollLock } from "./useLockBodyScroll";
 
@@ -41,10 +42,11 @@ const sectorAvg = (squad: Player[], poss: string[]) => {
     : "-";
 };
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function SectionLabel({ children, icon }: { children: React.ReactNode; icon?: GameIconName }) {
   return (
     <div className="mb-3">
-      <span className="ui-label" style={{ color: "#fbbf24" }}>
+      <span className="ui-label inline-flex items-center gap-1.5" style={{ color: "#fbbf24" }}>
+        {icon && <GameIcon name={icon} size={22} />}
         {children}
       </span>
     </div>
@@ -192,11 +194,25 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
     p.moved = true;
     setFabDrag({ dx: p.baseDx + dx, dy: p.baseDy + dy });
   };
-  const onFabPointerUp = () => {
+  const onFabPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
     const p = fabPointer.current;
     fabPointer.current = null;
-    // toque sem arrasto: dispara o jogo
-    if (p && !p.moved) onStartMatchday?.();
+    if (!p || p.moved) return; // arrasto: não dispara o jogo
+    // toque sem arrasto: dispara o jogo. IMPORTANTE — a navegação NÃO pode
+    // acontecer aqui no pointerup, senão a troca para a tela ao vivo põe um
+    // confronto exatamente sob o dedo e o `click` sintético que o navegador
+    // emite em seguida "vaza" nele. Suprimimos esse click e adiamos o start
+    // para o próximo tick, já com o click fantasma consumido.
+    e.preventDefault();
+    const suppressClick = (ev: Event) => {
+      ev.stopPropagation();
+      ev.preventDefault();
+    };
+    window.addEventListener("click", suppressClick, { capture: true, once: true });
+    setTimeout(() => {
+      window.removeEventListener("click", suppressClick, { capture: true } as EventListenerOptions);
+      onStartMatchday?.();
+    }, 0);
   };
   // feedback do "Pular rodada": a simulação trava a UI por um instante — marca o
   // clique na hora (botão desabilitado + rótulo) e roda a simulação no frame seguinte
@@ -298,8 +314,9 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
       {/* Falência: técnico demitido só observa — nenhum comando sobre o clube */}
       {game.fired && (
         <div className="mb-4 rounded-lg border border-red-800 bg-red-950/60 px-4 py-3">
-          <p className="text-sm font-bold uppercase tracking-wide text-red-400">
-            {game.firedReason === "moral" ? "📉 Moral zerada — você foi demitido" : "💸 Falência — você foi demitido"}
+          <p className="flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-red-400">
+            <GameIcon name={game.firedReason === "moral" ? "bankruptcy" : "bankruptcy"} size={15} />
+            {game.firedReason === "moral" ? "Moral zerada — você foi demitido" : "Falência — você foi demitido"}
           </p>
           <p className="mt-1 text-xs text-zinc-400">
             {game.firedReason === "moral"
@@ -312,8 +329,8 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
       {game.seasonNews && game.seasonNews.season === game.season && game.week <= 2 &&
         game.seasonNews.contractLosses.length > 0 && (
         <div className="mb-4 rounded-lg border border-zinc-700 bg-zinc-900/70 px-4 py-3">
-          <p className="text-sm font-bold uppercase tracking-wide text-red-400">
-            📝 Saídas de graça
+          <p className="flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-red-400">
+            <GameIcon name="contract" size={15} /> Saídas de graça
           </p>
           <p className="mt-1 text-xs text-zinc-400">
             Saíram com contrato expirado: {game.seasonNews.contractLosses.join(", ")}.
@@ -475,7 +492,7 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
         <div className="flex flex-row items-start justify-between gap-4 md:contents">
         {/* Coluna 1: Próximo jogo — largura do conteúdo, para o Iniciar jogo ficar colado ao lado */}
         <div className="md:shrink-0">
-        <SectionLabel>Próximo jogo</SectionLabel>
+        <SectionLabel icon="whistle">Próximo jogo</SectionLabel>
         {nextOpp && next ? (
           <div className="text-left">
             <p className="font-display text-xl font-semibold text-zinc-50">
@@ -486,17 +503,22 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
                     style={{ background: c.primaryColor }}
                   />
                 );
-                // cor escura (time de preto) some no fundo do app: nome ganha um chip claro
-                const oppNameCls = `cursor-pointer font-semibold hover:opacity-80${
-                  isDarkColor(nextOpp.primaryColor) ? " rounded bg-zinc-300 px-1" : ""
-                }`;
+                // cor escura (time de preto) some no fundo do app: em vez de um
+                // chip claro atrás, o nome usa a cor SECUNDÁRIA do time (ex.: o
+                // vermelho de um time preto-e-vermelho) quando ela contrasta com o
+                // fundo escuro; sem contraste, cai no branco. Não quebra a lógica
+                // de cores nem adiciona fundo.
+                const oppNameCls = "cursor-pointer font-semibold hover:opacity-80";
+                const oppNameColor = isDarkColor(nextOpp.primaryColor)
+                  ? readableKit("#09090b", nextOpp.secondaryColor)
+                  : nextOpp.primaryColor;
                 return next.homeId === club.id ? (
                   <>{dot(club)}{club.name} <span className="text-zinc-600">vs</span><br className="sm:hidden" />{" "}
                     {dot(nextOpp)}
                     <span
                       onClick={() => setViewClub(nextOpp)}
                       className={oppNameCls}
-                      style={{ color: nextOpp.primaryColor }}
+                      style={{ color: oppNameColor }}
                     >
                       {nextOpp.name}
                     </span></>
@@ -505,7 +527,7 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
                     <span
                       onClick={() => setViewClub(nextOpp)}
                       className={oppNameCls}
-                      style={{ color: nextOpp.primaryColor }}
+                      style={{ color: oppNameColor }}
                     >
                       {nextOpp.name}
                     </span>{" "}
@@ -513,18 +535,19 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
                 );
               })()}
             </p>
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="mt-1 inline-flex items-center gap-1 text-sm text-zinc-500">
               <span className="font-semibold uppercase tracking-wide text-zinc-300">
                 {next.homeId === club.id ? "Em casa" : "Fora"}
-              </span>{" "}
-              ·{" "}
-              {info?.type === "cup"
-                ? `🏆 ${cupName(club.country)} — ${CUP_STAGE_NAMES[info.stage]} (${info.leg === 1 ? "ida" : "volta"})`
-                : info?.type === "contgroup"
-                  ? `🌎 ${continentalName(club.country)} — Grupos (rodada ${info.matchday + 1})`
-                : info?.type === "continental"
-                  ? `🌎 ${continentalName(club.country)} — ${CONT_STAGE_NAMES[info.stage]} (${info.leg === 1 ? "ida" : "volta"})`
-                  : `Rodada ${next.round}`}
+              </span>{" · "}
+              {info?.type === "cup" ? (
+                <>{`${cupName(club.country)} — ${CUP_STAGE_NAMES[info.stage]} (${info.leg === 1 ? "ida" : "volta"})`} <GameIcon name="trophy" size={14} /></>
+              ) : info?.type === "contgroup" ? (
+                <>{`${continentalName(club.country)} — Grupos (rodada ${info.matchday + 1})`} <GameIcon name="globe" size={14} /></>
+              ) : info?.type === "continental" ? (
+                <>{`${continentalName(club.country)} — ${CONT_STAGE_NAMES[info.stage]} (${info.leg === 1 ? "ida" : "volta"})`} <GameIcon name="globe" size={14} /></>
+              ) : (
+                `Rodada ${next.round}`
+              )}
             </p>
             {week !== null && (
               <p className="mt-0.5 text-xs text-zinc-500">
@@ -568,13 +591,15 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
         ) : isCupNext && week !== null ? (
           // semana de mata-mata sem jogo do clube (fora ou eliminado): rodada corre sem você
           <div className="text-left">
-            <p className="text-sm font-semibold uppercase tracking-wide text-zinc-300">
-              {info?.type === "continental" || info?.type === "contgroup"
-                ? `🌎 ${continentalName(club.country)}`
-                : `🏆 ${cupName(club.country)}`}
+            <p className="inline-flex items-center gap-1 text-sm font-semibold uppercase tracking-wide text-zinc-300">
+              {info?.type === "continental" || info?.type === "contgroup" ? (
+                <>{continentalName(club.country)} <GameIcon name="globe" size={14} /></>
+              ) : (
+                <>{cupName(club.country)} <GameIcon name="trophy" size={14} /></>
+              )}
             </p>
             <p className="mt-1 text-xs text-zinc-500">
-              Seu clube não disputa.
+              Não disputa
             </p>
           </div>
         ) : eliminated && nextPlayableWeek(game) !== null ? (
@@ -600,7 +625,7 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
               className="hover:opacity-70"
               title="Ver o detalhamento financeiro completo"
             >
-              <SectionLabel>Caixa ›</SectionLabel>
+              <SectionLabel icon="finance">Caixa ›</SectionLabel>
             </button>
             {/* whitespace-nowrap: valor e rótulo nunca quebram de linha no mobile */}
             <div className="flex flex-col gap-0.5 text-sm">
@@ -611,8 +636,8 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
                 </span>
               </p>
               {(game.lastFinance.attendance ?? 0) > 0 && (
-                <p className="whitespace-nowrap text-xs text-zinc-400">
-                  🏟 {(game.lastFinance.attendance ?? 0).toLocaleString("pt-BR")}
+                <p className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-zinc-400">
+                  <GameIcon name="stadium" size={13} /> {(game.lastFinance.attendance ?? 0).toLocaleString("pt-BR")}
                   <span className="ml-1 text-zinc-500">torcedores</span>
                 </p>
               )}
@@ -637,7 +662,7 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
         <div className="flex flex-row gap-6 md:contents md:flex-1">
           {/* Coluna 3: Últimos resultados — some por completo quando não há jogos */}
           <div className={`flex-1 min-w-0 ${lastResults.length === 0 ? "hidden" : ""}`}>
-            <SectionLabel>Últimos resultados</SectionLabel>
+            <SectionLabel icon="board">Últimos resultados</SectionLabel>
             {lastResults.map((f, i) => {
               const home = game.clubs.find((c) => c.id === f.homeId)!;
               const away = game.clubs.find((c) => c.id === f.awayId)!;
@@ -645,12 +670,12 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
               const gf = isHome ? f.homeScore : f.awayScore;
               const ga = isHome ? f.awayScore : f.homeScore;
               const badge = gf > ga ? "bg-emerald-500" : gf < ga ? "bg-red-500" : "bg-zinc-500";
-              const compIcon = f.comp === "cup" ? "🏆" : f.comp === "continental" ? "🌎" : "";
+              const compIcon: "trophy" | "globe" | null = f.comp === "cup" ? "trophy" : f.comp === "continental" ? "globe" : null;
               return (
                 <div key={i} className="flex w-fit max-w-full items-center gap-1.5 py-1 md:py-1.5 pr-6 text-xs md:text-sm text-zinc-200">
                   <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${badge}`} />
                   <span className="truncate">
-                    {compIcon && <span className="mr-0.5">{compIcon}</span>}
+                    {compIcon && <GameIcon name={compIcon} size={12} className="mr-0.5 inline-block align-middle" />}
                     {teamName(home.name)}{" "}
                     <span className="font-display font-semibold text-zinc-50">
                       {f.homeScore}-{f.awayScore}
@@ -664,7 +689,7 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
 
           {/* Coluna 4: Artilheiros — some por completo quando não há gols */}
           <div className={`flex-1 min-w-0 ${topScorers.every((p) => p.goals === 0) ? "hidden" : ""}`}>
-            <SectionLabel>Artilheiros</SectionLabel>
+            <SectionLabel icon="goal">Artilheiros</SectionLabel>
             {topScorers.every((p) => p.goals === 0) ? null : (
               topScorers
                 .filter((p) => p.goals > 0)

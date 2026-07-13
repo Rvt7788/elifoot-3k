@@ -3,6 +3,7 @@ import { useStore, MIN_SQUAD, MAX_SQUAD } from "../store";
 import { aiAcceptChance, askingPrice, filterMarket, quickSellPrice, type MarketFilters } from "../game/market";
 import { appConfirm } from "./AppDialog";
 import FinanceModal from "./FinanceModal";
+import GameIcon from "./GameIcon";
 import type { Player, Position, Trait } from "../types";
 import { ScrollLock } from "./useLockBodyScroll";
 import { userSquadRoles } from "../game/roles";
@@ -70,7 +71,7 @@ function OfferResultModal({
         className="w-full max-w-sm rounded-xl border border-zinc-700 bg-zinc-900 p-5 text-center"
         onClick={(e) => e.stopPropagation()}
       >
-        <p className="mb-2 text-4xl">{result.ok ? "🤝" : "❌"}</p>
+        <p className="mb-2 flex justify-center"><GameIcon name={result.ok ? "deal" : "reject"} size={40} /></p>
         <p className={`mb-1 text-base font-bold ${result.ok ? "text-emerald-400" : "text-red-400"}`}>
           {result.ok ? "Proposta aceita!" : "Proposta recusada"}
         </p>
@@ -207,15 +208,15 @@ export default function Market() {
       <div className="mb-3 flex w-full gap-2">
         <button
           onClick={() => setTab("buy")}
-          className={`flex-1 rounded px-3 py-1.5 text-sm font-semibold ${tab === "buy" ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"}`}
+          className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded px-3 py-1.5 text-sm font-semibold ${tab === "buy" ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"}`}
         >
-          🔍 Contratar
+          <GameIcon name="search" size={15} className="[filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.7))]" /> Contratar
         </button>
         <button
           onClick={() => setTab("sell")}
-          className={`flex-1 rounded px-3 py-1.5 text-sm font-semibold ${tab === "sell" ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"}`}
+          className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded px-3 py-1.5 text-sm font-semibold ${tab === "sell" ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"}`}
         >
-          💰 Vender
+          <GameIcon name="finance" size={15} className="[filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.7))]" /> Vender
         </button>
       </div>
 
@@ -312,9 +313,9 @@ export default function Market() {
 
           <button
             onClick={() => setAppliedFilters(filters)}
-            className="mb-3 w-full rounded bg-emerald-600 py-2 text-sm font-bold hover:bg-emerald-500 sm:w-auto sm:px-6"
+            className="mb-3 inline-flex w-full items-center justify-center gap-1.5 rounded bg-emerald-600 py-2 text-sm font-bold hover:bg-emerald-500 sm:w-auto sm:px-6"
           >
-            🔍 Buscar
+            <GameIcon name="search" size={15} className="[filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.7))]" /> Buscar
           </button>
 
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
@@ -554,7 +555,7 @@ export default function Market() {
                         <p>Cartões: <span className="text-zinc-200">🟨 {p.yellows} · 🟥 {p.reds}</span></p>
                         <p>Evolução no ano: <span className={p.gained > 0 ? "text-emerald-400" : "text-zinc-200"}>{p.gained > 0 ? `+${p.gained}` : p.gained}</span></p>
                         <p>Treino: <span className="text-zinc-200 capitalize">{p.training}</span></p>
-                        <p>Títulos: <span className="text-amber-400">{p.titles ?? 0} 🏆</span></p>
+                        <p className="flex items-center gap-1">Títulos: <span className="inline-flex items-center gap-1 text-amber-400">{p.titles ?? 0} <GameIcon name="trophy" size={11} /></span></p>
                         <p className="col-span-2">
                           Contrato:{" "}
                           <span className={(p.contract ?? 1) <= 1 ? "font-bold text-amber-400" : "text-zinc-200"}>
