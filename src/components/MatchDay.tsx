@@ -1011,7 +1011,7 @@ export default function MatchDay({ onFinishRound, onOpenSettings }: { onFinishRo
       {/* logo trazida para a tela ao vivo, sem borda/divisória: o cabeçalho se
           funde ao corpo do ao vivo. */}
       <div className="mb-2 flex justify-center">
-        <img src="/elifoot3klogo.png" alt="Elifoot 3k" className="h-14 w-auto [filter:drop-shadow(0_0_18px_rgba(34,211,238,0.55))]" />
+        <img src="/elifoot3klogo.png" alt="Elifoot 3k" className="h-14 w-auto" />
       </div>
       {(() => {
         const wl = weekLabelHeader(game.week, game.season, userCountry);
