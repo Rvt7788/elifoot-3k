@@ -196,6 +196,8 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
     setTimeout(() => {
       window.removeEventListener("click", suppressClick, { capture: true } as EventListenerOptions);
       onStartMatchday?.();
+      // ao entrar no ao vivo, volta o scroll para o topo da página dos jogos
+      requestAnimationFrame(() => window.scrollTo(0, 0));
     }, 0);
   };
   // feedback do "Pular rodada": a simulação trava a UI por um instante — marca o
