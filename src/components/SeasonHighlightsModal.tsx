@@ -50,23 +50,27 @@ export default function SeasonHighlightsModal() {
   const relegated = isSerieA && userPos >= 15;
   const survived = isSerieA && userPos <= 14;
 
+  // títulos conquistados, com o ícone de cada competição (troféu para copa/liga,
+  // globo para a continental)
+  const titlesWon: { name: string; icon: string }[] = [];
+  if (wonSerieA) titlesWon.push({ name: "Campeonato Brasileiro (Série A)", icon: "/icons/trophy.png" });
+  if (wonSerieB) titlesWon.push({ name: "Campeonato Brasileiro (Série B)", icon: "/icons/trophy.png" });
+  if (wonCup) titlesWon.push({ name: "Copa Nacional", icon: "/icons/trophy.png" });
+  if (wonCont) titlesWon.push({ name: "Copa Continental", icon: "/icons/globe.png" });
+
   // Manager evaluation message and title
   let evalTitle = "⏳ Trabalho de Reconstrução";
   let evalMsg = `A temporada na Série B terminou sem o sonhado acesso à Série A para o **${userClub.name}**. O elenco batalhou, mas a irregularidade cobrou o seu preço. Vamos usar esse aprendizado para ajustar as peças corretas e garantir que, no próximo ano, a vaga seja nossa!`;
   let evalEmoji = "📋";
+  // taça da glória eterna usa o ícone trophy.png no lugar do emoji
+  let evalIcon: string | null = null;
   let evalBg = "border-zinc-700/60 bg-zinc-950";
 
   if (wonAnyTitle) {
-    evalTitle = "👑 Glória Eterna!";
-    evalEmoji = "🏆";
+    evalTitle = "Glória Eterna!";
+    evalIcon = "/icons/trophy.png";
     evalBg = "border-amber-500/70 bg-gradient-to-b from-amber-900/40 via-amber-950/20 to-zinc-950";
-    const titlesWon: string[] = [];
-    if (wonSerieA) titlesWon.push("Campeonato Brasileiro (Série A)");
-    if (wonSerieB) titlesWon.push("Campeonato Brasileiro (Série B)");
-    if (wonCup) titlesWon.push("Copa Nacional");
-    if (wonCont) titlesWon.push("Liga Continental");
-
-    evalMsg = `Uma temporada simplesmente monumental, Professor! Sob o seu comando estratégico, o **${userClub.name}** ergueu a taça e conquistou o título da: **${titlesWon.join(", ")}**. A torcida está em êxtase e a diretoria sabe que tem um técnico brilhante no comando. Parabéns pela conquista histórica!`;
+    evalMsg = `Uma temporada simplesmente monumental, Professor! Sob o seu comando estratégico, o **${userClub.name}** ergueu a taça e conquistou o título da: **${titlesWon.map((t) => t.name).join(", ")}**. A torcida está em êxtase e a diretoria sabe que tem um técnico brilhante no comando. Parabéns pela conquista histórica!`;
   } else if (promoted) {
     evalTitle = "🚀 Acesso Garantido!";
     evalEmoji = "📈";
@@ -117,9 +121,13 @@ export default function SeasonHighlightsModal() {
         // STAGE 1: MANAGER EVALUATION
         <div className={`my-auto w-full max-w-lg rounded-2xl border p-6 shadow-2xl transition-all duration-300 md:p-8 animate-in fade-in zoom-in-95 duration-200 ${evalBg}`}>
           <div className="mb-4 text-center">
-            <span className="text-5xl" role="img" aria-label="emoji">
-              {evalEmoji}
-            </span>
+            {evalIcon ? (
+              <img src={evalIcon} alt="" draggable={false} className="mx-auto h-14 w-14 select-none" />
+            ) : (
+              <span className="text-5xl" role="img" aria-label="emoji">
+                {evalEmoji}
+              </span>
+            )}
             <h2 className="mt-3 font-display text-2xl font-black text-zinc-100 uppercase tracking-wide">
               {evalTitle}
             </h2>
@@ -152,17 +160,24 @@ export default function SeasonHighlightsModal() {
               <span>Posição na Liga:</span>
               <span className="font-bold text-zinc-200">{userPos}º lugar ({userClub.division})</span>
             </div>
-            {wonAnyTitle && (
-              <div className="flex justify-between items-center rounded-lg bg-amber-500/5 border border-amber-500/10 px-4 py-2.5 text-xs text-amber-400">
-                <span>Título conquistado:</span>
-                <span className="font-bold">Sim 🏆</span>
+            {titlesWon.length > 0 && (
+              <div className="rounded-lg bg-amber-500/5 border border-amber-500/10 px-4 py-2.5 text-xs text-amber-400">
+                <span>{titlesWon.length > 1 ? "Títulos conquistados:" : "Título conquistado:"}</span>
+                <div className="mt-1.5 flex flex-col gap-1.5">
+                  {titlesWon.map((t) => (
+                    <span key={t.name} className="flex items-center gap-1.5 font-bold">
+                      {t.name}
+                      <img src={t.icon} alt="" draggable={false} className="h-4 w-4 select-none" />
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
           </div>
 
           <button
             onClick={() => setStep(2)}
-            className="btn-cta mx-auto mt-6 block w-fit px-8 py-2.5 text-sm font-bold uppercase tracking-wider"
+            className="mx-auto mt-6 block w-fit rounded-md bg-zinc-800 px-8 py-2.5 text-sm font-bold uppercase tracking-wider text-zinc-200 transition-colors hover:bg-zinc-700 hover:text-white"
           >
             Ver destaques
           </button>
