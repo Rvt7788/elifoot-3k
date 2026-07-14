@@ -27,6 +27,12 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
   // botão flutuante padrão do app, também aqui na parada tática: mesma posição
   // arrastável (compartilhada via store) — é o mesmo botão passeando entre as telas.
   const { fabPos, fabRef, onFabDown, onFabMove, fabTapEnded } = useFabDrag();
+  // Guarda contra o click sintético do FAB borbulhar/cair no overlay: quando o
+  // botão está deslocado (arrastado p/ o canto), o click que o navegador dispara
+  // após o pointer capturado é entregue no overlay, não no botão — então o
+  // stopPropagation do botão não pega. O botão marca o instante em que encerrou
+  // o gesto; o overlay ignora qualquer click nos ms seguintes.
+  const fabGestureEndedAt = useRef(0);
   const [selectedOutId, setSelectedOutId] = useState<string | null>(null);
   const [selectedInId, setSelectedInId] = useState<string | null>(null);
   const [slotOrder, setSlotOrder] = useState<string[] | null>(null);
@@ -722,7 +728,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
     // ancorado no topo (items-start): ao expandir "Ajustes", o conteúdo cresce
     // para baixo dentro do próprio scroll, sem reposicionar/pular o modal. O
     // pb-28 reserva espaço para o botão Jogar flutuante não ser coberto.
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-16 pb-28" onClick={closeAndResume}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-4 pt-16 pb-28" onClick={() => { if (Date.now() - fabGestureEndedAt.current < 500) return; closeAndResume(); }}>
       <div
         className="max-h-[calc(100vh-11rem)] w-full max-w-2xl overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 p-5 pb-6"
         onClick={(e) => e.stopPropagation()}
@@ -1300,8 +1306,8 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
           <button
             onPointerDown={onFabDown}
             onPointerMove={onFabMove}
-            onPointerUp={(e) => { e.stopPropagation(); if (fabTapEnded()) closeAndResume(); }}
-            onPointerCancel={() => fabTapEnded()}
+            onPointerUp={(e) => { e.stopPropagation(); fabGestureEndedAt.current = Date.now(); if (fabTapEnded()) closeAndResume(); }}
+            onPointerCancel={() => { fabGestureEndedAt.current = Date.now(); fabTapEnded(); }}
             disabled={!hasKeeperOnField}
             style={{ touchAction: "none" }}
             className="btn-live btn-live--play flex h-16 w-16 touch-none items-center justify-center !rounded-full text-2xl shadow-lg shadow-black/50 disabled:cursor-not-allowed disabled:opacity-40"
