@@ -1088,9 +1088,7 @@ export default function MatchDay({ onFinishRound, onOpenSettings }: { onFinishRo
               }}
               onPointerCancel={() => fabTapEnded()}
               style={{ touchAction: "none" }}
-              className={`btn-live flex h-16 w-16 touch-none items-center justify-center !rounded-full shadow-lg shadow-black/50 ${
-                paused ? "btn-live--play" : "btn-live--pause"
-              }`}
+              className="btn-live btn-live--play flex h-16 w-16 touch-none items-center justify-center !rounded-full shadow-lg shadow-black/50"
               title={paused ? "Retomar jogos (segure para mover)" : "Pausar jogos (segure para mover)"}
             >
               <img

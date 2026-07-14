@@ -421,9 +421,7 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
                 onClick={onStartMatchday}
                 className="btn-live btn-live--finish flex flex-col justify-center items-center gap-0 px-4 sm:px-5 text-sm sm:text-xs w-24 sm:w-28 self-stretch shrink-0"
               >
-                <svg viewBox="0 0 24 24" className="h-7 w-7 sm:h-9 sm:w-9 [filter:drop-shadow(0_1px_1px_rgba(255,255,255,0.35))]">
-                  <path d="M7 5v14l11-7-11-7Z" fill="#064e2b" />
-                </svg>
+                <img src="/icons/play.png" alt="" draggable={false} className="pointer-events-none h-7 w-7 select-none sm:h-9 sm:w-9" />
                 <span>Jogar</span>
               </button>
             ) : (
@@ -707,9 +705,7 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
           style={{ transform: `translate(${fabDrag.dx}px, ${fabDrag.dy}px)`, touchAction: "none" }}
           className="btn-live btn-live--finish fixed bottom-6 right-5 z-40 flex h-16 w-16 touch-none items-center justify-center !rounded-full shadow-lg shadow-black/50"
         >
-          <svg viewBox="0 0 24 24" className="h-8 w-8 [filter:drop-shadow(0_1px_1px_rgba(255,255,255,0.35))]">
-            <path d="M7 5v14l11-7-11-7Z" fill="#064e2b" />
-          </svg>
+          <img src="/icons/play.png" alt="" draggable={false} className="pointer-events-none h-8 w-8 select-none" />
         </button>
       )}
     </div>
