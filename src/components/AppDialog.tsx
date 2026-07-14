@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { create } from "zustand";
 import { ScrollLock } from "./useLockBodyScroll";
 
@@ -40,11 +41,27 @@ export const appConfirm = (message: string, labels?: DialogLabels): Promise<bool
 
 export function AppDialogHost() {
   const { message, kind, labels, close } = useDialog();
+  // O click sintético do gesto que ABRIU o diálogo não pode fechá-lo: quando o
+  // confirm é disparado num pointerup (ex.: botão flutuante da parada tática),
+  // o diálogo já está renderizado por cima quando o navegador despacha o click
+  // do mesmo toque — ele cairia aqui no backdrop e cancelaria sozinho. Então o
+  // backdrop ignora cliques nos primeiros instantes após abrir.
+  // o timestamp é gravado no PRÓPRIO render (não em useEffect): o render do
+  // diálogo acontece síncrono no flush do pointerup, antes do click chegar
+  const openedAt = useRef(0);
+  const prevMessage = useRef<string | null>(null);
+  if (message !== prevMessage.current) {
+    prevMessage.current = message;
+    if (message) openedAt.current = Date.now();
+  }
   if (!message) return null;
   return (
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-6"
-      onClick={() => close(false)}
+      onClick={() => {
+        if (Date.now() - openedAt.current < 400) return;
+        close(false);
+      }}
     >
       <ScrollLock />
       <div
