@@ -3,6 +3,7 @@ import type { Club, Formation, LivePlayer, Mentality, Player, Position } from ".
 import { FORMATIONS } from "../types";
 import { bestXIByPosition } from "../game/engine";
 import { pitchLayout, PlayerPin, EmptySlot, PitchBackground } from "./PitchField";
+import { readableOn } from "../game/color";
 
 const POS_ORDER = { GOL: 0, DEF: 1, MEI: 2, ATA: 3 } as const;
 const POS_KEYS = ["GOL", "DEF", "MEI", "ATA"] as const;
@@ -166,8 +167,8 @@ export default function ClubBoard({
         <div className="flex w-[42%] shrink-0 flex-col sm:w-44">
           <p className="text-sm leading-tight">
             <span
-              className="font-bold underline decoration-2 underline-offset-2"
-              style={{ color: club.primaryColor, textDecorationColor: club.primaryColor }}
+              className="inline-block rounded px-2 py-0.5 font-bold"
+              style={{ background: club.primaryColor, color: readableOn(club.primaryColor) }}
             >
               {club.name}
             </span>

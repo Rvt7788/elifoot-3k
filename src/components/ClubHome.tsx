@@ -83,18 +83,17 @@ function OpponentModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <span
-              className="inline-block h-8 w-8 rotate-45 border-2"
-              style={{ background: opp.primaryColor, borderColor: opp.secondaryColor }}
-            />
-            <div>
-              <h2 className="ui-title text-zinc-50">{opp.name}</h2>
-              <p className="text-sm text-zinc-400">
+          <div>
+            <h2
+              className="ui-title inline-block rounded px-2 py-0.5"
+              style={{ background: opp.primaryColor, color: readableOn(opp.primaryColor) }}
+            >
+              {opp.name}
+            </h2>
+            <p className="mt-1 text-sm text-zinc-400">
                 {opp.division} · {row ? `${pos}º · ${row.pts} pts` : "sem jogos"}
                 {row && ` · ${row.w}V ${row.d}E ${row.l}D`}
-              </p>
-            </div>
+            </p>
           </div>
           <button onClick={onClose} className="text-zinc-500 hover:text-amber-400">✕</button>
         </div>

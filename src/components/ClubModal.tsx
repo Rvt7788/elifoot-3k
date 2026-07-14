@@ -1,4 +1,5 @@
 import { sortTable } from "../game/schedule";
+import { readableOn } from "../game/color";
 import type { Club, GameState, Player } from "../types";
 import { ScrollLock } from "./useLockBodyScroll";
 
@@ -39,22 +40,21 @@ export default function ClubModal({ game, club, onClose }: { game: GameState; cl
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <span
-              className="inline-block h-8 w-8 rotate-45 border-2"
-              style={{ background: club.primaryColor, borderColor: club.secondaryColor }}
-            />
-            <div>
-              <h2 className="text-lg font-bold text-zinc-50">{club.name}</h2>
-              <p className="text-sm text-zinc-400">
+          <div>
+            <h2
+              className="inline-block rounded px-2 py-0.5 text-lg font-bold"
+              style={{ background: club.primaryColor, color: readableOn(club.primaryColor) }}
+            >
+              {club.name}
+            </h2>
+            <p className="mt-1 text-sm text-zinc-400">
                 {club.division}
                 {row ? ` · ${posIdx + 1}º · ${row.pts} pts` : ""}
                 {" · Téc. "}
                 {isUser
                   ? (game.managerName ?? "Você")
                   : game.managers?.find((m) => m.clubId === club.id)?.name ?? "—"}
-              </p>
-            </div>
+            </p>
           </div>
           <button onClick={onClose} className="text-zinc-500 hover:text-amber-400">✕</button>
         </div>
