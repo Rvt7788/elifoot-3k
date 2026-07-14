@@ -20,6 +20,15 @@ const COUNTRIES: Record<string, { name: string; locked?: boolean }> = {
   PT: { name: "Portugal", locked: true },
 };
 
+function isDarkColor(hex: string): boolean {
+  const m = hex.replace("#", "");
+  const r = parseInt(m.substring(0, 2), 16);
+  const g = parseInt(m.substring(2, 4), 16);
+  const b = parseInt(m.substring(4, 6), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance < 0.25;
+}
+
 function Flag({ code }: { code: string }) {
   return (
     <img
@@ -223,7 +232,9 @@ export default function NewGame() {
             style={{
               background: club.primaryColor,
               color: club.secondaryColor,
-              boxShadow: `0 24px 60px -12px ${club.primaryColor}80, 0 8px 24px -8px ${club.primaryColor}66`,
+              boxShadow: isDarkColor(club.primaryColor)
+                ? `0 24px 60px -12px ${club.secondaryColor}80, 0 8px 24px -8px ${club.secondaryColor}66`
+                : `0 24px 60px -12px ${club.primaryColor}80, 0 8px 24px -8px ${club.primaryColor}66`,
             }}
           >
             <button
