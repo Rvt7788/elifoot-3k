@@ -71,7 +71,7 @@ export default function Squad() {
           <div className="w-[10%] sm:w-[8%] shrink-0 text-center">Ene.</div>
           <div className="hidden sm:block sm:w-[25%] shrink-0 pr-1">Características</div>
           <div className="w-[20%] sm:w-[15%] shrink-0 text-right">Valor</div>
-          <div className="w-[16%] sm:w-[12%] shrink-0 text-right">Salário</div>
+          <div className="w-[16%] sm:w-[12%] shrink-0 pr-1 text-right">Salário</div>
         </div>
 
         {/* Linhas do Grid Flex */}
@@ -153,7 +153,7 @@ export default function Squad() {
                   {/* Valor */}
                   <div className="w-[20%] sm:w-[15%] shrink-0 text-right">${(p.value / 1e6).toFixed(2)}M</div>
                   {/* Salário */}
-                  <div className="w-[16%] sm:w-[12%] shrink-0 text-right text-zinc-400">${(playerSalary(p) / 1e3).toFixed(1)}k</div>
+                  <div className="w-[16%] sm:w-[12%] shrink-0 pr-1 text-right text-zinc-400 whitespace-nowrap">${(playerSalary(p) / 1e3).toFixed(1)}k</div>
                 </div>
                 {expanded === p.id && (
                   <div className="bg-zinc-900/50 px-3 py-2 border-t border-zinc-800">

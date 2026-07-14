@@ -59,6 +59,8 @@ export function useFabDrag() {
   }, []);
 
   const onFabDown = (e: React.PointerEvent<HTMLElement>) => {
+    // impede que segurar o botão inicie uma seleção de texto no conteúdo atrás
+    e.preventDefault();
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     const base = useStore.getState().fabPos;
     pointer.current = {

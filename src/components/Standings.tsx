@@ -11,6 +11,7 @@ import { cupName, continentalName } from "../data/leagues";
 import type { Club, Manager, Player, TableRow } from "../types";
 import ClubModal from "./ClubModal";
 import { readableOn } from "../game/color";
+import { ScrollLock } from "./useLockBodyScroll";
 
 function CupBracket({
   cup, clubs, userClubId, stageNames, totalStages, championLabel, onSelect,
@@ -134,16 +135,16 @@ function DivisionTable({
   );
 }
 
-// Seção de ranking com limite expansível: mostra 5 por padrão, com opção de
-// abrir para 10 ou 20.
-const RANK_LIMITS = [5, 10, 20] as const;
+// Prévia de cada ranking: só os 5 primeiros. Clicar abre um modal com a lista
+// completa (mesma tabela, sem corte).
+const RANK_PREVIEW = 5;
 
 // Escopo dos rankings de gols/assistências: temporada atual ou o save inteiro.
 type RankScope = "temporada" | "geral";
 
 function ScopeToggle({ scope, setScope }: { scope: RankScope; setScope: (s: RankScope) => void }) {
   return (
-    <div className="flex gap-1">
+    <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
       {(["temporada", "geral"] as const).map((s) => (
         <button
           key={s}
@@ -159,55 +160,79 @@ function ScopeToggle({ scope, setScope }: { scope: RankScope; setScope: (s: Rank
   );
 }
 
+// Seção de ranking: mostra a prévia (5) e, se houver mais, fica clicável para
+// abrir o modal com a lista inteira. `render(limit)` desenha a mesma tabela nos
+// dois lugares, garantindo colunas alinhadas entre prévia e modal.
 function RankSection({
-  title, count, children, limit, setLimit, headerExtra,
+  title, count, render, headerExtra, onOpen,
 }: {
   title: React.ReactNode;
   count: number;
-  children: React.ReactNode;
-  limit: number;
-  setLimit: (n: number) => void;
+  render: (limit: number) => React.ReactNode;
   headerExtra?: React.ReactNode;
+  onOpen?: () => void;
 }) {
+  const expandable = count > RANK_PREVIEW && !!onOpen;
   return (
     <div className="mb-6">
       <div className="mb-2 flex items-center justify-between">
         <h3 className="flex items-center gap-1.5 text-base font-bold text-amber-400">{title}</h3>
         {headerExtra}
-        {count > RANK_LIMITS[0] && (
-          <div className="flex gap-1">
-            {RANK_LIMITS.map((n) => (
-              <button
-                key={n}
-                onClick={() => setLimit(n)}
-                className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
-                  limit === n ? "bg-emerald-600 text-white" : "bg-zinc-800/60 text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
       {/* seção vazia mostra só o título — os dados aparecem conforme o save avança */}
-      {count === 0 ? null : children}
+      {count === 0 ? null : (
+        <div
+          onClick={expandable ? onOpen : undefined}
+          className={expandable ? "cursor-pointer rounded transition-colors hover:bg-zinc-900/40" : undefined}
+          title={expandable ? "Ver ranking completo" : undefined}
+        >
+          {render(RANK_PREVIEW)}
+        </div>
+      )}
     </div>
   );
 }
 
-// Ranking geral do save: clubes, jogadores e técnicos mais vitoriosos (títulos
-// de liga, copa e continental), mais o histórico do prêmio de Melhor Técnico.
-// Exportado para a aba própria "Ranking" no cabeçalho do app.
+// Modal com a lista completa de um ranking. Reaproveita o mesmo `render` da
+// seção, sem limite, mantendo as colunas idênticas.
+function RankModal({
+  title, headerExtra, render, onClose,
+}: {
+  title: React.ReactNode;
+  headerExtra?: React.ReactNode;
+  render: (limit: number) => React.ReactNode;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <ScrollLock />
+      <div
+        className="max-h-[85vh] w-full max-w-lg overflow-y-auto border border-zinc-700 bg-[#0a0f16] p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h3 className="flex items-center gap-1.5 text-base font-bold text-amber-400">{title}</h3>
+          <div className="flex items-center gap-3">
+            {headerExtra}
+            <button onClick={onClose} className="text-zinc-500 hover:text-amber-400">✕</button>
+          </div>
+        </div>
+        {render(Infinity)}
+      </div>
+    </div>
+  );
+}
+
+// Ranking geral do save: clubes e jogadores mais vitoriosos, mais os técnicos
+// ranqueados por reputação. Exportado para a aba própria "Ranking" no app.
 export function HallOfFame() {
   const game = useStore((s) => s.game)!;
-  const [clubLimit, setClubLimit] = useState<number>(RANK_LIMITS[0]);
-  const [scorerLimit, setScorerLimit] = useState<number>(RANK_LIMITS[0]);
-  const [assisterLimit, setAssisterLimit] = useState<number>(RANK_LIMITS[0]);
-  const [scorerScope, setScorerScope] = useState<RankScope>("temporada");
-  const [assisterScope, setAssisterScope] = useState<RankScope>("temporada");
-  const [mgrScope, setMgrScope] = useState<RankScope>("temporada");
-  const [managerLimit, setManagerLimit] = useState<number>(RANK_LIMITS[0]);
+  const [scorerScope, setScorerScope] = useState<RankScope>("geral");
+  const [assisterScope, setAssisterScope] = useState<RankScope>("geral");
+  const [openRank, setOpenRank] = useState<string | null>(null);
   const [selected, setSelected] = useState<Club | null>(null);
   const selectClub = (id: string | null) => {
     const club = id ? game.clubs.find((c) => c.id === id) : undefined;
@@ -238,221 +263,194 @@ export function HallOfFame() {
   const assisters = game.players
     .filter((p) => countryClubIds.has(p.clubId) && assistsOf(p) > 0)
     .sort((a, b) => assistsOf(b) - assistsOf(a) || b.strength - a.strength);
-  // técnicos: "geral" ranqueia por títulos (só entra quem tem taça), desempatando
-  // pelas vitórias da carreira; "temporada" ranqueia pelas vitórias do ano.
-  // Nos dois casos a vitória pela Série A pesa 3× mais que pela Série B.
-  const mgrWins = (m: Manager) =>
-    mgrScope === "geral" ? (m.winsA ?? 0) + (m.winsB ?? 0) : (m.seasonWinsA ?? 0) + (m.seasonWinsB ?? 0);
-  const mgrWinScore = (m: Manager) =>
-    mgrScope === "geral"
-      ? (m.winsA ?? 0) * 3 + (m.winsB ?? 0)
-      : (m.seasonWinsA ?? 0) * 3 + (m.seasonWinsB ?? 0);
+  // técnicos: ranqueados por uma PONTUAÇÃO de carreira que só cresce (sem teto):
+  // cada título vale 10 pontos e cada vitória vale 1. Junta prêmios e vitórias ao
+  // longo de todas as temporadas.
+  const mgrWins = (m: Manager) => (m.winsA ?? 0) + (m.winsB ?? 0);
+  const mgrScore = (m: Manager) => m.titles * 10 + mgrWins(m);
   const managers = (game.managers ?? [])
-    // desempregados (clubId null) só existem no carrossel do país do usuário
-    .filter((m) =>
-      (m.clubId === null || countryClubIds.has(m.clubId)) &&
-      (mgrScope === "geral" ? m.titles > 0 : mgrWins(m) > 0),
-    )
-    .sort((a, b) =>
-      mgrScope === "geral"
-        ? b.titles - a.titles || mgrWinScore(b) - mgrWinScore(a) || b.reputation - a.reputation
-        : mgrWinScore(b) - mgrWinScore(a) || b.titles - a.titles || b.reputation - a.reputation,
-    );
-  const awards = [...(game.managerAwards ?? [])].sort((a, b) => b.season - a.season);
+    // desempregados (clubId null) só existem no carrossel do país do usuário;
+    // só entra quem já pontuou (tem título ou vitória)
+    .filter((m) => (m.clubId === null || countryClubIds.has(m.clubId)) && mgrScore(m) > 0)
+    .sort((a, b) => mgrScore(b) - mgrScore(a) || b.titles - a.titles || mgrWins(b) - mgrWins(a));
 
   const thCls = "border-b border-zinc-700 text-left text-[10px] uppercase tracking-wide text-zinc-400";
 
-  // Seções sem dados vão para o fim da tela até começarem a ter conteúdo.
-  const sections: { key: string; count: number; node: React.ReactNode }[] = [
-    { key: "clubes", count: clubs.length, node: (
-      <RankSection
-        title={<><GameIcon name="trophy" size={16} /> Clubes vitoriosos</>}
-        count={clubs.length}
-        limit={clubLimit}
-        setLimit={setClubLimit}
-      >
-        <table className="w-full text-xs sm:text-sm">
-          <thead>
-            <tr className={thCls}>
-              <th className="py-1 pl-2 pr-1 w-6 text-center">#</th>
-              <th>Clube</th>
-              <th>Divisão</th>
-              <th className="w-14 text-center">Títulos</th>
-            </tr>
-          </thead>
-          <tbody>
-            {clubs.slice(0, clubLimit).map((c, i) => (
-              <tr
-                key={c.id}
-                onClick={() => setSelected(c)}
-                className={`cursor-pointer border-b border-zinc-800 hover:bg-zinc-900/60 ${c.id === game.userClubId ? "font-bold text-emerald-400" : "text-zinc-200"}`}
-              >
-                <td className="py-1 text-center font-mono tabular-nums opacity-70">{i + 1}</td>
-                <td className="truncate max-w-[140px] hover:underline sm:max-w-none">
-                  <span
-                    className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full border border-white/30 align-baseline"
-                    style={{ background: c.primaryColor }}
-                  />
-                  {c.name}
-                </td>
-                <td className="text-zinc-400">{c.division}</td>
-                <td className="text-center font-mono tabular-nums">{c.titles ?? 0}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </RankSection>
-    ) },
-    { key: "artilheiros", count: scorers.length, node: (
-      <RankSection
-        title={<><GameIcon name="scorers" size={16} /> Maiores artilheiros</>}
-        count={scorers.length}
-        headerExtra={<ScopeToggle scope={scorerScope} setScope={setScorerScope} />}
-        limit={scorerLimit}
-        setLimit={setScorerLimit}
-      >
-        <table className="w-full text-xs sm:text-sm">
-          <thead>
-            <tr className={thCls}>
-              <th className="py-1 pl-2 pr-1 w-6 text-center">#</th>
-              <th>Jogador</th>
-              <th>Clube</th>
-              <th className="w-10 text-center">Pos</th>
-              <th className="w-14 text-center">Gols</th>
-            </tr>
-          </thead>
-          <tbody>
-            {scorers.slice(0, scorerLimit).map((p, i) => (
-              <tr
-                key={p.id}
-                className={`border-b border-zinc-800 ${p.clubId === game.userClubId ? "font-bold text-emerald-400" : "text-zinc-200"}`}
-              >
-                <td className="py-1 text-center font-mono tabular-nums opacity-70">{i + 1}</td>
-                <td className="truncate max-w-[120px] sm:max-w-none">{p.name}</td>
-                <td
-                  onClick={() => selectClub(p.clubId)}
-                  className="cursor-pointer truncate max-w-[100px] text-zinc-400 hover:underline sm:max-w-none"
-                >
-                  {clubName(p.clubId)}
-                </td>
-                <td className="text-center text-zinc-400">{p.pos}</td>
-                <td className="text-center font-mono tabular-nums text-amber-400 font-semibold">{goalsOf(p)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </RankSection>
-    ) },
-    { key: "garcons", count: assisters.length, node: (
-      <RankSection
-        title={<><GameIcon name="assists" size={16} /> Maiores garçons</>}
-        count={assisters.length}
-        headerExtra={<ScopeToggle scope={assisterScope} setScope={setAssisterScope} />}
-        limit={assisterLimit}
-        setLimit={setAssisterLimit}
-      >
-        <table className="w-full text-xs sm:text-sm">
-          <thead>
-            <tr className={thCls}>
-              <th className="py-1 pl-2 pr-1 w-6 text-center">#</th>
-              <th>Jogador</th>
-              <th>Clube</th>
-              <th className="w-10 text-center">Pos</th>
-              <th className="w-14 text-center">Assist.</th>
-            </tr>
-          </thead>
-          <tbody>
-            {assisters.slice(0, assisterLimit).map((p, i) => (
-              <tr
-                key={p.id}
-                className={`border-b border-zinc-800 ${p.clubId === game.userClubId ? "font-bold text-emerald-400" : "text-zinc-200"}`}
-              >
-                <td className="py-1 text-center font-mono tabular-nums opacity-70">{i + 1}</td>
-                <td className="truncate max-w-[120px] sm:max-w-none">{p.name}</td>
-                <td
-                  onClick={() => selectClub(p.clubId)}
-                  className="cursor-pointer truncate max-w-[100px] text-zinc-400 hover:underline sm:max-w-none"
-                >
-                  {clubName(p.clubId)}
-                </td>
-                <td className="text-center text-zinc-400">{p.pos}</td>
-                <td className="text-center font-mono tabular-nums text-emerald-400 font-semibold">{assistsOf(p)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </RankSection>
-    ) },
-    { key: "tecnicos", count: managers.length, node: (
-      <RankSection
-        title={<><GameIcon name="medal" size={16} /> Melhores técnicos</>}
-        count={managers.length}
-        headerExtra={<ScopeToggle scope={mgrScope} setScope={setMgrScope} />}
-        limit={managerLimit}
-        setLimit={setManagerLimit}
-      >
-        <table className="w-full text-xs sm:text-sm">
-          <thead>
-            <tr className={thCls}>
-              <th className="py-1 pl-2 pr-1 w-6 text-center">#</th>
-              <th>Técnico</th>
-              <th>Clube</th>
-              <th className="w-14 text-center">Títulos</th>
-              <th className="w-14 text-center" title="Vitórias na carreira — as da Série A pesam mais no desempate">Vit.</th>
-              <th className="w-16 text-center" title="Reputação (5-99): sobe com campanhas acima do esperado e títulos">Reput.</th>
-            </tr>
-          </thead>
-          <tbody>
-            {managers.slice(0, managerLimit).map((m, i) => (
-              <tr
-                key={m.id}
-                className={`border-b border-zinc-800 ${m.isUser ? "font-bold text-emerald-400" : "text-zinc-200"}`}
-              >
-                <td className="py-1 text-center font-mono tabular-nums opacity-70">{i + 1}</td>
-                <td className="truncate max-w-[120px] sm:max-w-none">{m.name}{m.isUser ? " (você)" : ""}</td>
-                <td
-                  onClick={() => selectClub(m.clubId)}
-                  className="cursor-pointer truncate max-w-[100px] text-zinc-400 hover:underline sm:max-w-none"
-                >
-                  {clubName(m.clubId)}
-                </td>
-                <td className="text-center font-mono tabular-nums">{m.titles}</td>
-                <td className="text-center font-mono tabular-nums text-amber-400">{mgrWins(m)}</td>
-                <td className="text-center font-mono tabular-nums text-zinc-400">{m.reputation}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </RankSection>
-    ) },
-    { key: "premio", count: awards.length, node: (
-      <div className="mb-6">
-        <h3 className="mb-2 flex items-center gap-1.5 text-base font-bold text-amber-400"><GameIcon name="medal" size={16} /> Melhor Técnico da temporada</h3>
-        {awards.length === 0 ? null : (
-          <div className="mb-4">
-            {awards.map((a) => (
-              <div
-                key={a.season}
-                className="flex items-center justify-between border-b border-zinc-800 py-1.5 text-xs sm:text-sm text-zinc-200"
-              >
-                <span className="text-zinc-500">Temporada {a.season}</span>
-                <span className="font-semibold">{a.managerName}</span>
-                <span className="text-zinc-400">{a.clubName}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    ) },
+  // Todos os rankings compartilham o MESMO gabarito de 4 colunas (posição, nome,
+  // clube/divisão e valor), com larguras fixas via colgroup — assim as colunas
+  // caem na mesma faixa horizontal em todas as seções, no mobile e no desktop.
+  const RankTable = ({
+    nameLabel, subLabel, valueLabel, valueTitle, rows,
+  }: {
+    nameLabel: string;
+    subLabel: string;
+    valueLabel: string;
+    valueTitle?: string;
+    rows: {
+      key: string;
+      rank: number;
+      highlight: boolean;
+      name: React.ReactNode;
+      sub: React.ReactNode;
+      onSub?: () => void;
+      value: React.ReactNode;
+      valueCls: string;
+    }[];
+  }) => (
+    <table className="w-full table-fixed text-xs sm:text-sm">
+      <colgroup>
+        <col className="w-8" />
+        <col />
+        <col className="w-[34%]" />
+        <col className="w-14" />
+      </colgroup>
+      <thead>
+        <tr className={thCls}>
+          <th className="py-1 pr-1 text-center">#</th>
+          <th>{nameLabel}</th>
+          <th>{subLabel}</th>
+          <th className="text-center" title={valueTitle}>{valueLabel}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr
+            key={r.key}
+            className={`border-b border-zinc-800 ${r.highlight ? "font-bold text-emerald-400" : "text-zinc-200"}`}
+          >
+            <td className="py-1 text-center font-mono tabular-nums opacity-70">{r.rank}</td>
+            <td className="truncate">{r.name}</td>
+            <td
+              onClick={r.onSub ? (e) => { e.stopPropagation(); r.onSub!(); } : undefined}
+              className={`truncate text-zinc-400 ${r.onSub ? "cursor-pointer hover:underline" : ""}`}
+            >
+              {r.sub}
+            </td>
+            <td className={`text-center font-mono tabular-nums ${r.valueCls}`}>{r.value}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+
+  const clubsRender = (limit: number) => (
+    <RankTable
+      nameLabel="Clube"
+      subLabel="Divisão"
+      valueLabel="Títulos"
+      rows={clubs.slice(0, limit).map((c, i) => ({
+        key: c.id,
+        rank: i + 1,
+        highlight: c.id === game.userClubId,
+        name: (
+          <span className="inline-flex items-center">
+            <span
+              className="mr-1.5 inline-block h-2.5 w-2.5 shrink-0 rounded-full border border-white/30"
+              style={{ background: c.primaryColor }}
+            />
+            <span className="truncate">{c.name}</span>
+          </span>
+        ),
+        sub: c.division,
+        value: c.titles ?? 0,
+        valueCls: "",
+      }))}
+    />
+  );
+
+  const scorersRender = (limit: number) => (
+    <RankTable
+      nameLabel="Jogador"
+      subLabel="Clube"
+      valueLabel="Gols"
+      rows={scorers.slice(0, limit).map((p, i) => ({
+        key: p.id,
+        rank: i + 1,
+        highlight: p.clubId === game.userClubId,
+        name: p.name,
+        sub: clubName(p.clubId),
+        onSub: () => selectClub(p.clubId),
+        value: goalsOf(p),
+        valueCls: "font-semibold text-amber-400",
+      }))}
+    />
+  );
+
+  const assistersRender = (limit: number) => (
+    <RankTable
+      nameLabel="Jogador"
+      subLabel="Clube"
+      valueLabel="Assist."
+      rows={assisters.slice(0, limit).map((p, i) => ({
+        key: p.id,
+        rank: i + 1,
+        highlight: p.clubId === game.userClubId,
+        name: p.name,
+        sub: clubName(p.clubId),
+        onSub: () => selectClub(p.clubId),
+        value: assistsOf(p),
+        valueCls: "font-semibold text-emerald-400",
+      }))}
+    />
+  );
+
+  const managersRender = (limit: number) => (
+    <RankTable
+      nameLabel="Técnico"
+      subLabel="Clube"
+      valueLabel="Pontos"
+      valueTitle="Pontuação de carreira: cada título vale 10 pontos e cada vitória, 1 — só cresce, sem teto"
+      rows={managers.slice(0, limit).map((m, i) => ({
+        key: m.id,
+        rank: i + 1,
+        highlight: !!m.isUser,
+        name: `${m.name}${m.isUser ? " (você)" : ""}`,
+        sub: clubName(m.clubId),
+        onSub: () => selectClub(m.clubId),
+        value: mgrScore(m),
+        valueCls: "font-semibold text-amber-400",
+      }))}
+    />
+  );
+
+  type RankDef = {
+    key: string;
+    count: number;
+    title: React.ReactNode;
+    headerExtra?: React.ReactNode;
+    render: (limit: number) => React.ReactNode;
+  };
+  const rankDefs: RankDef[] = [
+    { key: "clubes", count: clubs.length, title: <><GameIcon name="trophy" size={16} /> Clubes vitoriosos</>, render: clubsRender },
+    { key: "artilheiros", count: scorers.length, title: <><GameIcon name="scorers" size={16} /> Maiores artilheiros</>, headerExtra: <ScopeToggle scope={scorerScope} setScope={setScorerScope} />, render: scorersRender },
+    { key: "garcons", count: assisters.length, title: <><GameIcon name="assists" size={16} /> Maiores garçons</>, headerExtra: <ScopeToggle scope={assisterScope} setScope={setAssisterScope} />, render: assistersRender },
+    { key: "tecnicos", count: managers.length, title: <><GameIcon name="medal" size={16} /> Melhores técnicos</>, render: managersRender },
   ];
-  // com dados primeiro, vazias no fim — a ordem relativa original é preservada
-  const ordered = [...sections].sort((a, b) => Number(a.count === 0) - Number(b.count === 0));
+
+  // Ordem fixa dos rankings — clicar (para abrir o modal) não reordena a tela.
+  const ordered = rankDefs;
+  const openDef = rankDefs.find((d) => d.key === openRank);
 
   return (
     <div>
-      {ordered.map((s) => (
-        <div key={s.key}>{s.node}</div>
+      {ordered.map((d) => (
+        <RankSection
+          key={d.key}
+          title={d.title}
+          count={d.count}
+          headerExtra={d.headerExtra}
+          render={d.render}
+          onOpen={() => setOpenRank(d.key)}
+        />
       ))}
+      {openDef && (
+        <RankModal
+          title={openDef.title}
+          headerExtra={openDef.headerExtra}
+          render={openDef.render}
+          onClose={() => setOpenRank(null)}
+        />
+      )}
       {selected && (
         <ClubModal game={game} club={selected} onClose={() => setSelected(null)} />
       )}

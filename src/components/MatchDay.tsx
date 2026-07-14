@@ -1063,7 +1063,7 @@ export default function MatchDay({ onFinishRound, onOpenSettings }: { onFinishRo
       {!modalOpen && !pendingPenalty && (
         <div
           ref={(el) => (fabRef.current = el)}
-          className="fixed bottom-6 right-5 z-40"
+          className="fixed bottom-6 right-5 z-40 select-none"
           style={{ transform: `translate(${fabPos.dx}px, ${fabPos.dy}px)` }}
         >
           {allDone ? (

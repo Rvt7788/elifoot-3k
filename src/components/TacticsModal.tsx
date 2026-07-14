@@ -1296,7 +1296,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
       {!infoClub && (
         <div
           ref={(el) => (fabRef.current = el)}
-          className="fixed bottom-6 right-5 z-[55]"
+          className="fixed bottom-6 right-5 z-[55] select-none"
           style={{ transform: `translate(${fabPos.dx}px, ${fabPos.dy}px)` }}
           // o botão age no onPointerUp; o click sintético que o navegador dispara
           // em seguida NÃO deve borbulhar até o overlay (onClick={closeAndResume}),
