@@ -7,7 +7,7 @@ import { playerValue } from "./seeder";
 // XP necessário para subir 1 ponto: cresce com a força atual — evoluir um bagre
 // jovem é rápido, lapidar um craque leva a temporada inteira.
 export function xpNeeded(strength: number): number {
-  return 20 + strength * 2;
+  return 34 + strength * 3;
 }
 
 // Jovens absorvem treino muito mais rápido; a partir dos 30 a evolução quase para.
@@ -20,11 +20,13 @@ export function ageFactor(age: number): number {
 }
 
 // XP base da semana, antes do fator de idade.
-export const XP_MATCH = 14; // quem entrou em campo
+// Jogar ainda rende mais que treinar, mas a diferença é menor: uma revelação no
+// banco continua evoluindo em ritmo próximo de quem joga (equalização).
+export const XP_MATCH = 8; // quem entrou em campo
 export const XP_TRAINING: Record<TrainingIntensity, number> = {
-  leve: 4,
-  normal: 6,
-  pesada: 9,
+  leve: 5,
+  normal: 7,
+  pesada: 10,
 };
 
 // Recuperação de energia na semana livre, por regime (fração da diferença até 100).
