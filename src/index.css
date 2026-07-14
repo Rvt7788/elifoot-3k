@@ -405,7 +405,7 @@ h1, h2, h3, .font-display {
   text-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
 }
 
-/* CTA chanfrado, metálico com contorno neon */
+/* CTA neutro: metálico cinza, cantos arredondados, sem borda colorida */
 .btn-cta {
   font-family: var(--font-display);
   font-weight: 600;
@@ -413,21 +413,16 @@ h1, h2, h3, .font-display {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--metal-100);
-  background: linear-gradient(180deg, #17222f, #0b1219);
-  border: 1px solid #0f766e; /* emerald-700 */
+  background: linear-gradient(180deg, #2a2f36, #1b1f24);
+  border: 1px solid #3f454d;
   border-radius: 6px;
   transition: all 0.15s;
 }
 .btn-cta:not(:disabled):hover {
   color: #fff;
-  border-color: #34d399;
+  border-color: #5a616b;
 }
 .btn-cta:disabled { opacity: 0.35; }
-/* variante sem chanfro: cantos arredondados, para botões compactos do tamanho do texto */
-.btn-cta--plain {
-  clip-path: none;
-  border-radius: 6px;
-}
 
 /* Mobile: nomes de times truncados para caber o momentum ao lado */
 @media (max-width: 639px) {

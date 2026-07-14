@@ -205,7 +205,7 @@ export default function NewGame() {
               setWelcomeOpen(true);
             }}
             disabled={!managerName.trim()}
-            className="btn-cta btn-cta--plain mx-auto mb-6 block px-6 py-2"
+            className="btn-cta mx-auto mb-6 block px-6 py-2"
           >
             Começar carreira
           </button>
@@ -220,7 +220,11 @@ export default function NewGame() {
               só o botão de ação mantém o visual do app */}
           <div
             className="relative w-full max-w-md rounded-xl p-5"
-            style={{ background: club.primaryColor, color: club.secondaryColor }}
+            style={{
+              background: club.primaryColor,
+              color: club.secondaryColor,
+              boxShadow: `0 24px 60px -12px ${club.primaryColor}80, 0 8px 24px -8px ${club.primaryColor}66`,
+            }}
           >
             <button
               onClick={() => setWelcomeOpen(false)}
@@ -247,7 +251,7 @@ export default function NewGame() {
             <div className="flex justify-center">
               <button
                 onClick={() => startGame(Date.now() >>> 0, club.id, managerName.trim())}
-                className="btn-cta btn-cta--plain px-8 py-2"
+                className="btn-cta px-8 py-2"
                 title="Assumir comando"
               >
                 <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 text-emerald-400">

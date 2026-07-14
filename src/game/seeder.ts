@@ -10,6 +10,10 @@ import continentalData from "../data/continental.json";
 
 const rosters = rostersData as Record<string, Record<Position, string[]>>;
 
+// Todo elenco carrega exatamente 3 goleiros: nunca faltam para escalar (1 titular
+// + 2 reservas cobrem lesão/suspensão) e nunca sobram ocupando vaga de jogador de
+// linha. Rosters reais podem listar mais, mas só os 3 melhores entram.
+const MAX_GOALKEEPERS = 3;
 const MIN_GOALKEEPERS = 3;
 const MIN_LINE_PLAYERS_BY_POS = 5;
 const LINE_POSITIONS: Position[] = ["DEF", "MEI", "ATA"];
@@ -133,9 +137,11 @@ export function makePlayer(
   realName?: string,
   realAge?: number,
 ): Player {
-  // dispersão em torno da média do time: a maioria fica perto do nível do clube,
-  // com cauda para cima (revelação) e para baixo (reserva fraco)
-  const spread = randInt(rng, -6, 6) + randInt(rng, -3, 3);
+  // dispersão apertada em torno da média do time: titular e reserva têm que ser
+  // PRÓXIMOS, não iguais — quem entra no XI é só um pouco melhor que o banco, e
+  // não um abismo. Soma de dois randInt estreitos = curva concentrada no centro
+  // (-4..+4), com cauda leve para revelação/reserva fraco em vez de -9..+9.
+  const spread = randInt(rng, -2, 2) + randInt(rng, -2, 2);
   const strength = young
     ? Math.max(8, randInt(rng, Math.round(target * 0.4) - 2, Math.round(target * 0.4) + 3))
     : Math.max(8, Math.min(44, Math.round(target + spread)));
@@ -286,7 +292,7 @@ export function newGame(seed: number, userClubId: string): GameState {
       const meiNames = roster.MEI || [];
       const ataNames = roster.ATA || [];
 
-      const golCount = Math.max(MIN_GOALKEEPERS, golNames.length);
+      const golCount = MAX_GOALKEEPERS; // sempre 3, mesmo que o roster liste mais
       const defCount = Math.max(MIN_LINE_PLAYERS_BY_POS, defNames.length);
       const meiCount = Math.max(MIN_LINE_PLAYERS_BY_POS, meiNames.length);
       const ataCount = Math.max(MIN_LINE_PLAYERS_BY_POS, ataNames.length);
