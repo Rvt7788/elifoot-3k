@@ -186,7 +186,7 @@ export default function SeasonHighlightsModal() {
         // STAGE 2: SEASON HIGHLIGHTS
         <div className="my-auto w-full max-w-2xl rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl transition-all duration-300 md:p-8 animate-in fade-in zoom-in-95 duration-200">
           <div className="mb-5 border-b border-zinc-900 pb-3 text-center">
-            <span className="text-3xl" role="img" aria-label="trophy">🏆</span>
+            <img src="/icons/trophy.png" alt="" draggable={false} className="mx-auto h-10 w-10 select-none" />
             <h2 className="mt-1 font-display text-2xl font-black text-zinc-100 uppercase tracking-wide">
               Destaques da Temporada
             </h2>
@@ -198,8 +198,8 @@ export default function SeasonHighlightsModal() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {/* Column 1: Winners & Prizes */}
             <div>
-              <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-amber-500">
-                🥇 Campeões & Prêmios
+              <h3 className="mb-3 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500">
+                <img src="/icons/medal.png" alt="" draggable={false} className="h-4 w-4 select-none" /> Campeões & Prêmios
               </h3>
               <div className="flex flex-col gap-2.5">
                 {/* Serie A */}
@@ -243,8 +243,8 @@ export default function SeasonHighlightsModal() {
             <div className="flex flex-col gap-5">
               {/* Scorers */}
               <div>
-                <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-amber-500">
-                  🥅 Maiores Artilheiros
+                <h3 className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500">
+                  <img src="/icons/scorers.png" alt="" draggable={false} className="h-4 w-4 select-none" /> Maiores Artilheiros
                 </h3>
                 {topScorers.length > 0 ? (
                   <div className="flex flex-col border border-zinc-900 bg-zinc-900/10 rounded-lg overflow-hidden">
@@ -270,8 +270,8 @@ export default function SeasonHighlightsModal() {
 
               {/* Assists */}
               <div>
-                <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-amber-500">
-                  👟 Líderes de Assistências
+                <h3 className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-500">
+                  <img src="/icons/assists.png" alt="" draggable={false} className="h-4 w-4 select-none" /> Líderes de Assistências
                 </h3>
                 {topAssists.length > 0 ? (
                   <div className="flex flex-col border border-zinc-900 bg-zinc-900/10 rounded-lg overflow-hidden">
@@ -302,7 +302,7 @@ export default function SeasonHighlightsModal() {
               onClick={() => startMatchday()}
               className="btn-play flex w-fit items-center justify-center gap-2 px-8 py-2.5 text-sm font-bold uppercase tracking-wider"
             >
-              Iniciar Nova Temporada ⚽
+              Iniciar Nova Temporada
             </button>
           </div>
         </div>
