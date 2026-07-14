@@ -1310,10 +1310,10 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
             onPointerCancel={() => { fabGestureEndedAt.current = Date.now(); fabTapEnded(); }}
             disabled={!hasKeeperOnField}
             style={{ touchAction: "none" }}
-            className="btn-live btn-live--play flex h-16 w-16 touch-none items-center justify-center !rounded-full text-2xl shadow-lg shadow-black/50 disabled:cursor-not-allowed disabled:opacity-40"
+            className="btn-live btn-live--play flex h-16 w-16 touch-none items-center justify-center !rounded-full shadow-lg shadow-black/50 disabled:cursor-not-allowed disabled:opacity-40"
             title={hasKeeperOnField ? "Voltar ao jogo (segure para mover)" : "Você precisa escalar um goleiro ou jogador de linha no gol!"}
           >
-            ▶
+            <img src="/icons/play.png" alt="" draggable={false} className="pointer-events-none h-8 w-8 select-none" />
           </button>
         </div>
       )}
