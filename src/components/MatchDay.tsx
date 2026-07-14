@@ -535,9 +535,12 @@ export default function MatchDay({ onFinishRound, onOpenSettings }: { onFinishRo
 
   // Parada tática aberta = jogo parado, sempre: mesmo que a pausa seja retirada
   // por outro caminho (botão do placar, atalho), o jogo não anda com o modal aberto.
+  // Qualquer modal aberto ao vivo pausa os jogos: se um modal está por cima,
+  // o técnico não está acompanhando a partida.
+  const anyModalOpen = modalOpen || !!selectedClub || !!detailMatch;
   useEffect(() => {
-    if (modalOpen && live && !allDone && !paused) setPaused(true);
-  }, [modalOpen, paused, live !== null, allDone]);
+    if (anyModalOpen && live && !allDone && !paused) setPaused(true);
+  }, [anyModalOpen, paused, live !== null, allDone]);
 
   useEffect(() => {
     if (!live || allDone) return;
