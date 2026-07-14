@@ -171,7 +171,10 @@ function buildRoundNews(
     if (Math.abs(m.homeScore - m.awayScore) >= 3) {
       const winner = m.homeScore > m.awayScore ? m.homeId : m.awayId;
       const loser = winner === m.homeId ? m.awayId : m.homeId;
-      news.push({ text: `🔥 ${name(winner)} atropela o ${name(loser)}: ${m.homeScore} a ${m.awayScore}.`, clubId: winner });
+      // placar sempre com os gols do vencedor primeiro, mesmo que vença fora
+      const wScore = Math.max(m.homeScore, m.awayScore);
+      const lScore = Math.min(m.homeScore, m.awayScore);
+      news.push({ text: `🔥 ${name(winner)} atropela o ${name(loser)}: ${wScore} a ${lScore}.`, clubId: winner });
     }
   }
   for (const m of divMatches) {
