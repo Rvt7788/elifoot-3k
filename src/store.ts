@@ -9,7 +9,8 @@ import {
   cupChampion,
 } from "./game/cup";
 import continentalData from "./data/continental.json";
-import { newGame, aiOffseasonTransfers, assignShirtNumbers, fixDuplicateNumbers, freeShirtNumber, renumberSquadByStarters, playerSalary, processSeasonTransitions } from "./game/seeder";
+import { newGame, assignShirtNumbers, fixDuplicateNumbers, freeShirtNumber, renumberSquadByStarters, playerSalary, processSeasonTransitions } from "./game/seeder";
+import { runTransferWindow, windowOfferForUser } from "./game/transferWindow";
 import { bestXI, createLiveMatch, simulateMinute } from "./game/engine";
 import { applyResult, buildLeagueFixtures, initTable, sortTable } from "./game/schedule";
 import { mulberry32, pick } from "./game/rng";
@@ -600,7 +601,6 @@ export const useStore = create<Store>()(
             ...game, managerName,
             budget: game.budget + seasonRevenue(userClub.baseBudget),
             managers: createManagers(seed, game.clubs, clubId, managerName, game.players),
-            managerAwards: [],
           },
           live: null,
           lastResults: null,
@@ -676,21 +676,21 @@ export const useStore = create<Store>()(
               ? { ...c, titles: (c.titles ?? 0) + championCount.get(c.id)! }
               : c,
           );
-          // ── técnicos: reputação, títulos, prêmio de Melhor Técnico e carrossel ──
+          // ── técnicos: reputação, títulos e carrossel de demissões ──
           const mgrRes = processManagerSeason(
             g.seed, g.season,
             g.managers ?? createManagers(g.seed, g.clubs, g.userClubId, g.managerName, g.players),
-            g.clubs, g.tables, champions, g.userClubId,
+            g.clubs, g.tables, champions,
           );
           // ── contratos queimam 1 ano; expirados do usuário saem de graça ──
           const transitions = processSeasonTransitions(seasonRng, playersTitled, clubsTitled, g.userClubId);
-          // mercado da IA: cada clube analisa o setor mais fraco e busca reforço
-          // por permuta com outro clube — os elencos da IA evoluem entre temporadas
-          aiOffseasonTransfers(seasonRng, transitions.updatedPlayers, clubsTitled, g.userClubId);
-          const awardBonus =
-            mgrRes.userWonAward && !g.fired
-              ? Math.round(seasonRevenue(userClub.baseBudget) * 0.25)
-              : 0;
+          // janela da entressafra: mercado com dinheiro de verdade — clubes vendem,
+          // compram, perdem craques para o exterior e repõem pela base. Promovidos
+          // à Série A chegam com aporte extra para montar elenco competitivo.
+          const offseasonWindow = runTransferWindow(
+            seasonRng, "offseason", transitions.updatedPlayers, clubsTitled,
+            mgrRes.managers, g.userClubId, promoted,
+          );
           // premiação de campeão: valores fixos, iguais pra qualquer clube
           // (Série A 10M, Série B 3M) — não escalam com o porte do time
           let leagueChampionBonus = 0;
@@ -706,13 +706,10 @@ export const useStore = create<Store>()(
             jobOffer,
             clubs: clubsTitled,
             managers: mgrRes.managers,
-            managerAwards: [...(g.managerAwards ?? []), mgrRes.award],
             seasonNews: {
               season: g.season + 1,
-              bestManager: mgrRes.award.managerName,
-              bestManagerClub: mgrRes.award.clubName,
-              userWonAward: mgrRes.userWonAward,
               contractLosses: transitions.expiredContracts,
+              transferNews: offseasonWindow.news,
             },
             incomingOffer: undefined,
             season: g.season + 1,
@@ -725,8 +722,7 @@ export const useStore = create<Store>()(
               ]),
             ),
             // clube falido não recebe aporte: o caixa fica congelado onde parou
-            // (prêmio de Melhor Técnico rende um bônus extra da diretoria)
-            budget: g.fired ? g.budget : g.budget + seasonRevenue(userClub.baseBudget) + awardBonus + leagueChampionBonus,
+            budget: g.fired ? g.budget : g.budget + seasonRevenue(userClub.baseBudget) + leagueChampionBonus,
             players: transitions.updatedPlayers,
             pendingPromotions:
               transitions.pendingPromotions.length > 0 ? transitions.pendingPromotions : undefined,
@@ -789,6 +785,13 @@ export const useStore = create<Store>()(
           : "cup";
         // técnico demitido não comanda: o ex-clube entra em campo escalado pela IA
         const isUserTeam = (id: string) => id === g!.userClubId && !g!.fired;
+        // "confiança" da IA derivada da reputação do técnico: mestre da tática
+        // (rep alta) entra em campo com o mesmo tipo de bônus que a moral dá ao
+        // usuário (até ~+7%); técnico fraco entra levemente abaixo do neutro
+        const aiConfidence = (id: string) => {
+          const rep = g!.managers?.find((m) => m.clubId === id)?.reputation ?? 50;
+          return 0.35 + (rep / 99) * 0.5;
+        };
         const live = sorted.map((f) =>
           createLiveMatch(
             f.homeId, f.awayId,
@@ -807,8 +810,8 @@ export const useStore = create<Store>()(
             isUserTeam(f.awayId) ? g.formation : undefined,
             isUserTeam(f.homeId) ? g.customFormation : undefined,
             isUserTeam(f.awayId) ? g.customFormation : undefined,
-            isUserTeam(f.homeId) ? (g.morale ?? 60) / 100 : undefined,
-            isUserTeam(f.awayId) ? (g.morale ?? 60) / 100 : undefined,
+            isUserTeam(f.homeId) ? (g.morale ?? 60) / 100 : aiConfidence(f.homeId),
+            isUserTeam(f.awayId) ? (g.morale ?? 60) / 100 : aiConfidence(f.awayId),
             isUserTeam(f.homeId) ? g.posOverrides : undefined,
             isUserTeam(f.awayId) ? g.posOverrides : undefined,
             isUserTeam(f.homeId) ? g.penaltyTakerId : undefined,
@@ -995,12 +998,14 @@ export const useStore = create<Store>()(
         const selectedPlayer = currentPromotion.options.find((p) => p.id === candidateId);
         if (!selectedPlayer) return;
 
-        const clubPlayers = g.players.filter((p) => p.clubId === g.userClubId);
+        // maior sufixo com o prefixo do clube do usuário em TODO o universo:
+        // jogador vendido mantém o id de origem, então olhar só o elenco atual
+        // podia recriar um id já existente em outro clube (colisão)
         let maxIdNum = 0;
-        for (const p of clubPlayers) {
-          const match = p.id.match(/_p(\d+)$/);
-          if (match) {
-            const val = parseInt(match[1], 10);
+        for (const p of g.players) {
+          const match = p.id.match(/^(.*)_p(\d+)$/);
+          if (match && match[1] === g.userClubId) {
+            const val = parseInt(match[2], 10);
             if (val > maxIdNum) maxIdNum = val;
           }
         }
@@ -1312,13 +1317,19 @@ export const useStore = create<Store>()(
           const base = played.get(p.id) ?? p.energy;
           const recovered = base + (100 - base) * RECOVERY[intensity];
           let injuryWeeks = p.injuryWeeks ?? 0;
+          let injuryStrengthLoss = 0;
           if (injuryWeeks > 0) {
             injuryWeeks -= 1;
           } else if (enteredField.has(p.id)) {
+            // incidência menor (~0,7% base): a sorte segue pesando, mas a rodada não
+            // vira um festival de lesões
             const pInjury =
-              (0.012 + Math.max(0, p.age - 30) * 0.004) * (p.traits.includes("Raçudo") ? 0.5 : 1);
+              (0.007 + Math.max(0, p.age - 30) * 0.0025) * (p.traits.includes("Raçudo") ? 0.5 : 1);
             if (injuryRng() < pInjury) {
               injuryWeeks = 1 + Math.floor(injuryRng() * 4); // 1 a 4 rodadas fora
+              // lesão custa força conforme a gravidade: leve (1-2r) tira 1, grave
+              // (3-4r) tira 2 — o jogador volta mais capenga e precisa recuperar
+              injuryStrengthLoss = injuryWeeks >= 3 ? 2 : 1;
               if (p.clubId === game.userClubId) newlyInjured.push({ name: p.name, weeks: injuryWeeks });
             }
           }
@@ -1326,6 +1337,7 @@ export const useStore = create<Store>()(
             ...p,
             energy: Math.min(100, Math.round(recovered)),
             apps: (p.apps ?? 0) + (enteredField.has(p.id) ? 1 : 0),
+            strength: Math.max(1, p.strength - injuryStrengthLoss),
             injuryWeeks,
             suspendedLeague: isLeague && suspendedIds.has(p.id) ? false : p.suspendedLeague,
             suspendedCup: isCupNac && suspendedIds.has(p.id) ? false : p.suspendedCup,
@@ -1442,6 +1454,23 @@ export const useStore = create<Store>()(
           return sId;
         });
 
+        // ── janela do meio de temporada: fecha a rodada 19 da liga e o mercado
+        // abre entre o turno e o returno. Só a IA negocia entre si; pelo elenco
+        // do usuário chega no máximo uma proposta (aceita/recusa como sempre).
+        const isMidWindow = info.type === "league" && info.round === 19;
+        let windowNews: { text: string; clubId?: string }[] = [];
+        let windowOffer: GameState["incomingOffer"];
+        if (isMidWindow) {
+          const wrng = mulberry32((game.seed ^ (game.season * 60013) ^ 0xa11ce) >>> 0);
+          const res = runTransferWindow(
+            wrng, "mid", players, game.clubs, managers ?? game.managers, game.userClubId,
+          );
+          windowNews = res.news;
+          // a janela aquece o interesse pelos destaques do usuário (~70% de chance)
+          if (!fired && wrng() < 0.7) {
+            windowOffer = windowOfferForUser(wrng, players, game.clubs, game.userClubId);
+          }
+        }
         // demitido NESTA rodada: um técnico novo (nome inventado, integrado ao
         // ecossistema) assume o ex-clube; o técnico do usuário vai para o mercado
         const managersFinal =
@@ -1462,10 +1491,11 @@ export const useStore = create<Store>()(
             posOverrides,
             jobOffer: fired ? undefined : game.jobOffer,
             // proposta antiga expira ao fim da rodada; nova pode chegar no lugar
-            incomingOffer: fired ? undefined : maybeIncomingOffer(game),
+            // (na janela do meio, a proposta da janela tem prioridade)
+            incomingOffer: fired ? undefined : windowOffer ?? maybeIncomingOffer(game),
             // balanço da rodada para a tela do clube: bilheteria, prêmios, folha e o bicho pago
             lastFinance: { revenue, tv, prize, wages, attendance, bicho: game.pendingBicho ?? 0 },
-            lastNews: buildRoundNews(game, live, newlyInjured),
+            lastNews: [...buildRoundNews(game, live, newlyInjured), ...windowNews],
             pendingBicho: undefined,
             // bicho vale só para a partida da rodada: pago, consumido, resetado
             defaultTactics: { ...game.defaultTactics, bicho: false, bichoPct: undefined },
@@ -1498,12 +1528,12 @@ export const useStore = create<Store>()(
           // v9: ecossistema de técnicos para saves antigos
           if (!g.managers) {
             g.managers = createManagers(g.seed, g.clubs, g.userClubId, g.managerName, g.players);
-            g.managerAwards = g.managerAwards ?? [];
           } else if ((version ?? 0) < 11) {
             // v10/v11: troca nomes genéricos por técnicos reais (BR) / nomes do elenco
             g.managers = remapManagerNames(g.seed, g.managers, g.clubs, g.players);
           }
           delete g.trainingIntensity;
+          delete g.managerAwards; // prêmio Melhor Técnico foi removido; ranking é por reputação
           // numeração de camisa: atribui por clube para quem ainda não tem
           if (g.players.some((p: Player) => !p.number)) {
             for (const club of g.clubs as { id: string }[]) {

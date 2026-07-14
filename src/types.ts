@@ -213,20 +213,11 @@ export interface Manager {
   isUser?: boolean; // técnico controlado pelo jogador
 }
 
-// Registro do prêmio de Melhor Técnico da temporada.
-export interface ManagerAward {
-  season: number;
-  managerName: string;
-  clubName: string;
-}
-
 // Resumo de notícias da virada de temporada, exibido nas primeiras semanas.
 export interface SeasonNews {
   season: number; // temporada que está começando
-  bestManager: string;
-  bestManagerClub: string;
-  userWonAward: boolean;
   contractLosses: string[]; // jogadores do usuário que saíram de graça (contrato expirado)
+  transferNews?: { text: string; clubId?: string }[]; // manchetes da janela da entressafra
 }
 
 import type { CupState } from "./game/cup";
@@ -278,8 +269,7 @@ export interface GameState {
   pendingPromotions?: PendingPromotion[];
   retiredLastSeason?: RetiredPlayerInfo[];
   managers?: Manager[]; // um técnico por clube + eventuais desempregados
-  managerAwards?: ManagerAward[]; // histórico do prêmio de Melhor Técnico por temporada
   incomingOffer?: IncomingOffer; // proposta pendente de um clube da IA por jogador do usuário
-  seasonNews?: SeasonNews; // notícias da virada de temporada (prêmio, contratos expirados)
+  seasonNews?: SeasonNews; // notícias da virada de temporada (contratos expirados)
   contractWarningSeason?: number; // temporada em que o aviso de contratos a vencer já foi exibido
 }

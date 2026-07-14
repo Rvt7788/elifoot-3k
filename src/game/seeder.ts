@@ -4,7 +4,6 @@ import { playerName } from "./names";
 import { buildLeagueFixtures, initTable } from "./schedule";
 import { drawCup, drawContinental } from "./cup";
 import { bestXI, DEFAULT_TACTICS } from "./engine";
-import { canNegotiate } from "./market";
 import clubsData from "../data/clubs.json";
 import rostersData from "../data/rosters.json";
 import continentalData from "../data/continental.json";
@@ -83,7 +82,7 @@ const TRAITS_BY_POS: Record<Position, Trait[]> = {
 // da Série B mira ~17, o campeão ~23; na Série A vai de ~27 até ~38. Isso é o que
 // determina o nível do time, não sorteio livre: um time fraco do mundo real tem
 // elenco fraco, ponto — só cresce jogando/treinando (ver training.ts).
-function targetStrength(division: string, power: number): number {
+export function targetStrength(division: string, power: number): number {
   return division === "Série A"
     ? 27 + power * 13 // 27 (pior da A) .. 40 (melhor da A)
     : 15 + power * 10; // 15 (pior da B) .. 25 (melhor da B)
@@ -447,90 +446,6 @@ export function generateYouthOptions(
   return options;
 }
 
-// =============================================================================
-// Mercado da IA na virada de temporada: cada clube analisa suas fragilidades
-// (setor mais fraco entre os jogadores que formam o time-base) e tenta corrigir
-// com uma troca — leva um reserva melhor de outro clube e entrega em troca o seu
-// jogador mais fraco do setor. Ninguém some do mundo e o dinheiro não infla:
-// é reforço por permuta, priorizando os clubes maiores (que atraem mais).
-// =============================================================================
-const STARTER_NEED: Record<Position, number> = { GOL: 1, DEF: 4, MEI: 4, ATA: 2 };
-
-export function aiOffseasonTransfers(
-  rng: Rng,
-  players: Player[],
-  clubs: Club[],
-  userClubId: string,
-): { name: string; fromId: string; toId: string }[] {
-  const moves: { name: string; fromId: string; toId: string }[] = [];
-  const byClub = new Map<string, Player[]>();
-  for (const p of players) byClub.set(p.clubId, [...(byClub.get(p.clubId) ?? []), p]);
-  const clubById = new Map(clubs.map((c) => [c.id, c]));
-
-  // média de força do time-base em cada setor
-  const sectorAvg = (squad: Player[], pos: Position): number => {
-    const list = squad.filter((p) => p.pos === pos).sort((a, b) => b.strength - a.strength);
-    const top = list.slice(0, STARTER_NEED[pos]);
-    if (top.length === 0) return 0;
-    return top.reduce((s, p) => s + p.strength, 0) / top.length;
-  };
-
-  // clubes maiores escolhem primeiro; nem todo clube se mexe toda temporada
-  const buyers = clubs
-    .filter((c) => c.id !== userClubId)
-    .sort((a, b) => b.baseBudget - a.baseBudget);
-  const traded = new Set<string>(); // clube que já fez uma troca nesta janela
-
-  for (const buyer of buyers) {
-    if (traded.has(buyer.id) || rng() > 0.6) continue;
-    const squad = byClub.get(buyer.id) ?? [];
-    if (squad.length === 0) continue;
-    // fragilidade: setor com a menor média do time-base
-    const sectors = (["GOL", "DEF", "MEI", "ATA"] as Position[])
-      .map((pos) => ({ pos, avg: sectorAvg(squad, pos) }))
-      .sort((a, b) => a.avg - b.avg);
-    const weak = sectors[0];
-    const mine = squad.filter((p) => p.pos === weak.pos).sort((a, b) => a.strength - b.strength);
-    const weakest = mine[0];
-    if (!weakest) continue;
-
-    // procura em outros clubes um reserva do setor que melhore o time-base
-    let best: { player: Player; seller: Club } | null = null;
-    for (const [sellerId, sellerSquad] of byClub) {
-      if (sellerId === buyer.id || sellerId === userClubId || traded.has(sellerId)) continue;
-      const seller = clubById.get(sellerId);
-      if (!seller || seller.country !== buyer.country) continue;
-      if (!canNegotiate(buyer.division, seller.division)) continue;
-      const inPos = sellerSquad.filter((p) => p.pos === weak.pos).sort((a, b) => b.strength - a.strength);
-      // só reservas: o clube não vende quem forma seu time-base
-      for (const cand of inPos.slice(STARTER_NEED[weak.pos])) {
-        if (cand.strength >= weakest.strength + 3 && (!best || cand.strength > best.player.strength)) {
-          best = { player: cand, seller };
-        }
-      }
-    }
-    if (!best) continue;
-
-    // permuta: o reforço vem, o mais fraco vai no lugar (elencos mantêm o tamanho)
-    const buyerSquad = byClub.get(buyer.id)!;
-    const sellerSquad = byClub.get(best.seller.id)!;
-    best.player.clubId = buyer.id;
-    weakest.clubId = best.seller.id;
-    byClub.set(buyer.id, [...buyerSquad.filter((p) => p.id !== weakest.id), best.player]);
-    byClub.set(best.seller.id, [...sellerSquad.filter((p) => p.id !== best!.player.id), weakest]);
-    best.player.number = freeShirtNumber(
-      byClub.get(buyer.id)!.filter((p) => p.id !== best!.player.id), best.player.pos,
-    );
-    weakest.number = freeShirtNumber(
-      byClub.get(best.seller.id)!.filter((p) => p.id !== weakest.id), weakest.pos,
-    );
-    traded.add(buyer.id);
-    traded.add(best.seller.id);
-    moves.push({ name: best.player.name, fromId: best.seller.id, toId: buyer.id });
-  }
-  return moves;
-}
-
 export function processSeasonTransitions(
   rng: Rng,
   players: Player[],
@@ -652,13 +567,14 @@ export function processSeasonTransitions(
     const retired = retirementsPerClub.get(c.id) || [];
     if (retired.length === 0) continue;
 
-    // Find max ID sufix for this club
-    const clubPlayers = activePlayers.filter(p => p.clubId === c.id);
+    // maior sufixo de id com o PREFIXO deste clube em todo o universo: jogador
+    // vendido leva o id do clube de origem junto, então olhar só o elenco atual
+    // permitia recriar um id já existente em outro clube (colisão)
     let maxIdNum = 0;
-    for (const p of clubPlayers) {
-      const match = p.id.match(/_p(\d+)$/);
-      if (match) {
-        const val = parseInt(match[1], 10);
+    for (const p of activePlayers) {
+      const match = p.id.match(/^(.*)_p(\d+)$/);
+      if (match && match[1] === c.id) {
+        const val = parseInt(match[2], 10);
         if (val > maxIdNum) maxIdNum = val;
       }
     }

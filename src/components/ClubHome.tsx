@@ -297,7 +297,7 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
 
   return (
     <div className="mx-auto max-w-4xl px-4 pb-10 pt-6">
-      {/* Virada de temporada: só as saídas de graça, nas 2 primeiras rodadas */}
+      {/* Virada de temporada: saídas de graça e a janela da entressafra, nas 2 primeiras rodadas */}
       {game.seasonNews && game.seasonNews.season === game.season && game.week <= 2 &&
         game.seasonNews.contractLosses.length > 0 && (
         <div className="mb-4 rounded-lg border border-zinc-700 bg-zinc-900/70 px-4 py-3">
@@ -307,6 +307,19 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
           <p className="mt-1 text-xs text-zinc-400">
             Saíram com contrato expirado: {game.seasonNews.contractLosses.join(", ")}.
           </p>
+        </div>
+      )}
+      {game.seasonNews && game.seasonNews.season === game.season && game.week <= 2 &&
+        (game.seasonNews.transferNews?.length ?? 0) > 0 && (
+        <div className="mb-4 rounded-lg border border-zinc-700 bg-zinc-900/70 px-4 py-3">
+          <p className="text-sm font-bold uppercase tracking-wide text-emerald-400">
+            Janela de transferências
+          </p>
+          <ul className="mt-1 space-y-0.5 text-xs text-zinc-400">
+            {game.seasonNews.transferNews!.map((n, i) => (
+              <li key={i}>{n.text}</li>
+            ))}
+          </ul>
         </div>
       )}
       {/* Alerta de dívida: contagem regressiva até a diretoria perder a paciência */}
@@ -704,7 +717,7 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
           ref={(el) => (fabRef.current = el)}
           title="Jogar (segure para mover)"
           style={{ transform: `translate(${fabDrag.dx}px, ${fabDrag.dy}px)`, touchAction: "none" }}
-          className="btn-live btn-live--finish fixed bottom-6 right-5 z-40 flex h-16 w-16 touch-none items-center justify-center !rounded-full shadow-lg shadow-black/50"
+          className="btn-live btn-live--finish fixed bottom-6 right-5 z-40 flex h-16 w-16 touch-none select-none items-center justify-center !rounded-full shadow-lg shadow-black/50"
         >
           <img src="/icons/play.png" alt="" draggable={false} className="pointer-events-none h-8 w-8 select-none" />
         </button>

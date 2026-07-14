@@ -1,4 +1,4 @@
-import type { Club, Manager, ManagerAward, Player, TableRow } from "../types";
+import type { Club, Manager, Player, TableRow } from "../types";
 import { playerName } from "./names";
 import { mulberry32, pick, type Rng } from "./rng";
 import { sortTable } from "./schedule";
@@ -7,8 +7,9 @@ import { BR_MANAGERS, BR_MANAGERS_EXTRA } from "../data/managersBR";
 // =============================================================================
 // Ecossistema de técnicos: cada clube tem um técnico com reputação e títulos.
 // No fim da temporada os técnicos são avaliados contra a expectativa do clube
-// (posição final vs. porte/orçamento), os que decepcionam caem no carrossel de
-// demissões e o prêmio de Melhor Técnico é entregue ao dono da melhor campanha.
+// (posição final vs. porte/orçamento) e os que decepcionam caem no carrossel de
+// demissões. A reputação (alimentada por títulos e campanhas acima do esperado)
+// é o que ranqueia os técnicos.
 // =============================================================================
 
 // Gerador de nomes de técnico a partir dos jogadores do save: combina o primeiro
@@ -156,14 +157,12 @@ function overperformance(
 
 export interface ManagerSeasonResult {
   managers: Manager[];
-  award: ManagerAward; // Melhor Técnico da temporada
-  userWonAward: boolean;
 }
 
-// Fecha a temporada dos técnicos: reputação, títulos, prêmio e carrossel.
+// Fecha a temporada dos técnicos: reputação, títulos e carrossel.
 // - `finalTables`: tabelas finais das divisões do país do usuário
 // - `champions`: clubes campeões (liga A, copa nacional, continental) — cada
-//   título soma para o técnico e pesa no prêmio.
+//   título soma para o técnico e vale +15 de reputação.
 export function processManagerSeason(
   seed: number,
   season: number,
@@ -171,12 +170,10 @@ export function processManagerSeason(
   clubs: Club[],
   finalTables: Record<string, TableRow[]>,
   champions: string[],
-  userClubId: string,
 ): ManagerSeasonResult {
   const rng = mulberry32((seed ^ (season * 2654435761)) >>> 0);
   // vitórias da temporada zeram na virada; as da carreira (winsA/winsB) ficam
   const next = managers.map((m) => ({ ...m, seasonWinsA: 0, seasonWinsB: 0 }));
-  const byClub = new Map(next.filter((m) => m.clubId).map((m) => [m.clubId!, m]));
   const championSet = new Set(champions);
 
   // avaliação de campanha (só clubes com tabela — o país do usuário)
@@ -200,26 +197,10 @@ export function processManagerSeason(
       ? champions.filter((id) => id === m.clubId).length
       : 0;
     m.titles += titlesWon;
-    m.reputation = Math.max(5, Math.min(99, Math.round(m.reputation + op * 2 + titlesWon * 10)));
+    // cada título vale +15 de reputação; campanha acima do esperado soma op*2. A
+    // reputação é o que ranqueia os técnicos, então o título é a moeda principal.
+    m.reputation = Math.max(5, Math.min(99, Math.round(m.reputation + op * 2 + titlesWon * 15)));
   }
-
-  // prêmio Melhor Técnico: melhor combinação de campanha acima do esperado e títulos
-  const candidates = next.filter((m) => m.clubId && (perf.has(m.clubId) || championSet.has(m.clubId)));
-  const awardScore = (m: Manager) => {
-    const op = perf.get(m.clubId!) ?? 0;
-    const titlesWon = champions.filter((id) => id === m.clubId).length;
-    return op * 2 + titlesWon * 12;
-  };
-  const winner =
-    [...candidates].sort((a, b) => awardScore(b) - awardScore(a))[0] ??
-    byClub.get(userClubId) ?? next[0];
-  const winnerClub = clubs.find((c) => c.id === winner.clubId);
-  const award: ManagerAward = {
-    season,
-    managerName: winner.name,
-    clubName: winnerClub?.name ?? "?",
-  };
-  if (winner) winner.reputation = Math.min(99, winner.reputation + 8);
 
   // carrossel de demissões: IA que ficou muito abaixo do esperado cai; os clubes
   // vagos contratam por reputação (clube maior leva o técnico mais cotado),
@@ -247,7 +228,7 @@ export function processManagerSeason(
     hire.clubId = club.id;
   }
 
-  return { managers: next, award, userWonAward: !!winner.isUser };
+  return { managers: next };
 }
 
 // Demissão do usuário: um técnico novo, com nome inventado no mesmo gerador dos
