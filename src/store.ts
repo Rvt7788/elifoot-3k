@@ -1477,6 +1477,39 @@ export const useStore = create<Store>()(
           fired && !game.fired && managers
             ? hireReplacementForUser(game.seed, game.season, managers, game.clubs, players, game.userClubId)
             : managers;
+        // histórico permanente da partida do usuário: eventos com minuto, formação
+        // e postura final de cada lado — alimenta a análise de partidas passadas
+        const userLive = live.find(
+          (m) => m.finished && (m.homeId === game.userClubId || m.awayId === game.userClubId),
+        );
+        const histComp: "league" | "cup" | "continental" =
+          info.type === "cup" ? "cup"
+          : info.type === "continental" || info.type === "contgroup" ? "continental"
+          : "league";
+        const matchHistory = userLive
+          ? [
+              ...(game.matchHistory ?? []),
+              {
+                season: game.season, week: game.week, comp: histComp,
+                homeId: userLive.homeId, awayId: userLive.awayId,
+                homeScore: userLive.homeScore, awayScore: userLive.awayScore,
+                events: userLive.events,
+                homeFormation: userLive.homeFormation ?? "4-4-2",
+                awayFormation: userLive.awayFormation ?? "4-4-2",
+                homeTactics: {
+                  mentality: userLive.homeTactics.mentality,
+                  marking: userLive.homeTactics.marking,
+                  truculencia: userLive.homeTactics.truculencia,
+                },
+                awayTactics: {
+                  mentality: userLive.awayTactics.mentality,
+                  marking: userLive.awayTactics.marking,
+                  truculencia: userLive.awayTactics.truculencia,
+                },
+                attendance: userLive.attendance,
+              },
+            ]
+          : game.matchHistory;
         set({
           game: {
             ...game, fixtures, tables, players, cup, continental, managers: managersFinal, morale,
@@ -1495,6 +1528,7 @@ export const useStore = create<Store>()(
             incomingOffer: fired ? undefined : windowOffer ?? maybeIncomingOffer(game),
             // balanço da rodada para a tela do clube: bilheteria, prêmios, folha e o bicho pago
             lastFinance: { revenue, tv, prize, wages, attendance, bicho: game.pendingBicho ?? 0 },
+            matchHistory,
             lastNews: [...buildRoundNews(game, live, newlyInjured), ...windowNews],
             pendingBicho: undefined,
             // bicho vale só para a partida da rodada: pago, consumido, resetado

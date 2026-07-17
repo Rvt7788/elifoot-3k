@@ -253,6 +253,7 @@ export function createLiveMatch(
     homeAggression, awayAggression,
     homeSlotOrder: homeSlotOrder ? [...homeSlotOrder] : undefined,
     awaySlotOrder: awaySlotOrder ? [...awaySlotOrder] : undefined,
+    homeFormation, awayFormation,
     stats: {
       home: { shots: 0, onTarget: 0, saves: 0, tackles: 0, interceptions: 0, poss: 0 },
       away: { shots: 0, onTarget: 0, saves: 0, tackles: 0, interceptions: 0, poss: 0 },

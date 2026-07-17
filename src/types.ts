@@ -153,6 +153,8 @@ export interface LiveMatch {
   awayAggression: number;
   homeSlotOrder?: string[]; // ordem esquerda→direita dos titulares por linha (para o bônus de pé)
   awaySlotOrder?: string[];
+  homeFormation?: Formation; // formação com que cada lado entrou em campo (para o histórico)
+  awayFormation?: Formation;
   homePenaltyTakerId?: string; // cobrador de pênalti designado (usuário); ausente = automático
   awayPenaltyTakerId?: string;
   homeCaptainId?: string; // capitão designado (usuário); ausente = automático (Líder mais forte, senão o mais forte)
@@ -161,6 +163,24 @@ export interface LiveMatch {
   awayMorale?: number;
   attendance?: number; // público no estádio do mandante (define a renda da partida)
   stats?: { home: SideMatchStats; away: SideMatchStats }; // volume de jogo acumulado
+}
+
+// Registro permanente de uma partida do clube do usuário, para análise posterior:
+// eventos com minuto, formação e postura de cada lado no apito final
+export interface MatchRecord {
+  season: number;
+  week: number;
+  comp: "league" | "cup" | "continental";
+  homeId: string;
+  awayId: string;
+  homeScore: number;
+  awayScore: number;
+  events: MatchEvent[];
+  homeFormation: Formation;
+  awayFormation: Formation;
+  homeTactics: { mentality: Mentality; marking: Marking; truculencia: boolean };
+  awayTactics: { mentality: Mentality; marking: Marking; truculencia: boolean };
+  attendance?: number;
 }
 
 export interface Fixture {
@@ -257,6 +277,7 @@ export interface GameState {
   jobOffer?: string; // convite de clube maior após temporada de sucesso (clubId)
   pendingBicho?: number; // valor do bicho pago para a próxima partida (vira gasto no fechamento)
   lastFinance?: { revenue: number; prize: number; bicho: number; wages?: number; tv?: number; attendance?: number }; // caixa da última rodada encerrada
+  matchHistory?: MatchRecord[]; // partidas já disputadas pelo clube do usuário, com eventos e táticas
   // manchetes da última rodada (divisão do usuário); clubId pinta a manchete com
   // as cores do clube — itens antigos (string pura) seguem válidos em saves velhos
   lastNews?: (string | { text: string; clubId?: string })[];

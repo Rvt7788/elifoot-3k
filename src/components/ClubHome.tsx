@@ -5,7 +5,7 @@ import { sortTable } from "../game/schedule";
 import { aiPregameTactics } from "../game/engine";
 import { autoTacticsForOpponent } from "../game/autoTactics";
 import { appAlert } from "./AppDialog";
-import type { Club, GameState, Player } from "../types";
+import type { Club, GameState, MatchRecord, Player } from "../types";
 import TacticsBoard from "./TacticsBoard";
 import ClubBoard from "./ClubBoard";
 import { leagueName, cupName, continentalName } from "../data/leagues";
@@ -51,6 +51,163 @@ function SectionLabel({ children, icon }: { children: React.ReactNode; icon?: Ga
         {children}
       </span>
     </div>
+  );
+}
+
+/* Casca comum dos modais desta tela: overlay escuro + cartão rolável */
+function ModalShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <ScrollLock />
+      <div
+        className="max-h-[85vh] w-full max-w-lg overflow-y-auto border border-zinc-700 bg-[#0a0f16] p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-start justify-between">
+          <SectionLabel>{title}</SectionLabel>
+          <button onClick={onClose} className="text-zinc-500 hover:text-amber-400">✕</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+const EVENT_ICON: Record<string, GameIconName> = { goal: "goal", yellow: "yellow", red: "red", sub: "sub", penalty: "net" };
+
+/* Detalhe de uma partida do histórico: táticas dos dois lados e a timeline de eventos */
+function MatchDetail({ game, rec }: { game: GameState; rec: MatchRecord }) {
+  const home = game.clubs.find((c) => c.id === rec.homeId)!;
+  const away = game.clubs.find((c) => c.id === rec.awayId)!;
+  const tacticsLine = (side: "home" | "away") => {
+    const t = side === "home" ? rec.homeTactics : rec.awayTactics;
+    const f = side === "home" ? rec.homeFormation : rec.awayFormation;
+    return (
+      <>
+        <span className="font-semibold text-amber-400">{f === "custom" ? "livre" : f}</span>
+        {" · "}{t.mentality.replace(/_/g, " ")}
+        {" · marcação "}{t.marking}
+        {t.truculencia && <span className="text-red-400"> · truculência</span>}
+      </>
+    );
+  };
+  return (
+    <div>
+      <p className="mb-1 text-center font-display text-lg font-semibold text-zinc-50">
+        {teamName(home.name)}{" "}
+        <span className="text-amber-400">{rec.homeScore} - {rec.awayScore}</span>{" "}
+        {teamName(away.name)}
+      </p>
+      <p className="mb-3 text-center text-xs text-zinc-500">
+        {formatMatchDate(rec.season, rec.week)}
+        {(rec.attendance ?? 0) > 0 && ` · ${rec.attendance!.toLocaleString("pt-BR")} torcedores`}
+      </p>
+
+      <div className="mb-4 space-y-1 text-xs text-zinc-300">
+        <p><span className="text-zinc-500">{teamName(home.name)}:</span> {tacticsLine("home")}</p>
+        <p><span className="text-zinc-500">{teamName(away.name)}:</span> {tacticsLine("away")}</p>
+      </div>
+
+      {rec.events.length === 0 ? (
+        <p className="text-sm text-zinc-500">Sem lances registrados.</p>
+      ) : (
+        [...rec.events].sort((a, b) => a.minute - b.minute).map((e, i) => (
+          <div key={i} className="flex items-center gap-2 border-b border-[rgba(30,42,56,0.6)] py-1.5 text-sm text-zinc-200">
+            <span className="w-8 shrink-0 text-right text-xs text-zinc-500">{e.minute}&#39;</span>
+            <GameIcon name={EVENT_ICON[e.type] ?? "goal"} size={14} className="shrink-0" />
+            <span className="min-w-0 flex-1 truncate">
+              {e.playerName}
+              {e.type === "penalty" && (
+                <span className={e.scored ? "text-emerald-400" : "text-red-400"}>
+                  {e.scored ? " (pênalti convertido)" : " (pênalti perdido)"}
+                </span>
+              )}
+            </span>
+            <span className="shrink-0 text-xs text-zinc-500">
+              {teamName((e.side === "home" ? home : away).name)}
+            </span>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+/* Todas as partidas já disputadas na temporada, da mais recente à mais antiga.
+   Partidas com histórico gravado (matchHistory) abrem o detalhe ao clicar. */
+function ResultsModal({ game, onClose }: { game: GameState; onClose: () => void }) {
+  const club = game.clubs.find((c) => c.id === game.userClubId)!;
+  const matches = [...userRecentMatches(game, 999)].reverse();
+  const [detail, setDetail] = useState<MatchRecord | null>(null);
+  const recordOf = (f: { week: number; homeId: string; awayId: string }) =>
+    game.matchHistory?.find(
+      (r) => r.season === game.season && r.week === f.week && r.homeId === f.homeId && r.awayId === f.awayId,
+    ) ?? null;
+
+  if (detail) {
+    return (
+      <ModalShell title="Análise da partida" onClose={onClose}>
+        <button onClick={() => setDetail(null)} className="mb-3 text-xs text-zinc-400 hover:text-amber-400">
+          ‹ Todas as partidas
+        </button>
+        <MatchDetail game={game} rec={detail} />
+      </ModalShell>
+    );
+  }
+
+  return (
+    <ModalShell title="Partidas da temporada" onClose={onClose}>
+      {matches.map((f, i) => {
+        const home = game.clubs.find((c) => c.id === f.homeId)!;
+        const away = game.clubs.find((c) => c.id === f.awayId)!;
+        const isHome = f.homeId === club.id;
+        const gf = isHome ? f.homeScore : f.awayScore;
+        const ga = isHome ? f.awayScore : f.homeScore;
+        const badge = gf > ga ? "bg-emerald-500" : gf < ga ? "bg-red-500" : "bg-zinc-500";
+        const compIcon: GameIconName | null = f.comp === "cup" ? "trophy" : f.comp === "continental" ? "globe" : null;
+        const rec = recordOf(f);
+        return (
+          <div
+            key={i}
+            onClick={rec ? () => setDetail(rec) : undefined}
+            className={`flex items-center gap-2 border-b border-[rgba(30,42,56,0.6)] py-1.5 text-sm text-zinc-200 ${rec ? "cursor-pointer hover:bg-zinc-800/50" : ""}`}
+          >
+            <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${badge}`} />
+            <span className="min-w-0 flex-1 truncate">
+              {compIcon && <GameIcon name={compIcon} size={12} className="mr-0.5 inline-block align-middle" />}
+              {teamName(home.name)}{" "}
+              <span className="font-display font-semibold text-zinc-50">
+                {f.homeScore}-{f.awayScore}
+              </span>{" "}
+              {teamName(away.name)}
+            </span>
+            <span className="shrink-0 text-xs text-zinc-500">{formatMatchDate(game.season, f.week)}</span>
+            {rec && <span className="shrink-0 text-zinc-600">›</span>}
+          </div>
+        );
+      })}
+    </ModalShell>
+  );
+}
+
+/* Artilharia completa do elenco na temporada */
+function ScorersModal({ game, onClose }: { game: GameState; onClose: () => void }) {
+  const squad = game.players.filter((p) => p.clubId === game.userClubId);
+  const scorers = [...squad].filter((p) => p.goals > 0).sort((a, b) => b.goals - a.goals);
+  return (
+    <ModalShell title="Artilheiros" onClose={onClose}>
+      {scorers.map((p, i) => (
+        <div key={p.id} className="flex items-center gap-2 border-b border-[rgba(30,42,56,0.6)] py-1.5 text-sm text-zinc-200">
+          <span className="w-6 shrink-0 text-right text-xs text-zinc-500">{i + 1}º</span>
+          <span className="w-9 shrink-0 text-xs text-zinc-500">{p.pos}</span>
+          <span className="min-w-0 flex-1 truncate">{p.name}</span>
+          <span className="font-display font-semibold text-amber-400 shrink-0">{p.goals}</span>
+        </div>
+      ))}
+    </ModalShell>
   );
 }
 
@@ -176,6 +333,8 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
   const [analyzing, setAnalyzing] = useState(false);
   const [viewClub, setViewClub] = useState<Club | null>(null);
   const [financeOpen, setFinanceOpen] = useState(false);
+  const [resultsOpen, setResultsOpen] = useState(false);
+  const [scorersOpen, setScorersOpen] = useState(false);
   // FAB "Jogar" arrastável: clicar e segurar move o botão; um toque simples ainda
   // dispara o jogo. A posição vem do store (fabPos) para ser a MESMA no ao vivo —
   // é o mesmo botão passeando entre as telas.
@@ -291,7 +450,7 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
 
   const lastResults = userRecentMatches(game, 5);
 
-  const topScorers = [...squad].sort((a, b) => b.goals - a.goals).slice(0, 10);
+  const topScorers = [...squad].sort((a, b) => b.goals - a.goals).slice(0, 5);
   const squadValue = squad.reduce((s, p) => s + p.value, 0);
   const wageBill = squadWageBill(game);
 
@@ -645,7 +804,9 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
         <div className="flex flex-row gap-6 md:contents md:flex-1">
           {/* Coluna 3: Últimos resultados — some por completo quando não há jogos */}
           <div className={`flex-1 min-w-0 ${lastResults.length === 0 ? "hidden" : ""}`}>
-            <SectionLabel icon="board">Últimos resultados</SectionLabel>
+            <button onClick={() => setResultsOpen(true)} className="hover:opacity-70" title="Ver todas as partidas da temporada">
+              <SectionLabel icon="board">Últimos resultados ›</SectionLabel>
+            </button>
             {lastResults.map((f, i) => {
               const home = game.clubs.find((c) => c.id === f.homeId)!;
               const away = game.clubs.find((c) => c.id === f.awayId)!;
@@ -672,7 +833,9 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
 
           {/* Coluna 4: Artilheiros — some por completo quando não há gols */}
           <div className={`flex-1 min-w-0 ${topScorers.every((p) => p.goals === 0) ? "hidden" : ""}`}>
-            <SectionLabel icon="goal">Artilheiros</SectionLabel>
+            <button onClick={() => setScorersOpen(true)} className="hover:opacity-70" title="Ver a artilharia completa">
+              <SectionLabel icon="goal">Artilheiros ›</SectionLabel>
+            </button>
             {topScorers.every((p) => p.goals === 0) ? null : (
               topScorers
                 .filter((p) => p.goals > 0)
@@ -704,6 +867,8 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
         <ClubModal game={game} club={viewClub} onClose={() => setViewClub(null)} />
       )}
       {financeOpen && <FinanceModal onClose={() => setFinanceOpen(false)} />}
+      {resultsOpen && <ResultsModal game={game} onClose={() => setResultsOpen(false)} />}
+      {scorersOpen && <ScorersModal game={game} onClose={() => setScorersOpen(false)} />}
 
       {/* Jogar flutuante (canto inferior direito): o botão padrão do app, sempre
           visível quando há próximo jogo do usuário para disputar. É o mesmo botão
