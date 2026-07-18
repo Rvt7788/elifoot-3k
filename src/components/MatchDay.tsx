@@ -319,13 +319,13 @@ function MatchDetailModal({
           <div>
             {homeGoals.length === 0 && <p className="text-zinc-600">—</p>}
             {homeGoals.map((e, i) => (
-              <p key={i} className="flex items-center gap-1 text-zinc-300"><GameIcon name="goal" size={13} /> {e.playerName} <span className="text-zinc-500">{e.minute}'</span></p>
+              <p key={i} className="flex items-center gap-1 text-zinc-300"><GameIcon name="goal" size={13} /> <span>{e.playerName}{e.assistName && <span className="text-zinc-500"> ({e.assistName})</span>}</span> <span className="text-zinc-500">{e.minute}'</span></p>
             ))}
           </div>
           <div className="text-right">
             {awayGoals.length === 0 && <p className="text-zinc-600">—</p>}
             {awayGoals.map((e, i) => (
-              <p key={i} className="flex items-center justify-end gap-1 text-zinc-300"><span className="text-zinc-500">{e.minute}'</span> {e.playerName} <GameIcon name="goal" size={13} /></p>
+              <p key={i} className="flex items-center justify-end gap-1 text-zinc-300"><span className="text-zinc-500">{e.minute}'</span> <span>{e.playerName}{e.assistName && <span className="text-zinc-500"> ({e.assistName})</span>}</span> <GameIcon name="goal" size={13} /></p>
             ))}
           </div>
         </div>

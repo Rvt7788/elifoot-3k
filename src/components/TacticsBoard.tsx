@@ -177,6 +177,7 @@ export default function TacticsBoard() {
   const setPenaltyTaker = useStore((s) => s.setPenaltyTaker);
   const setCaptain = useStore((s) => s.setCaptain);
   const payBicho = useStore((s) => s.payBicho);
+  const cancelBicho = useStore((s) => s.cancelBicho);
   const [sel, setSel] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   // modo de troca de função: badge clicado no card expandido arma a escolha —
@@ -786,14 +787,15 @@ export default function TacticsBoard() {
                   <button
                     key={lvl.key}
                     onClick={() => {
-                      if (tactics.bicho) return; // dinheiro pago não volta
+                      if (paidThis) { cancelBicho(); return; } // segundo clique desfaz e devolve o dinheiro
+                      if (tactics.bicho) return; // outro nível já pago: cancele primeiro
                       if (!payBicho(lvl)) appAlert("Orçamento insuficiente para pagar o bicho.");
                     }}
                     disabled={tactics.bicho ? !paidThis : game.budget < cost}
+                    title={paidThis ? "Clique para cancelar e reaver o valor" : `+${lvl.pct}% de motivação no ataque nesta partida`}
                     className={`flex w-full min-w-0 items-center justify-between gap-1 rounded px-2 py-1 text-left text-[11px] disabled:cursor-not-allowed disabled:opacity-40 ${
                       paidThis ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
                     }`}
-                    title={`+${lvl.pct}% de motivação no ataque nesta partida`}
                   >
                     <span className="truncate">{lvl.label} <span className={paidThis ? "opacity-80" : "text-zinc-400"}>+{lvl.pct}%</span></span>
                     <span className={`shrink-0 ${paidThis ? "opacity-80" : "text-zinc-400"}`}>

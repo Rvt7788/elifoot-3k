@@ -242,6 +242,62 @@ function RoundNewsModal() {
   );
 }
 
+// Contratos VENCIDOS na virada de temporada: cada jogador com contrato zerado
+// exige uma decisão — renovar (paga luvas) ou liberar de graça. O modal fica na
+// tela até todos os casos serem resolvidos.
+function ExpiredContractsModal() {
+  const game = useStore((s) => s.game);
+  const renewContract = useStore((s) => s.renewContract);
+  const releaseExpiredPlayer = useStore((s) => s.releaseExpiredPlayer);
+  if (!game || game.fired) return null;
+  const expired = game.players
+    .filter((p) => p.clubId === game.userClubId && (p.contract ?? 1) <= 0)
+    .sort((a, b) => b.strength - a.strength);
+  if (expired.length === 0) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <ScrollLock />
+      <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-xl border border-amber-700/60 bg-zinc-900 p-5">
+        <h2 className="mb-2 flex items-center gap-2 font-display text-lg font-bold text-amber-400">
+          <GameIcon name="contract" size={18} /> Contrato venceu
+        </h2>
+        <p className="mb-3 text-pretty text-sm leading-relaxed text-zinc-300">
+          O que deseja fazer? Renovar paga luvas; liberar deixa o jogador sair
+          <b className="text-red-400"> de graça</b> para outro clube.
+        </p>
+        <div>
+          {expired.map((p) => (
+            <div key={p.id} className="flex flex-col gap-2 border-b border-zinc-800 py-2 text-sm">
+              <span className="text-zinc-200">
+                <span className="mr-1 text-xs text-zinc-500">{p.pos}</span>
+                {p.name}
+                <span className="ml-1 text-xs text-amber-400">{p.strength}</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <button
+                  onClick={async () => {
+                    const r = renewContract(p.id);
+                    if (!r.ok) await appAlert(r.message);
+                  }}
+                  className="rounded bg-emerald-800 px-2 py-0.5 text-[11px] font-semibold text-emerald-100 hover:bg-emerald-700"
+                >
+                  Renovar +2 (${(renewalCost(p) / 1e3).toFixed(0)}k)
+                </button>
+                <button
+                  onClick={() => releaseExpiredPlayer(p.id)}
+                  className="rounded bg-red-900 px-2 py-0.5 text-[11px] font-semibold text-red-100 hover:bg-red-800"
+                >
+                  Liberar
+                </button>
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Aviso de fim de temporada: jogadores no último ano de contrato saem de graça
 // na virada — o modal aparece uma vez por temporada, nas 3 rodadas finais da
 // liga, com renovação direta dali mesmo.
@@ -255,7 +311,7 @@ function ContractWarningModal() {
   const roundsLeft = new Set(game.fixtures.filter((f) => !f.played).map((f) => f.round)).size;
   if (roundsLeft === 0 || roundsLeft > 3) return null;
   const expiring = game.players
-    .filter((p) => p.clubId === game.userClubId && (p.contract ?? 1) <= 1)
+    .filter((p) => p.clubId === game.userClubId && (p.contract ?? 1) === 1)
     .sort((a, b) => b.strength - a.strength);
   if (expiring.length === 0) return null;
   return (
@@ -612,6 +668,7 @@ export default function App() {
       {!liveRunning && <PendingPromotionsModal />}
       {!liveRunning && <IncomingOfferModal onOpenSquad={() => setTab("elenco")} />}
       {!liveRunning && <RoundNewsModal />}
+      {!liveRunning && <ExpiredContractsModal />}
       {!liveRunning && <ContractWarningModal />}
       {!liveRunning && <SeasonHighlightsModal />}
       {shootoutOpen && (

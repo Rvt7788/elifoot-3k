@@ -237,16 +237,16 @@ export const CUP_STAGE_PRIZE = [
   600_000,   // Oitavas
   1_200_000, // Quartas
   2_200_000, // Semifinal
-  3_500_000, // Final (chegar à decisão; campeão recebe o prêmio de título à parte)
+  8_000_000, // Final (chegar à decisão; campeão recebe o prêmio de título à parte)
 ] as const;
 
 // Premiação da COPA CONTINENTAL por fase: mesma lógica fixa e crescente, em
 // patamar mais alto (competição mais rica). Índices: Oitavas, Quartas, Semi, Final.
 export const CONT_STAGE_PRIZE = [
-  1_500_000, // Oitavas
-  3_000_000, // Quartas
-  5_000_000, // Semifinal
-  8_000_000, // Final (campeão recebe CHAMPION_PRIZE.continental à parte)
+  1_000_000, // Oitavas
+  2_000_000, // Quartas
+  3_500_000, // Semifinal
+  5_500_000, // Final (campeão recebe CHAMPION_PRIZE.continental à parte)
 ] as const;
 
 // Premiação por participar de cada rodada da FASE DE GRUPOS continental: valor
@@ -304,10 +304,13 @@ interface Store {
   setPlayerNumber: (id: string, number: number) => void;
   renumberSquad: () => void;
   payBicho: (level: BichoLevel) => boolean;
+  cancelBicho: () => void;
+  dismissWindowNews: () => void;
   upgradeStadium: () => boolean;
   sellPlayer: (id: string) => { ok: boolean; amount?: number };
   buyPlayer: (id: string, offer: number) => { ok: boolean; message: string };
   renewContract: (id: string) => { ok: boolean; message: string };
+  releaseExpiredPlayer: (id: string) => void;
   acceptIncomingOffer: () => void;
   declineIncomingOffer: () => void;
   dismissContractWarning: () => void;
@@ -517,6 +520,31 @@ export const useStore = create<Store>()(
           ok: true,
           message: `${player.name} renovou por +2 temporadas (luvas de $${(cost / 1e3).toFixed(0)}k).`,
         };
+      },
+
+      // Libera jogador com contrato vencido (decisão do modal da virada): sai de
+      // graça para outro clube do país, com contrato novo no destino.
+      releaseExpiredPlayer: (id) => {
+        const g = get().game;
+        if (!g) return;
+        const player = g.players.find((p) => p.id === id && p.clubId === g.userClubId);
+        if (!player) return;
+        const userCountry = g.clubs.find((c) => c.id === g.userClubId)?.country;
+        const sameCountry = g.clubs.filter((c) => c.id !== g.userClubId && c.country === userCountry);
+        const destinations = sameCountry.length > 0 ? sameCountry : g.clubs.filter((c) => c.id !== g.userClubId);
+        const dest = destinations[Math.floor(Math.random() * destinations.length)];
+        const players = g.players.map((p) =>
+          p.id === id
+            ? { ...p, clubId: dest.id, contract: 2 + Math.round(Math.random() * 2) }
+            : p,
+        );
+        let starters = g.starters;
+        if (starters.includes(id)) {
+          const rest = players.filter((p) => p.clubId === g.userClubId);
+          const sub = rest.find((p) => !starters.includes(p.id));
+          starters = starters.map((s) => (s === id ? (sub?.id ?? s) : s)).filter((s) => s !== id);
+        }
+        set({ game: { ...g, players, starters } });
       },
 
       // Proposta recebida de um clube da IA: aceitar transfere o jogador na hora.
@@ -1060,6 +1088,27 @@ export const useStore = create<Store>()(
           },
         });
         return true;
+      },
+
+      // desfaz o bicho antes da partida: devolve o dinheiro e libera outro nível
+      cancelBicho: () => {
+        const g = get().game;
+        if (!g || g.fired || !g.defaultTactics.bicho) return;
+        set({
+          game: {
+            ...g,
+            budget: g.budget + (g.pendingBicho ?? 0),
+            pendingBicho: undefined,
+            defaultTactics: { ...g.defaultTactics, bicho: false, bichoPct: undefined },
+          },
+        });
+      },
+
+      // fecha o modal de manchetes da janela: marcado como visto, não reaparece
+      dismissWindowNews: () => {
+        const g = get().game;
+        if (!g || !g.seasonNews) return;
+        set({ game: { ...g, seasonNews: { ...g.seasonNews, windowNewsSeen: true } } });
       },
 
       setPlayerTraining: (id, i) => {

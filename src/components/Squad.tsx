@@ -69,8 +69,8 @@ export default function Squad() {
           <div className="w-[8%] sm:w-[6%] shrink-0 text-center">Id.</div>
           <div className="w-[8%] sm:w-[6%] shrink-0 text-center">For.</div>
           <div className="w-[10%] sm:w-[8%] shrink-0 text-center">Ene.</div>
-          <div className="hidden sm:block sm:w-[25%] shrink-0 pr-1">Características</div>
-          <div className="w-[20%] sm:w-[15%] shrink-0 text-right">Valor</div>
+          <div className="hidden sm:block sm:w-[28%] shrink-0 pr-1">Características</div>
+          <div className="w-[15%] sm:w-[12%] shrink-0 text-right">Valor</div>
           <div className="w-[16%] sm:w-[12%] shrink-0 pr-1 text-right">Salário</div>
         </div>
 
@@ -83,26 +83,9 @@ export default function Squad() {
                   onClick={() => setExpanded(expanded === p.id ? null : p.id)}
                   className="flex w-full items-center py-1.5 cursor-pointer text-[2.7vw] min-[350px]:text-[2.9vw] sm:text-xs text-zinc-200"
                 >
-                  {/* Nº */}
-                  <div className="w-[8%] sm:w-[6%] shrink-0 text-center" onClick={(e) => e.stopPropagation()}>
-                    {/* clique seleciona tudo (edição livre, dá para apagar); confirma no
-                        blur/Enter — vazio ou inválido volta ao número antigo. A troca
-                        continua em swap: quem tinha o número herda o antigo. */}
-                    <input
-                      key={`${p.id}-${p.number}`}
-                      type="number"
-                      min={1}
-                      max={99}
-                      defaultValue={p.number}
-                      onFocus={(e) => e.target.select()}
-                      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                      onBlur={(e) => {
-                        const n = e.target.valueAsNumber;
-                        if (!Number.isNaN(n) && n >= 1 && n <= 99 && n !== p.number) setPlayerNumber(p.id, n);
-                        else e.target.value = String(p.number);
-                      }}
-                      className="w-8 sm:w-10 rounded bg-zinc-800 px-0.5 sm:px-1 py-0.5 text-center text-[10px] sm:text-xs"
-                    />
+                  {/* Nº: número seco, como na tela de Treinamento */}
+                  <div className="w-[8%] sm:w-[6%] shrink-0 text-center tabular-nums text-zinc-500">
+                    {p.number}
                   </div>
                   {/* Pos */}
                   <div className="w-[10%] sm:w-[7%] shrink-0 pl-1 text-center sm:text-left text-zinc-400">{p.pos}</div>
@@ -149,9 +132,9 @@ export default function Squad() {
                     {p.energy}%
                   </div>
                   {/* Características */}
-                  <div className="hidden sm:block sm:w-[25%] shrink-0 text-zinc-400 truncate pr-1">{p.traits.join(", ")}</div>
+                  <div className="hidden sm:block sm:w-[28%] shrink-0 text-zinc-400 truncate pr-1">{p.traits.join(", ")}</div>
                   {/* Valor */}
-                  <div className="w-[20%] sm:w-[15%] shrink-0 text-right">${(p.value / 1e6).toFixed(2)}M</div>
+                  <div className="w-[15%] sm:w-[12%] shrink-0 text-right whitespace-nowrap">${(p.value / 1e6).toFixed(2)}M</div>
                   {/* Salário */}
                   <div className="w-[16%] sm:w-[12%] shrink-0 pr-1 text-right text-zinc-400 whitespace-nowrap">${(playerSalary(p) / 1e3).toFixed(1)}k</div>
                 </div>
@@ -162,6 +145,26 @@ export default function Squad() {
                     <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-zinc-400 sm:grid-cols-4">
                       <p>Nível: <span className="text-zinc-200">{TIER_NAME[p.tier]}</span></p>
                       <p>Pé: <span className="text-zinc-200 capitalize">{p.foot}</span></p>
+                      <p className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        Camisa:{" "}
+                        {/* edição livre; confirma no blur/Enter — inválido volta ao antigo.
+                            A troca é em swap: quem tinha o número herda o antigo. */}
+                        <input
+                          key={`${p.id}-${p.number}`}
+                          type="number"
+                          min={1}
+                          max={99}
+                          defaultValue={p.number}
+                          onFocus={(e) => e.target.select()}
+                          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                          onBlur={(e) => {
+                            const n = e.target.valueAsNumber;
+                            if (!Number.isNaN(n) && n >= 1 && n <= 99 && n !== p.number) setPlayerNumber(p.id, n);
+                            else e.target.value = String(p.number);
+                          }}
+                          className="w-10 rounded bg-zinc-800 px-1 py-0.5 text-center text-xs text-zinc-200"
+                        />
+                      </p>
                       <p className="col-span-2">Nascimento: <span className="text-zinc-200">{playerBirthDate(p.id, p.age, game.season)}</span></p>
                       <p className="col-span-2 sm:col-span-4">
                         Características:{" "}

@@ -651,7 +651,13 @@ function tryShot(
     // pickStriker retorna uma cópia (pos ajustada pelo posOverride) — o gol tem
     // que ser gravado no jogador real do índice, senão o contador se perde
     idx[striker.id].goals++;
-    m.events.push({ minute: m.minute, type: "goal", side, playerName: striker.name });
+    m.events.push({
+      minute: m.minute,
+      type: "goal",
+      side,
+      playerName: striker.name,
+      assistName: assistantLp ? idx[assistantLp.playerId].name : undefined,
+    });
     if (assistantLp) {
       idx[assistantLp.playerId].assists++;
     }

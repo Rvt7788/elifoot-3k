@@ -520,20 +520,13 @@ export function processSeasonTransitions(
       }
 
       // contrato: queima 1 temporada; IA renova sozinha ao expirar. Jogador do
-      // usuário com contrato zerado sai DE GRAÇA para outro clube do país — a
-      // renovação tem que acontecer durante a temporada, na aba Elenco.
+      // usuário com contrato zerado NÃO sai automaticamente: fica com contrato 0
+      // e a decisão (liberar ou renovar) é tomada no modal da virada.
       let contract = (p.contract ?? 2) - 1;
-      let clubId = p.clubId;
+      const clubId = p.clubId;
       if (contract <= 0) {
         if (p.clubId === userClubId) {
-          const userCountry = clubs.find((c) => c.id === userClubId)?.country;
-          const sameCountry = clubs.filter((c) => c.id !== userClubId && c.country === userCountry);
-          const destinations = sameCountry.length > 0 ? sameCountry : clubs.filter((c) => c.id !== userClubId);
-          if (destinations.length > 0) {
-            clubId = destinations[Math.floor(rng() * destinations.length)].id;
-            expiredContracts.push(p.name);
-          }
-          contract = Math.max(2, Math.round(2 + rng() * 2)); // contrato novo no destino
+          contract = 0; // pendente: modal "contrato venceu" decide o destino
         } else {
           contract = Math.max(2, Math.round(2 + rng() * 2)); // IA renova por 2-4 anos
         }

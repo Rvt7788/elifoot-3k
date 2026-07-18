@@ -102,6 +102,7 @@ export interface MatchEvent {
   type: "goal" | "yellow" | "red" | "sub" | "penalty";
   side: "home" | "away";
   playerName: string;
+  assistName?: string; // só para gols: quem deu o passe
   scored?: boolean; // só para pênaltis: se a cobrança automática foi convertida
 }
 
@@ -238,6 +239,7 @@ export interface SeasonNews {
   season: number; // temporada que está começando
   contractLosses: string[]; // jogadores do usuário que saíram de graça (contrato expirado)
   transferNews?: { text: string; clubId?: string }[]; // manchetes da janela da entressafra
+  windowNewsSeen?: boolean; // o modal da janela já foi fechado pelo usuário (não reaparece)
 }
 
 import type { CupState } from "./game/cup";

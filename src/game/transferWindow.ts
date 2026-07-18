@@ -22,6 +22,8 @@ const STARTER_NEED: Record<Position, number> = { GOL: 1, DEF: 4, MEI: 4, ATA: 2 
 // piso por posição depois de vender: o clube nunca fica sem elenco jogável
 const POS_FLOOR: Record<Position, number> = { GOL: 2, DEF: 5, MEI: 5, ATA: 3 };
 const POSITIONS: Position[] = ["GOL", "DEF", "MEI", "ATA"];
+// nacionalidades possíveis de reforços vindos de fora (pools de nome do names.ts)
+const FOREIGN_COUNTRIES = ["BR", "AR", "EN", "ES", "DE", "FR", "PT", "IT"];
 
 export interface WindowHeadline {
   text: string;
@@ -116,10 +118,14 @@ export function runTransferWindow(
   let abroad = 0;
   let moves = 0;
 
-  // ── vendas ao exterior: craques de clubes acima do nível atraem proposta de
-  // fora; o clube some com o jogador e entra dinheiro grande (anti-hegemonia) ──
-  const abroadChance = phase === "offseason" ? 0.3 : 0.15;
-  for (const c of aiClubs) {
+  // ── vendas ao exterior: poucas por janela — o grosso do mercado gira entre os
+  // clubes do país. Uma cota pequena e sorteada limita quantos craques saem; os
+  // clubes mais acima do nível da divisão têm prioridade (anti-hegemonia) ──
+  const abroadQuota = phase === "offseason" ? randInt(rng, 1, 3) : randInt(rng, 0, 2);
+  const abroadChance = phase === "offseason" ? 0.2 : 0.1;
+  const byOver = [...aiClubs].sort((a, b) => (xiAvg(b.id) - target(b)) - (xiAvg(a.id) - target(a)));
+  for (const c of byOver) {
+    if (abroad >= abroadQuota) break;
     const over = xiAvg(c.id) - target(c);
     const stars = squadOf(c.id)
       .filter((p) => p.strength >= 32 && (p.tier === "craque" || p.tier === "extra" || over > 3))
@@ -128,7 +134,7 @@ export function runTransferWindow(
     if (!star || !canRelease(star)) continue;
     // quanto mais acima do nível da divisão, mais tentadora fica a proposta
     const pull = abroadChance + Math.max(0, over) * 0.05;
-    if (!chance(rng, Math.min(0.6, pull))) continue;
+    if (!chance(rng, Math.min(0.5, pull))) continue;
     const fee = Math.round((playerValue(star) * 1.5) / 1000) * 1000;
     byClub.set(c.id, squadOf(c.id).filter((p) => p.id !== star.id));
     players.splice(players.findIndex((p) => p.id === star.id), 1);
@@ -163,6 +169,18 @@ export function runTransferWindow(
     // muito acima do nível da divisão: o destaque fica "vendável" (regressão à média)
     if (best && xiAvg(c.id) > target(c) + 4) list(best, 1.25);
   }
+
+  // numeração de id por clube (usada por reforços do exterior e garotos da base)
+  const maxIdNum = new Map<string, number>();
+  for (const p of players) {
+    const m = p.id.match(/^(.*)_p(\d+)$/);
+    if (m) maxIdNum.set(m[1], Math.max(maxIdNum.get(m[1]) ?? 0, parseInt(m[2], 10)));
+  }
+  const nextIdNum = (clubId: string) => {
+    const n = (maxIdNum.get(clubId) ?? 0) + 1;
+    maxIdNum.set(clubId, n);
+    return n;
+  };
 
   // ── pregão: rodadas de compra ordenadas pelo poder de compra do MOMENTO ──
   const rounds = phase === "offseason" ? 3 : 2;
@@ -237,12 +255,44 @@ export function runTransferWindow(
     }
   }
 
-  // ── reposição por base: quem vendeu demais promove garotos até o mínimo ──
-  const maxIdNum = new Map<string, number>();
-  for (const p of players) {
-    const m = p.id.match(/^(.*)_p(\d+)$/);
-    if (m) maxIdNum.set(m[1], Math.max(maxIdNum.get(m[1]) ?? 0, parseInt(m[2], 10)));
+  // ── reforços do exterior: quem sobrou com caixa depois do pregão interno pode
+  // trazer um estrangeiro para o setor mais carente — poucos por janela, e o
+  // apetite depende da gestão (técnico bom garimpa fora, ruim gasta em casa) ──
+  const foreignQuota = phase === "offseason" ? randInt(rng, 1, 3) : randInt(rng, 0, 2);
+  let fromAbroad = 0;
+  const byCash = [...aiClubs].sort((a, b) => (cash.get(b.id) ?? 0) - (cash.get(a.id) ?? 0));
+  for (const buyer of byCash) {
+    if (fromAbroad >= foreignQuota) break;
+    const squad = squadOf(buyer.id);
+    if (squad.length >= MAX_SQUAD_AI) continue;
+    const myCash = cash.get(buyer.id) ?? 0;
+    if (myCash < 300_000) continue;
+    if (!chance(rng, 0.25 + skill(buyer.id) * 0.35)) continue;
+    // setor titular mais defasado do alvo recebe o gringo
+    const gaps = POSITIONS.map((pos) => ({ pos, gap: target(buyer) - starterAvg(buyer.id, pos) }))
+      .sort((a, b) => b.gap - a.gap);
+    const need = gaps[0];
+    if (!need || need.gap <= 0) continue;
+    const nat = pick(rng, FOREIGN_COUNTRIES.filter((n) => n !== buyer.country));
+    const gringo = makePlayer(
+      rng, buyer.id, nat, need.pos,
+      target(buyer) + randInt(rng, 0, 3), nextIdNum(buyer.id),
+    );
+    const fee = windowPrice(gringo, 1.2);
+    if (fee > myCash) continue;
+    gringo.number = freeShirtNumber(squad, need.pos);
+    players.push(gringo);
+    byClub.set(buyer.id, [...squad, gringo]);
+    debit(buyer.id, fee);
+    fromAbroad++;
+    moves++;
+    news.push({
+      text: `🌍 ${buyer.name} traz ${gringo.name} do exterior por ${fmtMoney(fee)}.`,
+      clubId: buyer.id,
+    });
   }
+
+  // ── reposição por base: quem vendeu demais promove garotos até o mínimo ──
   for (const c of aiClubs) {
     let guard = 0;
     while (guard++ < 10) {

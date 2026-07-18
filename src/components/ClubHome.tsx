@@ -120,6 +120,9 @@ function MatchDetail({ game, rec }: { game: GameState; rec: MatchRecord }) {
             <GameIcon name={EVENT_ICON[e.type] ?? "goal"} size={14} className="shrink-0" />
             <span className="min-w-0 flex-1 truncate">
               {e.playerName}
+              {e.type === "goal" && e.assistName && (
+                <span className="text-zinc-500"> (assist. {e.assistName})</span>
+              )}
               {e.type === "penalty" && (
                 <span className={e.scored ? "text-emerald-400" : "text-red-400"}>
                   {e.scored ? " (pênalti convertido)" : " (pênalti perdido)"}
@@ -330,6 +333,7 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
   const setDefaultTactics = useStore((s) => s.setDefaultTactics);
   const setStarters = useStore((s) => s.setStarters);
   const setPosOverrides = useStore((s) => s.setPosOverrides);
+  const dismissWindowNews = useStore((s) => s.dismissWindowNews);
   const [analyzing, setAnalyzing] = useState(false);
   const [viewClub, setViewClub] = useState<Club | null>(null);
   const [financeOpen, setFinanceOpen] = useState(false);
@@ -468,18 +472,17 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
           </p>
         </div>
       )}
+      {/* Manchetes da janela: modal único — fechou, não volta a aparecer */}
       {game.seasonNews && game.seasonNews.season === game.season && game.week <= 2 &&
+        !game.seasonNews.windowNewsSeen &&
         (game.seasonNews.transferNews?.length ?? 0) > 0 && (
-        <div className="mb-4 rounded-lg border border-zinc-700 bg-zinc-900/70 px-4 py-3">
-          <p className="text-sm font-bold uppercase tracking-wide text-emerald-400">
-            Janela de transferências
-          </p>
-          <ul className="mt-1 space-y-0.5 text-xs text-zinc-400">
+        <ModalShell title="Janela de transferências" onClose={dismissWindowNews}>
+          <ul className="space-y-1 text-sm text-zinc-300">
             {game.seasonNews.transferNews!.map((n, i) => (
               <li key={i}>{n.text}</li>
             ))}
           </ul>
-        </div>
+        </ModalShell>
       )}
       {/* Alerta de dívida: contagem regressiva até a diretoria perder a paciência */}
       {!game.fired && (game.debtWeeks ?? 0) > 0 && (
