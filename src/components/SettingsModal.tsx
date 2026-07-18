@@ -166,14 +166,18 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
               <div className="flex-1 min-w-0">
                 {meta ? (
                   <div className="flex flex-col leading-tight">
-                    <span className="truncate text-sm font-bold text-zinc-100">{meta.clubName}</span>
+                    <span className="truncate text-sm font-bold text-zinc-100">
+                      {meta.clubName} <span className="font-normal text-zinc-400">· T{meta.season}</span>
+                    </span>
                     <span className="text-[11px] text-zinc-400">{formatDate(meta.savedAt)}</span>
                     {meta.managerName && (
                       <span className="truncate text-[11px] text-zinc-400">Téc. {meta.managerName}</span>
                     )}
-                    <span className="text-[11px] text-zinc-500">
-                      {meta.position ? `${meta.position}º · ${meta.division ?? ""}` : `Ano ${meta.season}`}
-                    </span>
+                    {meta.position != null && (
+                      <span className="text-[11px] text-zinc-500">
+                        {meta.position}º · {meta.division ?? ""}
+                      </span>
+                    )}
                   </div>
                 ) : (
                   <span className="text-sm text-zinc-500">vazio</span>
