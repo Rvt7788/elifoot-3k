@@ -804,7 +804,7 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
         <div className="flex flex-row gap-6 md:contents md:flex-1">
           {/* Coluna 3: Últimos resultados — some por completo quando não há jogos */}
           <div className={`flex-1 min-w-0 ${lastResults.length === 0 ? "hidden" : ""}`}>
-            <button onClick={() => setResultsOpen(true)} className="block w-fit whitespace-nowrap text-left hover:opacity-70" title="Ver todas as partidas da temporada">
+            <button onClick={() => setResultsOpen(true)} className="block w-fit text-left hover:opacity-70" title="Ver todas as partidas da temporada">
               <SectionLabel icon="board">Últimos resultados ›</SectionLabel>
             </button>
             {lastResults.map((f, i) => {
