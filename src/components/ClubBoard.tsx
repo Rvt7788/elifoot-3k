@@ -12,7 +12,7 @@ const MENTALITY_LABEL: Record<Mentality, string> = {
   defensivo: "Defensivo",
   equilibrado: "Equilibrado",
   ofensivo: "Ofensivo",
-  tudo_ou_nada: "Tudo ou nada",
+  tudo_ou_nada: "Total",
 };
 
 // Deduz a formação a partir do número de DEF/MEI/ATA em campo — a formação real

@@ -12,18 +12,22 @@ export function energyStepColors(value: number): { bg: string; border: string } 
 // de 10 passos (1 por 10% de energia): cada célula pode ficar meia-cheia, mostrando
 // o nível com o dobro de precisão sem multiplicar o número de divisões visuais.
 // Cor acompanha o nível: verde (cheio) → vermelho (esgotado).
+// `compact`: células menores e mais juntas, para listas apertadas (titulares na
+// prancheta), sem mudar a barra padrão usada no resto do app.
 export default function EnergyBar({
   value,
   className,
+  compact,
 }: {
   value: number;
   className?: string;
+  compact?: boolean;
 }) {
   const steps = Math.max(0, Math.min(10, Math.round(value / 10))); // 0..10 (1 por 10%)
   const color = energyStepColors(value).bg;
   return (
     <span
-      className={`inline-flex shrink-0 items-center gap-[2px] ${className ?? ""}`}
+      className={`inline-flex shrink-0 items-center ${compact ? "gap-[1px]" : "gap-[2px]"} ${className ?? ""}`}
       title={`Energia: ${Math.round(value)}%`}
     >
       {[0, 1, 2, 3, 4].map((i) => {
@@ -32,7 +36,7 @@ export default function EnergyBar({
         return (
           <span
             key={i}
-            className="relative h-2 w-1.5 overflow-hidden rounded-[1px]"
+            className={`relative overflow-hidden rounded-[1px] ${compact ? "h-1.5 w-1" : "h-2 w-1.5"}`}
             style={{ background: "#3f3f46" }}
           >
             <span

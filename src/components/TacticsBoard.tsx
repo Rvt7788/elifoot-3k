@@ -104,8 +104,10 @@ function PlayerRow({
       >
         {/* flex-1 + overflow-hidden: o nome encolhe e os badges nunca invadem a barra de energia */}
         <span className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden pr-1">
-          <span className={`w-4 shrink-0 text-right tabular-nums ${selected ? "opacity-70" : "text-zinc-500"}`}>{p.number}</span>
-          <b className={`shrink-0 ${selected ? "opacity-70" : "text-zinc-400"}`}>{p.pos}</b>
+          <span className={`w-4 shrink-0 text-left tabular-nums ${selected ? "opacity-70" : "text-zinc-500"}`}>{p.number}</span>
+          {/* só a inicial (G/D/M/A): em telas estreitas os 3 caracteres de "GOL"
+              comiam o espaço do nome. O título traz a posição por extenso. */}
+          <b className={`shrink-0 ${selected ? "opacity-70" : "text-zinc-400"}`} title={p.pos}>{p.pos[0]}</b>
           {/* nome corta seco (sem "…") para a estrelinha ao lado nunca sumir */}
           <span className={`overflow-hidden whitespace-nowrap [text-overflow:clip] ${suspendedNext || injured ? "text-zinc-500 line-through" : ""}`}>{p.name}</span>
           <span className="shrink-0 text-amber-400">{TIER_BADGE[p.tier]}</span>
@@ -113,8 +115,8 @@ function PlayerRow({
           {suspendedNext && <span className="shrink-0 text-[9px] font-bold text-red-400">SUSP</span>}
           {injured && <span className="shrink-0 text-[9px] font-bold text-orange-400" title={`Lesionado: volta em ${p.injuryWeeks} rodada${(p.injuryWeeks ?? 0) > 1 ? "s" : ""}`}>LES</span>}
         </span>
-        <span className="flex shrink-0 items-center gap-1.5">
-          <EnergyBar value={p.energy} />
+        <span className="flex shrink-0 items-center gap-1">
+          <EnergyBar value={p.energy} compact />
           {/* largura fixa: a barra de energia não desloca com 1 ou 2 dígitos de força */}
           <b className="w-5 text-right tabular-nums">{p.strength}</b>
           <span
@@ -156,7 +158,7 @@ const MENT: { key: Mentality; label: string }[] = [
   { key: "defensivo", label: "Defensivo" },
   { key: "equilibrado", label: "Equilibrado" },
   { key: "ofensivo", label: "Ofensivo" },
-  { key: "tudo_ou_nada", label: "Tudo ou nada" },
+  { key: "tudo_ou_nada", label: "Total" },
 ];
 
 const MARK: { key: Marking; label: string }[] = [
@@ -626,7 +628,10 @@ export default function TacticsBoard() {
 
         <div className="mt-4">
           <p className="ui-label mb-1">Escalar por</p>
-          <div className="flex gap-1.5">
+          {/* gap menor e min-w-0 nos botões: a 360px os três com whitespace-nowrap
+              estouravam a coluna e "Energia" caía para fora da linha, desalinhando
+              Extras/Bicho logo abaixo */}
+          <div className="flex gap-1">
             <button
               onClick={() => {
                 setScaleBy("forca");
@@ -634,7 +639,7 @@ export default function TacticsBoard() {
                 setPosOverrides(undefined);
                 setManualMode(false);
               }}
-              className={`flex-1 whitespace-nowrap rounded px-1 py-1 text-[11px] ${
+              className={`min-w-0 flex-1 truncate rounded px-0.5 py-1 text-[11px] ${
                 scaleBy === "forca" && isBestActive ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
               }`}
             >
@@ -649,7 +654,7 @@ export default function TacticsBoard() {
                 setPosOverrides(undefined);
                 setManualMode(false);
               }}
-              className={`flex-1 whitespace-nowrap rounded px-1 py-1 text-[11px] ${
+              className={`min-w-0 flex-1 truncate rounded px-0.5 py-1 text-[11px] ${
                 scaleBy === "posicao" && isBestActive ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
               }`}
             >
@@ -662,7 +667,7 @@ export default function TacticsBoard() {
                 setPosOverrides(undefined);
                 setManualMode(false);
               }}
-              className={`flex-1 whitespace-nowrap rounded px-1 py-1 text-[11px] ${
+              className={`min-w-0 flex-1 truncate rounded px-0.5 py-1 text-[11px] ${
                 scaleBy === "energia" && isBestActive ? "bg-emerald-600" : "bg-zinc-800 hover:bg-zinc-700"
               }`}
             >

@@ -689,7 +689,7 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
     { key: "defensivo", label: "Defensivo", icon: "shield" },
     { key: "equilibrado", label: "Equilibrado", icon: "balance" },
     { key: "ofensivo", label: "Ofensivo", icon: "offense" },
-    { key: "tudo_ou_nada", label: "Tudo ou nada", icon: "allout" },
+    { key: "tudo_ou_nada", label: "Total", icon: "allout" },
   ];
 
   const MARK: { key: Marking; label: string; icon: GameIconName | null; glyph?: string }[] = [
