@@ -526,11 +526,21 @@ export default function ClubHome({ onStartMatchday, onOpenTable }: { onStartMatc
                 className="h-full w-auto rounded-sm opacity-95 [filter:drop-shadow(0_1px_3px_rgba(0,0,0,0.5))]"
               />
             </div>
-            <div className="relative px-4 py-2.5 pl-6 sm:h-full sm:flex sm:flex-col sm:justify-center sm:pl-10 sm:py-4 sm:gap-0.5">
+            {/* pr-[150px] no desktop: reserva a faixa ocupada pela bandeira
+                (que é absolute e não empurra o texto), senão um nome longo
+                como "Botafogo-SP" quebra a linha por cima dela */}
+            <div className="relative flex h-full flex-col justify-center gap-0.5 [container-type:inline-size] px-4 py-2.5 pl-6 pr-[104px] sm:pl-10 sm:py-4 sm:pr-[150px]">
               <h1
                 className="ui-title leading-tight"
-                // nome cresce com a tela, mas com teto no desktop
-                style={{ color: readableOn(club.primaryColor), fontSize: "clamp(1.6rem, 6vw, 2.4rem)", textShadow: nameShadow }}
+                // a fonte escala pela largura do container (cqi) e pelo tamanho
+                // do nome (ch): assim "Botafogo-SP" fica grande e um nome longo
+                // como "Borussia Mönchengladbach" encolhe sozinho, sem quebrar
+                // linha por cima da bandeira nem estourar a tarja
+                style={{
+                  color: readableOn(club.primaryColor),
+                  fontSize: `clamp(1.05rem, min(9cqi, ${(100 / (club.name.length * 0.7)).toFixed(2)}cqi), 2.4rem)`,
+                  textShadow: nameShadow,
+                }}
               >
                 {club.name}
               </h1>

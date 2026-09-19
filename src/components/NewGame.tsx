@@ -4,6 +4,7 @@ import type { Club } from "../types";
 import { useStore } from "../store";
 import { ScrollLock } from "./useLockBodyScroll";
 import GameIcon from "./GameIcon";
+import { readableOn } from "../game/color";
 
 // bandeiras em mini PNG (public/flags): emoji de bandeira não renderiza em
 // todo sistema (Windows/Chrome mostra só as letras do código do país)
@@ -133,6 +134,8 @@ export default function NewGame() {
   // não rola a sorte de novo, só sorteia outro clube dentro do mesmo pool
   const [lucky] = useState(() => Math.random() < 0.05);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
+  // valor de partida: o modal só abre com um clube sorteado, e o sorteio já
+  // define a carta — este inicial existe apenas para o estado nunca ser nulo
   const [welcomeMsg, setWelcomeMsg] = useState(WELCOME_MESSAGES[0]);
 
   function drawRandom(pool: Club[]) {
@@ -140,7 +143,13 @@ export default function NewGame() {
     const options = club && pool.length > 1 ? pool.filter((c) => c.id !== club.id) : pool;
     const drawn = options[Math.floor(Math.random() * options.length)];
     setClub(drawn);
+    // a carta é sorteada junto com o clube, e não ao abrir o modal: assim ela
+    // fica atrelada ao sorteio e não troca a cada "Começar carreira"
+    setWelcomeMsg(WELCOME_MESSAGES[Math.floor(Math.random() * WELCOME_MESSAGES.length)]);
   }
+
+  // time de cor clara pede texto escuro, e aí a sombra clara é que dá relevo
+  const bannerTextDark = club ? readableOn(club.primaryColor) !== "#ffffff" : false;
 
   return (
     // justify-start (e não center): ancorado no topo, o conteúdo cresce para
@@ -209,31 +218,73 @@ export default function NewGame() {
       <div className="mb-6 flex justify-center">
         <button
           onClick={() => drawRandom(serieBPool(clubs, lucky, country ?? undefined))}
-          className="country-tab"
+          className="btn-cta inline-flex items-center px-6 py-2"
           title={country ? "Sorteia um clube pequeno da Série B do país selecionado" : "Sorteia um clube pequeno da Série B de qualquer país"}
         >
-          <span className="mr-1.5 inline-flex align-middle"><GameIcon name="dice" size={15} /></span>
-          Sortear clube
+          <span className="mr-2 inline-flex align-middle"><GameIcon name="dice" size={15} /></span>
+          {club ? "Sortear outro" : "Sortear clube"}
         </button>
       </div>
 
       {club && (
         <>
-          <div className="mx-auto mb-6 flex w-fit items-center gap-3 rounded-lg border border-zinc-700 bg-zinc-900/60 px-4 py-3">
-            <span
-              className="inline-block h-3 w-3 rotate-45 border border-zinc-700"
-              style={{ background: club.primaryColor }}
+          {/* mesma tarja da página do clube: gradiente na cor primária, mastro
+              na secundária e bandeira do país à direita — a identidade visual do
+              clube é a mesma desde o sorteio */}
+          <div
+            className="metal-relief relative mb-6 h-24 overflow-hidden rounded-md"
+            style={{
+              background: `linear-gradient(180deg, color-mix(in srgb, ${club.primaryColor} 80%, white) 0%, ${club.primaryColor} 45%, color-mix(in srgb, ${club.primaryColor} 82%, black) 100%)`,
+              ["--relief-edge" as string]: club.secondaryColor,
+              ["--relief-base" as string]: "rgba(0,0,0,0.45)",
+            }}
+          >
+            <div
+              className="absolute inset-y-0 left-0 w-2"
+              style={{ background: club.secondaryColor }}
             />
-            <span className="text-base font-semibold text-zinc-100">{club.name}</span>
-            <span className="ui-label">{club.division}</span>
-            <span className="font-mono text-xs text-zinc-500">
-              ${(club.baseBudget / 1e6).toFixed(1)}M
-            </span>
+            {/* py maior no mobile deixa a bandeira menor e libera largura para o
+                nome, que aqui tem menos espaço que na página do clube */}
+            <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center py-7 sm:right-6 sm:py-4">
+              <img
+                src={`/flags/${club.country.toLowerCase()}.png`}
+                alt={club.country}
+                className="h-full w-auto rounded-sm opacity-95 [filter:drop-shadow(0_1px_3px_rgba(0,0,0,0.5))]"
+              />
+            </div>
+            {/* pr reservado para a bandeira, que é absolute e não empurra o texto */}
+            <div className="relative flex h-full flex-col justify-center [container-type:inline-size] px-4 py-2.5 pl-6 pr-[74px] sm:pl-10 sm:pr-[150px]">
+              <div
+                className="ui-title leading-tight"
+                style={{
+                  color: readableOn(club.primaryColor),
+                  fontSize: `clamp(0.8rem, min(9cqi, ${(100 / (club.name.length * 0.7)).toFixed(2)}cqi), 2.4rem)`,
+                  textShadow: bannerTextDark
+                    ? "0 1px 2px rgba(255,255,255,0.55)"
+                    : "0 2px 4px rgba(0,0,0,0.55)",
+                }}
+              >
+                {club.name}
+              </div>
+              <div
+                className="flex items-center gap-3 text-sm leading-tight opacity-90"
+                style={{
+                  color: readableOn(club.primaryColor),
+                  textShadow: bannerTextDark
+                    ? "0 1px 1px rgba(255,255,255,0.5)"
+                    : "0 1px 2px rgba(0,0,0,0.5)",
+                }}
+              >
+                <span>{club.division}</span>
+                <span className="font-mono text-xs">
+                  ${(club.baseBudget / 1e6).toFixed(1)}M
+                </span>
+              </div>
+            </div>
           </div>
           <button
             onClick={() => {
               if (!managerName.trim()) return;
-              setWelcomeMsg(WELCOME_MESSAGES[Math.floor(Math.random() * WELCOME_MESSAGES.length)]);
               setWelcomeOpen(true);
             }}
             disabled={!managerName.trim()}
