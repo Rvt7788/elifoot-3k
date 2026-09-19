@@ -123,9 +123,11 @@ export default function NewGame() {
   }
 
   return (
-    // min-h + justify-center: o bloco inteiro fica verticalmente centrado na tela,
-    // tanto no desktop quanto no mobile (o rodapé com a engrenagem fica abaixo)
-    <div className="mx-auto flex min-h-[88vh] w-full max-w-2xl flex-col justify-center px-8 pb-6 pt-12 sm:px-6">
+    // justify-start (e não center): ancorado no topo, o conteúdo cresce para
+    // baixo quando o clube é sorteado. Com justify-center a sobra de espaço era
+    // dividida em cima e embaixo, então cada elemento novo encolhia a margem
+    // superior e empurrava a logo para cima.
+    <div className="mx-auto flex min-h-[88vh] w-full max-w-2xl flex-col justify-start px-8 pb-6 pt-[8vh] sm:px-6">
       <img
         src="/elifoot3klogo.png"
         alt="Elifoot 3K — Manager de futebol do futuro"
