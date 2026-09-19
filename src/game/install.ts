@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { track } from "./analytics";
 
 /** Evento do Chrome para instalação da PWA (não existe nos tipos do DOM). */
 interface BeforeInstallPromptEvent extends Event {
@@ -98,6 +99,7 @@ function setupListeners(): void {
     deferredPrompt = null;
     invited = true;
     markInvited();
+    track("app_installed");
     notify();
   });
 }
@@ -134,6 +136,7 @@ export function useInstall() {
   const dismissInvite = () => {
     invited = true;
     markInvited();
+    track("install_prompt_dismissed", { sessions });
     notify();
   };
 

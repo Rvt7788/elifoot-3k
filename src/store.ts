@@ -11,6 +11,7 @@ import {
 import continentalData from "./data/continental.json";
 import { newGame, assignShirtNumbers, fixDuplicateNumbers, freeShirtNumber, renumberSquadByStarters, playerSalary, processSeasonTransitions } from "./game/seeder";
 import { runTransferWindow, windowOfferForUser } from "./game/transferWindow";
+import { track } from "./game/analytics";
 import { bestXI, createLiveMatch, simulateMinute } from "./game/engine";
 import { applyResult, buildLeagueFixtures, initTable, sortTable } from "./game/schedule";
 import { mulberry32, pick } from "./game/rng";
@@ -624,6 +625,7 @@ export const useStore = create<Store>()(
       startGame: (seed, clubId, managerName) => {
         const game = newGame(seed, clubId);
         const userClub = game.clubs.find((c) => c.id === clubId)!;
+        track("game_start", { division: userClub.division, country: userClub.country });
         set({
           game: {
             ...game, managerName,
@@ -729,6 +731,8 @@ export const useStore = create<Store>()(
               leagueChampionBonus = CHAMPION_PRIZE.serieB;
             }
           }
+          // marco de retenção: quantas pessoas chegam à segunda temporada
+          track("season_finish", { season: g.season, division: userClub.division });
           g = {
             ...g,
             jobOffer,
@@ -791,6 +795,9 @@ export const useStore = create<Store>()(
         if (g.week !== week) set({ game: { ...g, week } });
         const userClub = g.clubs.find((c) => c.id === g!.userClubId)!;
         const info = weekInfo(week);
+        // mantém a sessão do GA viva: sem nenhum evento por 30 minutos, uma
+        // partida longa seria contada como duas sessões
+        track("matchday_start", { season: g.season, week, competition: info.type });
         // semana de copa/continental: confrontos da perna atual; grupos da
         // continental: jogos da rodada de grupos; liga: jogos da rodada
         const pairs: { homeId: string; awayId: string }[] =
@@ -1231,6 +1238,19 @@ export const useStore = create<Store>()(
       finishMatchday: (userTieWinnerId) => {
         const { game, live, liveDivision } = get();
         if (!game || !live) return;
+        const userMatch = live.find(
+          (m) => m.homeId === game.userClubId || m.awayId === game.userClubId,
+        );
+        if (userMatch) {
+          const home = userMatch.homeId === game.userClubId;
+          const [gf, ga] = home
+            ? [userMatch.homeScore, userMatch.awayScore]
+            : [userMatch.awayScore, userMatch.homeScore];
+          track("matchday_finish", {
+            season: game.season,
+            result: gf > ga ? "win" : gf < ga ? "loss" : "draw",
+          });
+        }
         const info = weekInfo(game.week);
         const isContinental = info.type === "continental" && !!game.continental;
         const isContGroup = info.type === "contgroup" && !!game.continental;

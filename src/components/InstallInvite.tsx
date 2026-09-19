@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import InstallModal from "./InstallModal";
 import { useInstall } from "../game/install";
+import { track } from "../game/analytics";
 
 /**
  * Convite único para instalar o app, a partir da segunda sessão: quem fechou o
@@ -8,6 +10,13 @@ import { useInstall } from "../game/install";
  */
 export default function InstallInvite() {
   const { shouldInvite, dismissInvite } = useInstall();
+
+  // registra a exibição: sem ela não dá para medir quantos dos que viram
+  // o convite acabaram instalando
+  useEffect(() => {
+    if (shouldInvite) track("install_prompt_shown");
+  }, [shouldInvite]);
+
   if (!shouldInvite) return null;
   return (
     <InstallModal
