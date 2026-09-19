@@ -1,5 +1,5 @@
 import { useState } from "react";
-import GameIcon from "./GameIcon";
+import GameIcon, { type GameIconName } from "./GameIcon";
 import InfoModal from "./InfoModal";
 
 /** Chave Pix aleatória (EVP): não expõe CPF, telefone nem e-mail do titular. */
@@ -7,6 +7,15 @@ const PIX_KEY = "c90f6d77-5ee1-4b32-91bf-981faefe0a6b";
 /** Formulário público de sugestões e parceria. */
 const FORM_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLSeUeD9cWaAFUv_EFvfxprxCWZ1rPMc0A3_oaI9K157X4Q6Ufg/viewform";
+
+/** Cabeçalho de seção: mesmo peso visual para Pix e para sugestões. */
+function SectionTitle({ icon, label }: { icon: GameIconName; label: string }) {
+  return (
+    <h3 className="mb-2 flex items-center justify-center gap-2 text-[13px] font-semibold text-zinc-200">
+      <GameIcon name={icon} size={15} /> {label}
+    </h3>
+  );
+}
 
 export default function SupportModal({ onClose }: { onClose: () => void }) {
   const [copied, setCopied] = useState(false);
@@ -22,11 +31,12 @@ export default function SupportModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <InfoModal icon="finance" title="Apoie o projeto" onClose={onClose}>
-      {/* ── Pix ── */}
+    <InfoModal icon="medal" title="Apoie o projeto" onClose={onClose}>
+      {/* ── Contribuir com Pix ── */}
+      <SectionTitle icon="finance" label="Contribuir com Pix" />
       <div className="mb-5 flex flex-col items-center gap-2">
         <p className="text-center text-[13px] leading-relaxed text-zinc-400">
-          Quem quiser ajudar a manter o projeto de pé pode contribuir por Pix, no valor que quiser.
+          Quem quiser ajudar a manter o projeto de pé pode contribuir com o valor que quiser.
         </p>
         <code className="w-full select-all break-all rounded border border-zinc-700 bg-zinc-800/60 px-3 py-2 text-center text-[12px] text-zinc-300">
           {PIX_KEY}
@@ -37,7 +47,7 @@ export default function SupportModal({ onClose }: { onClose: () => void }) {
       </div>
 
       {/* ── Sugestões e parceria ── */}
-      <p className="mb-2 text-center text-xs text-zinc-500">SUGESTÕES E PARCERIA</p>
+      <SectionTitle icon="proposal" label="Sugestões e parceria" />
       <div className="flex flex-col items-center gap-2">
         <p className="text-center text-[13px] leading-relaxed text-zinc-400">
           Ajudar não é só com dinheiro: ideia, crítica e relato de bug valem tanto quanto.

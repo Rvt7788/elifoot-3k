@@ -18,17 +18,17 @@ export default function InfoModal({
   footer?: ReactNode;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6" onClick={onClose}>
       <ScrollLock />
       <div
-        className="max-h-[85vh] w-full max-w-sm overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 p-5"
+        className="max-h-[78vh] w-full max-w-[19rem] overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 p-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative mb-4 flex items-center justify-center">
-          <h2 className="flex items-center gap-2 text-lg font-bold">
-            <GameIcon name={icon} size={18} /> {title}
+        <div className="relative mb-3 flex items-center justify-center">
+          <h2 className="flex items-center gap-2 text-base font-bold">
+            <GameIcon name={icon} size={17} /> {title}
           </h2>
-          <button onClick={onClose} className="absolute right-0 text-zinc-400 hover:text-white">✕</button>
+          <button onClick={onClose} className="absolute -right-1 -top-0.5 px-1 text-zinc-400 hover:text-white">✕</button>
         </div>
         {children}
         {footer && <div className="mt-4 flex justify-center">{footer}</div>}
