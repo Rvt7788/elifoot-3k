@@ -25,8 +25,8 @@ export default defineConfig({
         description: "Manager de futebol do futuro",
         start_url: "/",
         display: "standalone",
-        background_color: "#0a0e14",
-        theme_color: "#0a0e14",
+        background_color: "#09090b",
+        theme_color: "#09090b",
         orientation: "portrait",
         icons: [
           { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
