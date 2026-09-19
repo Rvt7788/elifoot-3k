@@ -7,9 +7,9 @@ import "./index.css";
 
 // Com registerType "autoUpdate" o SW novo já assumiu o controle quando este
 // callback roda, mas a aba aberta segue com o código antigo em memória. Sem
-// onNeedReload o plugin dispara window.location.reload() por conta própria —
-// o que mataria uma rodada em andamento. Aqui só avisamos: o técnico recarrega
-// na hora que quiser.
+// onNeedReload o plugin recarregaria na hora, inclusive no meio de uma rodada
+// ao vivo. Interceptamos só para segurar esse caso: fora da partida a recarga
+// é imediata e silenciosa.
 registerSW({
   immediate: true,
   onNeedReload: () => setUpdateReady(() => window.location.reload()),
