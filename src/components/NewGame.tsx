@@ -81,24 +81,44 @@ export function presidentName(clubId: string): string {
 // do modal para a recepção nunca ser igual. {name} vira o nome do técnico.
 const WELCOME_MESSAGES: { p1: string; p2: string }[] = [
   {
-    p1: "Professor {name}, as luzes do estádio já estão se apagando e a diretoria acaba de assinar a sua papelada. Sabemos que o orçamento é curto, o elenco é limitado e as arquibancadas andam meio vazias ultimamente. Mas o futebol é feito de superação, e todo gigante começou exatamente onde estamos hoje.",
-    p2: "O vestiário é todo seu, técnico. Nós acreditamos na sua mentalidade. Mostre a eles do que você é capaz.",
+    p1: "Professor {name}, a papelada está assinada e o clube é seu a partir de agora. O orçamento pede criatividade e o elenco é enxuto, mas o gramado está impecável, o vestiário é unido e a rapaziada treina firme desde janeiro. Todo gigante já esteve exatamente onde estamos hoje.",
+    p2: "O vestiário é todo seu, técnico. Apostamos na sua mentalidade. Mostre a eles do que você é capaz.",
   },
   {
-    p1: "Técnico {name}, não vamos te vender ilusões: aqui você não vai encontrar estruturas de ponta nem salários astronômicos. Mas há um grupo sedento por vencer, uma cidade inteira de olho em cada rodada e uma diretoria que escolheu você a dedo para liderar esse projeto.",
+    p1: "Técnico {name}, aqui o dinheiro é contado e cada contratação precisa fazer sentido — é assim que trabalhamos. Em compensação, você herda um grupo sedento por vencer, uma cidade que acompanha cada rodada de perto e uma diretoria que escolheu o seu nome a dedo para liderar o projeto.",
     p2: "Faça esses garotos jogarem com o coração. O resto a gente constrói no dia a dia, lado a lado.",
   },
   {
-    p1: "Professor {name}, para ser sincero, outros recusaram este cargo antes de você chegar. Acharam o desafio pesado demais e o elenco muito curto. Mas nós sabíamos exatamente quem queríamos no comando. Acreditamos que este desafio tem o tamanho exato da sua capacidade.",
-    p2: "A prancheta está nas suas mãos. Vá lá fora e transforme toda essa desconfiança em orgulho para a torcida.",
+    p1: "Professor {name}, conversamos com bons nomes antes de bater o martelo, e em nenhum deles a ficha caiu como caiu com você. Vimos o seu trabalho, entendemos a sua ideia de jogo e chegamos à mesma conclusão: este projeto tem exatamente o tamanho da sua capacidade.",
+    p2: "A prancheta está nas suas mãos. Vá lá fora e transforme essa aposta em orgulho para a torcida.",
   },
   {
-    p1: "Técnico {name}, a nossa torcida não esquece as glórias do passado e sente falta de ver o time brigando no topo. O que eles pedem é simples: um time com alma, que divida cada bola e um comandante que acredite no projeto tanto quanto eles.",
+    p1: "Técnico {name}, a nossa torcida guarda de cor as glórias do passado e quer ver o time brigando no topo outra vez. O que ela pede é simples: um time com alma, que dispute cada bola até o fim, e um comandante que acredite no projeto tanto quanto ela acredita.",
     p2: "Devolva o brilho nos olhos e o orgulho a essa gente. Seja muito bem-vindo ao desafio da sua carreira.",
   },
   {
-    p1: "Professor {name}, os cofres do clube estão quase vazios e nosso banco de reservas é enxuto — não há mistério nisso. No entanto, o futebol nos ensina toda semana que ideias grandes e corajosas valem muito mais do que folhas salariais astronômicas.",
+    p1: "Professor {name}, nossa folha salarial é modesta e o banco de reservas é curto — números que você já conhece. Mas o futebol nos lembra toda semana que uma ideia corajosa e bem treinada rende mais do que qualquer cifra, e é nesse terreno que pretendemos brigar.",
     p2: "Coloque a sua identidade em campo. A prancheta agora é sua, e nós daremos todo o suporte.",
+  },
+  {
+    p1: "Técnico {name}, esta casa é pequena no orçamento e grande no resto: sócio que paga em dia, base que revela jogador todo ano e um centro de treinamento que é o orgulho da região. Faltava alguém com ideia clara para amarrar tudo isso dentro de campo.",
+    p2: "Esse alguém é você. Ponha o time para jogar e deixe o resto com a gente.",
+  },
+  {
+    p1: "Professor {name}, a cidade inteira vive em função deste clube. Na segunda-feira o resultado de domingo está na padaria, na barbearia e na fila do banco. Não é pressão, é combustível — e nenhum clube grande do país tem uma torcida que se importe mais do que a nossa.",
+    p2: "Dê a eles um time à altura dessa paixão. A camisa está nas suas mãos.",
+  },
+  {
+    p1: "Técnico {name}, você assume um grupo jovem, e isso é uma escolha nossa, não um acaso. São meninos que correm os noventa minutos, escutam o que se fala no vestiário e ainda têm tudo por aprender. Nas mãos certas, um elenco assim evolui rápido demais.",
+    p2: "As mãos certas são as suas. Lapide esse grupo e a temporada vai nos surpreender.",
+  },
+  {
+    p1: "Professor {name}, nosso planejamento não é para daqui a cinco anos: é para esta temporada. As contas estão em ordem, o elenco foi montado com cuidado e o calendário nos favorece no começo. Agora falta a parte que só um técnico entrega — um time com cara, método e coragem.",
+    p2: "Comece por aí, e nós seguramos as pontas do lado de fora. Bem-vindo ao clube.",
+  },
+  {
+    p1: "Técnico {name}, ninguém aqui vai cobrar título logo na estreia, mas queremos ver um time reconhecível em campo já nas primeiras rodadas. Se a torcida sair do estádio sabendo como a sua equipe joga, o resto vem com o tempo e com o trabalho de todo dia.",
+    p2: "Construa esse time do seu jeito. A paciência é nossa, a prancheta é sua.",
   },
 ];
 
@@ -250,10 +270,10 @@ export default function NewGame() {
             <h2 className="mb-7 text-center font-display text-lg font-bold">
               Bem-vindo ao {club.name}
             </h2>
-            <p className="mb-2 text-pretty text-sm leading-relaxed">
+            <p className="mb-2 text-pretty text-center text-sm leading-relaxed">
               {welcomeMsg.p1.replace("{name}", managerName.trim())}
             </p>
-            <p className="mb-8 text-pretty text-sm leading-relaxed">
+            <p className="mb-8 text-pretty text-center text-sm leading-relaxed">
               {welcomeMsg.p2}
             </p>
             <p className="mb-0.5 text-center font-display text-xl italic opacity-90">
