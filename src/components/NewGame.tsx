@@ -11,9 +11,9 @@ import GameIcon from "./GameIcon";
 // Os demais ficam bloqueados na tela inicial até terem seus elencos revisados.
 const COUNTRIES: Record<string, { name: string; locked?: boolean }> = {
   BR: { name: "Brasil" },
-  AR: { name: "Argentina", locked: true },
-  EN: { name: "Inglaterra", locked: true },
-  ES: { name: "Espanha", locked: true },
+  AR: { name: "Argentina" },
+  EN: { name: "Inglaterra" },
+  ES: { name: "Espanha" },
   DE: { name: "Alemanha", locked: true },
   FR: { name: "França", locked: true },
   IT: { name: "Itália", locked: true },

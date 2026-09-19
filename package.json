@@ -16,6 +16,7 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@tailwindcss/vite": "^4.0.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
