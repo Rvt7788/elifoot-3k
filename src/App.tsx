@@ -16,6 +16,7 @@ import Training from "./components/Training";
 import { IconGear, IconPlay, IconLive } from "./components/icons";
 import AppFooter from "./components/AppFooter";
 import InstallInvite from "./components/InstallInvite";
+import UpdateBanner from "./components/UpdateBanner";
 import { ScrollLock } from "./components/useLockBodyScroll";
 import { readableKit } from "./game/color";
 import { quickSellPrice } from "./game/market";
@@ -545,6 +546,7 @@ export default function App() {
           </button>
         </AppFooter>
         {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+        <UpdateBanner />
       </>
     );
   // rodada vazia (estado anômalo de save inconsistente) NÃO conta como ao vivo:
@@ -733,6 +735,10 @@ export default function App() {
 
       {/* links de ajuda e apoio: fora da rodada ao vivo, para não disputar com o jogo */}
       {!liveRunning && <AppFooter />}
+
+      {/* recarregar no meio da rodada perderia os lances em andamento:
+          o aviso espera a partida terminar */}
+      {!liveRunning && <UpdateBanner />}
     </div>
   );
 }
