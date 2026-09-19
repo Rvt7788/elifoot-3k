@@ -35,6 +35,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,png,jpg,svg,json}"],
+        // a imagem de compartilhamento só é lida pelos robôs de link: no
+        // precache ela custaria 64KB de download a cada jogador, à toa
+        globIgnores: ["og.png"],
       },
     }),
   ],
