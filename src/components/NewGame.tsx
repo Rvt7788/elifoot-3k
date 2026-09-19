@@ -141,7 +141,8 @@ export default function NewGame() {
       </div>
 
       {/* não-controlado de propósito: a digitação nunca depende de re-render;
-          o estado só guarda o valor para habilitar o "Começar carreira" */}
+          o estado só guarda o valor para habilitar o "Começar carreira".
+          a listra usa o mesmo ciano da sombra da logo: rgb(34,211,238) */}
       <input
         type="text"
         name="managerName"
@@ -151,7 +152,7 @@ export default function NewGame() {
         maxLength={16}
         autoComplete="off"
         spellCheck={false}
-        className="mx-auto mb-6 block w-full max-w-xs border-b border-zinc-700 bg-transparent px-2 py-2 text-center font-semibold tracking-wide text-zinc-100 placeholder-zinc-600 outline-none transition-colors focus:border-emerald-500"
+        className="mx-auto mb-6 block w-full max-w-xs border-b border-[rgba(34,211,238,0.55)] bg-transparent px-2 py-2 text-center font-semibold tracking-wide text-zinc-100 placeholder-zinc-600 outline-none transition-colors focus:border-[rgb(34,211,238)]"
       />
 
       {/* seleção de país em grade 3×3: só o Brasil está liberado — os demais
