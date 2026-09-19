@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useStore, needsUserShootout, renewalCost } from "./store";
+import { useStore, needsUserShootout, renewalCost, nextPlayableWeek } from "./store";
 import { appAlert } from "./components/AppDialog";
 import GameIcon, { type GameIconName } from "./components/GameIcon";
 import PenaltyShootout from "./components/PenaltyShootout";
@@ -14,6 +14,8 @@ import Squad from "./components/Squad";
 import Market from "./components/Market";
 import Training from "./components/Training";
 import { IconGear, IconPlay, IconLive } from "./components/icons";
+import AppFooter from "./components/AppFooter";
+import InstallInvite from "./components/InstallInvite";
 import { ScrollLock } from "./components/useLockBodyScroll";
 import { readableKit } from "./game/color";
 import { quickSellPrice } from "./game/market";
@@ -532,8 +534,8 @@ export default function App() {
       <>
         <AppDialogHost />
         <NewGame />
-        {/* engrenagem discreta no rodapé da tela inicial */}
-        <div className="flex justify-center pb-6">
+        {/* engrenagem discreta no rodapé da tela inicial, sobre os links de ajuda */}
+        <AppFooter>
           <button
             onClick={() => setSettingsOpen(true)}
             className="rounded px-2 py-1 text-zinc-500 hover:bg-zinc-800"
@@ -541,7 +543,7 @@ export default function App() {
           >
             <IconGear className="h-5 w-5" />
           </button>
-        </div>
+        </AppFooter>
         {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
       </>
     );
@@ -549,6 +551,15 @@ export default function App() {
   // senão o cabeçalho some e o app fica preso numa tela sem jogos
   const liveRunning = live !== null && live.length > 0;
   const liveFinished = liveRunning && live.every((m) => m.finished);
+
+  // algum modal do jogo disputando a tela: o convite de instalação espera
+  const gameModalOpen =
+    !!game.jobOffer ||
+    !!game.incomingOffer ||
+    !!game.pendingPromotions?.length ||
+    !!game.lastNews?.length ||
+    nextPlayableWeek(game) === null || // retrospectiva de fim de temporada
+    game.players.some((p) => p.clubId === game.userClubId && (p.contract ?? 1) <= 0);
 
   // demitido: tela própria, sem abas nem clube — só o pulo temporal até a virada.
   // O convite de volta (JobOfferModal) e a retrospectiva aparecem por cima.
@@ -671,6 +682,9 @@ export default function App() {
       {!liveRunning && <ExpiredContractsModal />}
       {!liveRunning && <ContractWarningModal />}
       {!liveRunning && <SeasonHighlightsModal />}
+      {/* convite de instalação: só na home, fora da rodada e com a tela livre
+          dos modais do jogo — ele espera a vez, nunca disputa atenção */}
+      {!liveRunning && tab === "clube" && !gameModalOpen && <InstallInvite />}
       {shootoutOpen && (
         <PenaltyShootout
           onDone={(winnerId) => {
@@ -716,6 +730,9 @@ export default function App() {
           <HallOfFame />
         </div>
       )}
+
+      {/* links de ajuda e apoio: fora da rodada ao vivo, para não disputar com o jogo */}
+      {!liveRunning && <AppFooter />}
     </div>
   );
 }
