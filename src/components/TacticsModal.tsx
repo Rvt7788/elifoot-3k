@@ -881,34 +881,20 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
             <p className="inline-flex items-center gap-1 text-[11px] font-bold text-zinc-400"><GameIcon name="sub" size={13} /> SUBSTITUIÇÕES</p>
             <span className="text-[11px] text-zinc-600">{subsLeft}/5 subs</span>
           </div>
-          <div className="mb-1.5 flex items-center gap-2">
-            <span className="w-20 shrink-0 text-[11px] font-semibold text-zinc-500">RÁPIDA</span>
-            <button
-              onClick={() => quickSub("energia")}
-              disabled={subsLeft <= 0}
-              className="rounded bg-zinc-800 px-2.5 py-1 text-[11px] text-zinc-300 hover:bg-zinc-700 disabled:opacity-40"
-              title="Troca o titular mais cansado pelo reserva mais descansado da mesma posição"
-            >
-              Energia
-            </button>
-            <button
-              onClick={() => quickSub("posicao")}
-              disabled={subsLeft <= 0}
-              className="rounded bg-zinc-800 px-2.5 py-1 text-[11px] text-zinc-300 hover:bg-zinc-700 disabled:opacity-40"
-              title="Melhora o setor: entra o reserva mais forte que um titular da mesma posição"
-            >
-              Posição
-            </button>
-          </div>
+          {/* o automático vem primeiro e em caixa própria: é um MODO que fica
+              ligado, não uma das trocas imediatas abaixo — lado a lado e com o
+              mesmo rótulo de "RÁPIDA" os dois se confundiam */}
           <button
             type="button"
             role="switch"
             aria-checked={tactics.autoSub ?? false}
             onClick={() => setTactic((t) => (t.autoSub = !t.autoSub))}
             title="No segundo tempo, troca sozinho jogadores esgotados por reservas descansados da mesma posição"
-            className="flex w-full items-center gap-2 text-left"
+            className="mb-2 flex w-full items-center justify-between gap-2 rounded border border-zinc-700 bg-zinc-900/60 px-2.5 py-1.5 text-left hover:bg-zinc-800/60"
           >
-            <span className="w-20 shrink-0 text-[11px] font-semibold text-zinc-500">AUTOMÁTICA</span>
+            <span className="min-w-0 text-[11px] font-semibold text-zinc-300">
+              Substituição automática
+            </span>
             <span
               className="relative inline-block h-3.5 w-7 shrink-0 rounded-full transition-colors"
               style={{ backgroundColor: (tactics.autoSub ?? false) ? "#0891b2" : "#3f3f46" }}
@@ -919,6 +905,32 @@ export default function TacticsModal({ onClose }: { onClose: () => void }) {
               />
             </span>
           </button>
+
+          {/* sub-bloco das trocas imediatas: mesma caixa do container pai, uma
+              escala abaixo (rounded, px-2 py-1.5, título [10px]) */}
+          <div className="mb-2 rounded bg-zinc-900/50 px-2 py-1.5">
+            <p className="mb-1.5 inline-flex items-center gap-1 text-[10px] font-bold text-zinc-500">
+              <GameIcon name="sub" size={10} /> RÁPIDA
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => quickSub("energia")}
+                disabled={subsLeft <= 0}
+                className="rounded bg-zinc-800 px-2.5 py-1 text-[11px] text-zinc-300 hover:bg-zinc-700 disabled:opacity-40"
+                title="Troca o titular mais cansado pelo reserva mais descansado da mesma posição"
+              >
+                Energia
+              </button>
+              <button
+                onClick={() => quickSub("posicao")}
+                disabled={subsLeft <= 0}
+                className="rounded bg-zinc-800 px-2.5 py-1 text-[11px] text-zinc-300 hover:bg-zinc-700 disabled:opacity-40"
+                title="Melhora o setor: entra o reserva mais forte que um titular da mesma posição"
+              >
+                Posição
+              </button>
+            </div>
+          </div>
 
         {/* substituições feitas nesta parada: canceláveis uma a uma antes de retomar */}
         {sessionSubs.length > 0 && (
