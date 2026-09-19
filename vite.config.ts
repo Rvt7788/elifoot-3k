@@ -3,7 +3,16 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
+// aviso de autoria preservado no topo dos arquivos gerados: sobrevive à
+// minificação e acompanha o bundle caso ele seja copiado
+const banner = `/*! Elifoot 3K | Copyright (c) 2026 Rvt7788 <rafaelvteixeira@gmail.com> | Todos os direitos reservados. Licenca proprietaria: copia, modificacao ou redistribuicao sao proibidas sem autorizacao escrita. */`;
+
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: { banner },
+    },
+  },
   plugins: [
     react(),
     tailwindcss(),

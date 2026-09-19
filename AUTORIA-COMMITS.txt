@@ -1,0 +1,112 @@
+8852a833eef1413598cbe30b0f6cc2078908a1bb 2026-09-19T05:29:37-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Listra do campo de nome usa o ciano da sombra da logo
+c5427f57a0ac8ca7e6eec2a99a51c78dabaa765d 2026-09-19T05:27:50-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Google Analytics, config do Vercel e scripts de coleta de elencos
+4509cf1dfee67d8e56fc6e755de8f6facce4b502 2026-07-18T02:22:05-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Slots de save mostram a temporada ao lado do nome do time
+3f9ddf05dc9fd5169a055fdf220d345e5c93703c 2026-07-18T02:16:12-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Bicho cancelavel, assistencias, mercado dinamico, contratos com decisao e elenco compacto
+0848bfb7b08e785b20c658aac3a5169f65dc133d 2026-07-17T22:50:57-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Título Últimos resultados pode quebrar linha, alinhado à esquerda
+51064e8f5de3d69ecd6593b841e0bbc40241f70a 2026-07-17T22:31:26-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Títulos clicáveis alinhados à esquerda, sem quebra de linha
+6dae9bfb9877ae97d1e175b8d67f817cbb23ff05 2026-07-17T13:55:36-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Modais de artilheiros e partidas com histórico completo por jogo
+8df01d33767057aabdf7436e5289549c24d100b0 2026-07-14T09:09:26-03:00 Rvt7788 <rafaelvteixeira@gmail.com> cores boas-vindas
+b3c009ea306fca443bbb13ed9b52161e3e7f8ed8 2026-07-14T08:57:37-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Elencos equilibrados e CTAs cinza; sombra colorida no modal
+dcaf116354944fc8bd786cef315617345352a1f9 2026-07-14T08:42:43-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Mercado dinâmico da IA: duas janelas por ano com dinheiro de verdade
+b70b6e3015b646e51d75ac274b7d86b9bcc21dc5 2026-07-14T08:42:12-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Reequilibra a evolução: banco evolui perto de quem joga
+8f792e2b9b8335615c1b94650d0798845688d9d7 2026-07-14T08:42:12-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Rankings completos em modal e botão flutuante sem seleção de texto
+f302be0268a42776f3b5a5a019d5e3b23191d244 2026-07-14T00:39:51-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Remove o glow ciano da logo no ao vivo
+d5fac7aabff4008706b172a299d2c6905c367816 2026-07-14T00:37:11-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Manchete de goleada com o placar do vencedor primeiro
+0c5bc373f4984c9e6b86177cda8b9df0835a375c 2026-07-14T00:37:11-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Scroll para o topo ao entrar no ao vivo pelo botão play
+763ad9792397d3287ef205896c6d24252cc3394b 2026-07-14T00:37:11-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Pausa os jogos ao vivo com qualquer modal aberto
+1453af0596c1fb6fc1ab93d42fa74be98ed23117 2026-07-14T00:31:17-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Nome do time em pílula com as cores do clube nos modais
+b46c075efd418ab89705a2bd30fe7a65cbf97e09 2026-07-14T00:12:51-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Remove .pngs sem uso da raiz do projeto
+c12479464b57dcca4ea9fce6e23e5f5baf3980e3 2026-07-14T00:11:20-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Ícone do app com fundo sólido escuro
+e42f8fbd72eded694e00b17898bd8e8d7bb7d865 2026-07-13T23:56:13-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Ícone do app atualizado com a nova arte
+6dae99712521b27342321b0b8f53ec29b4f00750 2026-07-13T23:45:26-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Novo ícone do app (fundo transparente) e favicon com board.png
+e318e220dccc8d83442f92273162e86343153bca 2026-07-13T22:58:14-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Destaques da temporada com ícones .png no lugar dos emojis
+109e6b9c83d7e4ade4c38605ce9ce6e1c9104862 2026-07-13T22:55:34-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Glória eterna: taça trophy.png sem coroa, títulos listados e botão cinza
+168d60761c970b7045b265ec3fe14b3f8f83e9b4 2026-07-13T22:50:25-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Diálogo de confirmação não cancela sozinho com o click do gesto que o abriu
+8d8c6ee7e19298d59b2a3d2d37613b6e80a844e1 2026-07-13T22:43:43-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Ícone play.png na home e verde único no FAB de pause
+8b9f985644b8dfa25fa3b6e31ce67e22b632acef 2026-07-13T22:39:52-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Ícones .png de play/pause no botão flutuante (512→192)
+211584bb796d066c11ec541a5003a02377d5b4b1 2026-07-13T22:26:03-03:00 Rvt7788 <rafaelvteixeira@gmail.com> FAB no canto não cancela mudanças: overlay ignora click pós-gesto
+c49c95d33ae8a438e98e6ab090e7559b5e62b512 2026-07-13T19:45:14-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Botão flutuante da parada tática abre confirmação em vez de desfazer
+10c00e3e0a69dfb3cdf82a82f3199948b1caa72a 2026-07-13T19:33:53-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Botão flutuante nunca sai da tela: trava nas bordas e reset automático
+184debb705dfd69e49e7121f6c5877586520f434 2026-07-13T19:29:42-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Fluxo de demissão com tela própria, pulo de temporada e convite garantido
+6feafab8e039e8298faaa440204598cf709e66ae 2026-07-13T19:28:11-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Arrasto fluido do botão flutuante e ícone metálico home
+ca84d018c9e2d90def476c8589d8f97fba7fabe1 2026-07-13T18:34:10-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Economia de copas fixa por fase, ofertas nunca abaixo do valor e respiro entre gols
+63533e009c130055e0e9d6a8f0dbe7aa4c2544bf 2026-07-13T16:30:42-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Ajustes de UI: notícias, parada tática e mercado
+56bb8d67c3f1ddac5a0d622766c4b08cdbf4cba4 2026-07-13T15:59:02-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Ícones metálicos próprios substituem emojis na UI
+8be674387ba91a75f2d270be42d966daa77233e8 2026-07-13T14:14:14-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Relevo metalizado nos botões Assistir e Pular da home
+f54212bc616fe446692a3e81133c3d08a2411fad 2026-07-13T14:10:15-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Redesign da UI ao vivo/home e ajustes de motor
+01d16765385151c26748c2d80d3e4d90c46aa3d9 2026-07-13T00:24:29-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Badges de capitão/pênalti não sobem mais a bolinha do jogador
+05e8339d1436fd3838fce50ed30906f08c33f168 2026-07-13T00:14:07-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Nova logo transparente no cabeçalho e na tela de novo jogo
+3d059707728b66bb7ac3524b153ae11f85bea069 2026-07-13T00:04:28-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Cartão vermelho suspende de verdade na próxima rodada
+30f968254391779457903ab217199a7f748ea54f 2026-07-12T22:54:51-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Abrevia nome de time grande nos resultados para o placar caber
+25087abfde7a5e8992ad5754f25c2dfcc810f39b 2026-07-12T22:46:53-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Home mostra copas nos resultados, save retoma jogo pausado, premiação fixa
+551d6b2065c77536d40d5f4bfe1365e9aa0f2ad5 2026-07-12T17:34:47-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Badges de capitão/cobrador indicam seleção: anel verde ao armar e no hover (prancheta e listas)
+558adea2cd6c561001cee3d3bc1b212240d10444 2026-07-12T17:30:23-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Venda rápida com deságio, propostas da IA realistas e modal de oferta compacto
+7f1b37f333961688c137f2634e6187bf6f57c7c0 2026-07-12T16:56:27-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Demissão por moral zerada com convite de volta, mercado da IA na virada, cancelar sub na parada, premiações consistentes
+3279b9657cc90976c359d92982e684a8b62ef94c 2026-07-12T15:29:45-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Badges de capitão/pênalti, Modal de convite, Notícias da rodada, Parada tática pausa o jogo
+615b73d792957d03bd64a918ad8bc96355cb3227 2026-07-12T12:43:09-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Parada tática reorganizada e sem spoiler de pênalti
+2226eb22f302cc0070de92ed6e3d1efd3812dc38 2026-07-12T12:42:54-03:00 Rvt7788 <rafaelvteixeira@gmail.com> UI: badges de capitão/cobrador em todas as listas, prancheta por lado do campo, contraste para times escuros
+19ac2a226bdec9ec732ad84e2351f242c2f569eb 2026-07-12T12:42:37-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Motor: trait Líder com bônus de capitão, pênaltis e lesões recalibrados, substituição unificada; trava de números de camisa
+212de7e7cd8d50c94de07b01f52cd554bc5545ff 2026-07-12T01:06:24-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Designated penalty taker on the tactics board; penalty modal with suspense and auto-resume; remove match row flashing
+c4e0fa9222ff87110cea765453ef8dbd50d20f2f 2026-07-12T00:46:37-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Penalties in the match engine with auto-taken penalty modal; intro tagline moved into body text; mobile fix: stats card no longer pushes play buttons past the club card edge
+f12d671881de07bc4d523fe635a4ceeb1b70d4d7 2026-07-11T21:42:20-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Prancheta do clube: parada tática e análise, país só Brasil
+7fc8345cb9630189b22f3c690a5d9227987b6854 2026-07-11T16:57:47-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Realistic red card impact: numeric inferiority penalties
+13aaa5583fb3794b47e1b05a13d012dba7140634 2026-07-11T14:54:44-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Auto formation button: confirmation modal on apply and green active state when current setup matches
+9a3692e4d9bb13ebf9f63814347106d63dd72b99 2026-07-11T14:29:26-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Auto formation button styled like the lineup buttons, slightly larger
+7cfac00f6d49df5cfb09740eb50770901549903c 2026-07-11T14:28:18-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Next-match card: auto formation button below Analisar; opponent-based tactics logic extracted to game/autoTactics.ts
+6f5685c3bb2bbd0b3e85656a8adf92551ad5badd 2026-07-11T13:48:16-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Squad expand: traits line right after birth date, per-competition yellow line removed
+6d0c7d2930796f6f2965ad82ac53512d952f2004 2026-07-11T13:44:10-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Remove winning-players ranking; move per-competition yellow cards below traits in squad expand
+e078f7849407a500285fd8217e6791d3faea3022 2026-07-11T13:38:30-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Season-end modal: club-color bar moved above the league position row, full container width
+cbf6b46ab388fe5b3fa06c150b1b02abd9c4012f 2026-07-11T13:33:26-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Season-end modal with club colors, round news as modal, softer retirement curve
+c418f674427d57d5fd0541966d07d36b49fe9098 2026-07-11T13:17:43-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Rewrite match engine core: continuous chance creation, strong home advantage scaled by morale, meaningful traits and tactics
+5b2a934006d1494f622f47aac5a3da6adf1a07ca 2026-07-11T13:16:33-03:00 Rvt7788 <rafaelvteixeira@gmail.com> UI fixes: rounded buttons, modal scroll, match list and tactics pause improvements
+e64cdbdca75967a846cdb21efb0fdae263a2a392 2026-07-11T04:05:00-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Auto-replace injured starters with best healthy reserves of the same position in finishMatchday
+24103bf150075674853b429f7fdf1019efc49931 2026-07-11T04:02:05-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Update match simulation moraleBoost calculation to align with the same 40%-60% neutral/gradual thresholds (up to +10% boost or -10% penalty to player strength)
+e943fa4150e1579a370ef75b456c788938bc2289 2026-07-11T04:00:42-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Update crowdMorale calculation to scale occupancy based on morale thresholds (boosting above 60%, flat neutral between 40%-60%, penalizing below 40%)
+ddcea4264bd4d75bd5e6867d0650e01d1c3cf4dd 2026-07-11T03:57:01-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Refactor morale algorithm to support venue-based scaling (home draws and losses hurt morale) and remove descriptive morale text
+a57e437606f1ae867c63699031444156aa9f7efe 2026-07-11T03:55:24-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Adjust yellow stats card and club banner container heights for better vertical spacing on mobile
+fbde139115ab04d3827fb666823a345355de9bac 2026-07-11T03:53:06-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Rewrite career start welcome messages to be more immersive and narrative
+887241074d1080d881c990d7d987b608d22bd5ec 2026-07-11T03:50:29-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Fix season transitions, highlights modals, injury/suspension blocks, and tactical stop swapping
+2aef2690ab1d4cf5f6be032cc805c367b263e433 2026-07-11T02:50:15-03:00 Rvt7788 <rafaelvteixeira@gmail.com> feat: escalação fora de posição, parada tática com desfazer e scroll travado nos modais
+7016e3fee7e3074f1c6670721ba5d2abfc40f38e 2026-07-11T00:15:07-03:00 Rvt7788 <rafaelvteixeira@gmail.com> feat: moral do time, notícias, lesões, estádio, finanças e mercado reorganizado
+d5921f4f19084a36af2e7d523a1e46c30c15f9ac 2026-07-10T23:06:40-03:00 Rvt7788 <rafaelvteixeira@gmail.com> fix: escalar por adversário nunca sugere marcação extrema
+6ec01d79af0ebb01aaa1c0eab51dd519fbf08e1c 2026-07-10T23:05:35-03:00 Rvt7788 <rafaelvteixeira@gmail.com> feat: pull-to-refresh liberado apenas na Home
+46144754f175e22ffa06a05c3837871087533226 2026-07-10T23:05:15-03:00 Rvt7788 <rafaelvteixeira@gmail.com> fix: slots de save em IndexedDB para não estourar a cota do localStorage
+7229d80e26ac9895c5af11cbe79982c940aff1d1 2026-07-10T23:03:30-03:00 Rvt7788 <rafaelvteixeira@gmail.com> feat: rankings com escopo temporada/geral e vitórias por técnico
+c3f3471e92290aa90ae70442b1234dd6c1610643 2026-07-10T23:03:11-03:00 Rvt7788 <rafaelvteixeira@gmail.com> fix: gol era gravado em cópia descartável do jogador e nunca contabilizava
+a813e27ee36986a55e37ff1d2e29fdf4d37752f8 2026-07-10T22:13:36-03:00 Rvt7788 <rafaelvteixeira@gmail.com> feat: sorteio de clube com 5% de chance de time bom da Série B
+f2c33f4a8acc5f53fdb53fa535919ed8203e8461 2026-07-10T22:12:37-03:00 Rvt7788 <rafaelvteixeira@gmail.com> feat: rebalancear finanças com cota de TV por rodada e salários menores
+6f5fb7b5eb45a51e5f98c32c5f6c175b43e99dd1 2026-07-10T22:12:18-03:00 Rvt7788 <rafaelvteixeira@gmail.com> feat: modal de proposta com botão Aceitar simples e consulta ao elenco
+3120e830e158702796888580e162399d371261d6 2026-07-10T21:44:39-03:00 Rvt7788 <rafaelvteixeira@gmail.com> feat: permitir troca de posição entre titulares de setores diferentes no modal tático
+0f80c211fa3455bcf92b16cf2b94cd35cfb18da9 2026-07-10T21:21:50-03:00 Rvt7788 <rafaelvteixeira@gmail.com> feat: botão "Por adversário" monta formação e tática pela força do rival
+c5e050f906a3fbb61dd49f5c256345703926a5fb 2026-07-10T21:09:00-03:00 Rvt7788 <rafaelvteixeira@gmail.com> style: alinhar alturas do botão Jogar e card posição/orçamento e destacar números em branco
+47a50913b731a9af006635434cb54f1c663aefbb 2026-07-10T21:00:49-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Fix absolute height and padding alignment for play button and banner
+086c6941066513004084cf4fd3da7ae38bd0839a 2026-07-10T20:58:35-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Align gaps and height of dashboard header containers on desktop
+d2ca2a20ab2e1a785ef394188f79d7be0dc8a209 2026-07-10T20:51:36-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Refactor transfer market layout, format statistics columns, expand player details in sell tab, simplify formation modal, and optimize matchday dashboard layout
+be0dfe4f265268741d334d99b95b57f3a27c77da 2026-07-10T19:10:36-03:00 Rvt7788 <rafaelvteixeira@gmail.com> feat: refatorar layout da Home, Taticas e Elenco e desativar pull-to-refresh
+4134be59038f21b31711b360132ed5f396d134b5 2026-07-10T18:29:00-03:00 Rvt7788 <rafaelvteixeira@gmail.com> style: ocultar cabeçalhos em jogos ao vivo, unificar destaque e ajustar espaçamentos
+2c21261fecefff90a34ffc353cb168d79d7aa440 2026-07-10T17:06:47-03:00 Rvt7788 <rafaelvteixeira@gmail.com> fix: elenco, ranking, técnicos, várias features do motor do jogo
+492419f1798bf68575fc9aae5e3424f5b842b42c 2026-07-10T14:40:05-03:00 Rvt7788 <rafaelvteixeira@gmail.com> feat: refatora sistema de suspensões e aprimora prancheta tática ao vivo - Implementa suspensões e acúmulos de cartões isolados por competição (Liga, Copa Nacional e Continental). - Adiciona regra de suspensão por acúmulo de 3 cartões amarelos em uma mesma competição. - Implementa trava de segurança no fechamento do modal de táticas se o time estiver sem goleiro. - Permite improvisação de jogadores de linha no gol (GOL) em caso de goleiro expulso. - Corrige compatibilidade de substituição para permitir trocar um goleiro improvisado diretamente por um goleiro reserva. - Ajusta a mudança de formação durante a partida para realocar automaticamente jogadores sobressalentes em outros setores. - Atualiza substituição rápida por posição para priorizar a troca de jogadores fora de posição (improvisados). - Cancela automaticamente a sugestão rápida se o usuário iniciar uma alteração manual na prancheta. - Simplifica a sinalização visual de compatibilidade na prancheta usando opacidade em vez de colorir os pinos de vermelho.
+469d44451a46480f8a5ccd18b9064a68bfa5b405 2026-07-10T13:34:54-03:00 Rvt7788 <rafaelvteixeira@gmail.com> fix: todos jogadores reais e idade atualizadas, plano de aposentadoria entre outras melhorias
+683f41626ce2382ccd05cb0887074ef99badcaca 2026-07-10T03:44:50-03:00 Rvt7788 <rafaelvteixeira@gmail.com> fix: adiciona fallback de seguranca para formacao no save e ajusta tabelas
+69784d0e3ac49d7589b2f1ca487d28d4d1126dec 2026-07-10T03:38:18-03:00 Rvt7788 <rafaelvteixeira@gmail.com> design: ajusta layout de reservas e alinhamento na aba de tabelas
+cf412e8c605f2c6e4f78ae2d7ae856def49aeb75 2026-07-10T03:32:49-03:00 Rvt7788 <rafaelvteixeira@gmail.com> design: melhorias responsivas no layout mobile da ClubHome
+e01b7cc3d8a1f7e040b7e9c423325517eb5a631e 2026-07-10T03:28:45-03:00 Rvt7788 <rafaelvteixeira@gmail.com> fix: corrige bug de confirmacao de tacticas sem alteracoes
+9f62e7bc7caf6d6271d8a401aa8b52b7c6f9b4fd 2026-07-10T03:22:01-03:00 Rvt7788 <rafaelvteixeira@gmail.com> feat: melhorias no mercado, lógica de substituição e layout mobile
+6ececbe2fffd2908b932f5c9d46485d426fdc37c 2026-07-10T03:11:24-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Add market filters and improve matchday mobile layout
+1eca1d7edd9fb4763ce7d707ae56b4350e125fbe 2026-07-10T02:44:35-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Add roster ages and save slots
+37a2193fb7945a7c79db3951480a3dbf2b05ceb9 2026-07-10T02:02:23-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Carreira do zero, fase de grupos continental, estatisticas e UX da rodada
+be8158d240fcbd33db29633bfdfe351878adfbf4 2026-07-09T20:05:24-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Fix squad depth and competition flow
+04d5820e42ff3e953bdddef35ae6d948480f4909 2026-07-09T03:00:06-03:00 Rvt7788 <rafaelvteixeira@gmail.com> feat: update tactics and squad management
+c7cad7c41eee88064eff23f9e163714a60818e15 2026-07-08T22:37:44-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Ajusta cabecalho: botao Iniciar jogo maior e sempre verde, Ao vivo so fora da rodada
+c7e8f10c1451fd6393ad70bb316a8a01305e137b 2026-07-08T21:58:26-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Transforma o jogo em PWA instalavel, usando a logo como icone
+1b89db25713c11bb003e164996893f0c6ebb4db0 2026-07-08T21:51:44-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Finalizacao considera formacao, mentalidade e sorte, nao so posicao fixa
+0f3e18fd9e781f596780001a8120e775472e7fe9 2026-07-08T21:48:13-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Escalar por Forca/Energia ja aplica o melhor time no clique
+88b9811f08811e023d70997c90891d5b8a704fbc 2026-07-08T21:46:50-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Reorganiza painel de comando da prancheta do Clube
+f7eaf5b12ea6bd7b0d96fb76dedf47de1a594a62 2026-07-08T21:45:12-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Rebalanceia forca dos elencos por divisao, nomes reais e prancheta
+0e0c77c2e4a5367506f7b060047b7040ee10241c 2026-07-08T21:35:22-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Completa levantamento de elencos reais para todos os clubes
+fb375f590c16c81a074b850fa8c737a1b34a4b9e 2026-07-08T21:11:22-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Liga italiana (40 clubes) + banco de convidados continentais
+a4c3641aa74fda2a578f1500e36db63249460ada 2026-07-08T21:07:04-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Levantamento: clubes com historico de Libertadores e Champions
+e43bc4c84b1b894f33a4b52c3213acc950b337ec 2026-07-08T21:05:34-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Prancheta sem emojis, formacoes clicaveis, trocas por slot e cores do clube
+cd29925a6f7b29b79ee41bc61c3659e79c874858 2026-07-08T20:53:22-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Tela inicial: nome do tecnico, sorteio de time e bandeiras
+f05ab3b08824d5985c769a31c53d879b4b8d0fa8 2026-07-08T20:26:46-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Redesign da tela inicial baseado na logo
+79073e010eb546c1478501a77c2f911704bfccef 2026-07-08T20:21:51-03:00 Rvt7788 <rafaelvteixeira@gmail.com> Initial commit: Elifoot 3K (retro-manager-2026)
