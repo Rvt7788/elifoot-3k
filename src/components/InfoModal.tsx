@@ -25,8 +25,13 @@ export default function InfoModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative mb-3 flex items-center justify-center">
-          <h2 className="flex items-center gap-2 text-base font-bold">
-            <GameIcon name={icon} size={17} /> {title}
+          {/* o título é que fica centralizado: o ícone sai do fluxo e se
+              pendura à esquerda dele, sem empurrar o texto para o lado */}
+          <h2 className="relative text-lg font-bold">
+            <span className="absolute right-full top-1/2 mr-2 -translate-y-1/2">
+              <GameIcon name={icon} size={19} />
+            </span>
+            {title}
           </h2>
           <button onClick={onClose} className="absolute -right-1 -top-0.5 px-1 text-zinc-400 hover:text-white">✕</button>
         </div>
