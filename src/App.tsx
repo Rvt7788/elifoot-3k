@@ -636,7 +636,7 @@ export default function App() {
   return (
     <div className="min-h-screen">
       {!liveHappening && (
-        <header className="sticky top-0 z-40 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur">
+        <header className="sticky top-0 z-40 border-b border-zinc-800 bg-zinc-950">
           {/* mobile: 3 linhas empilhadas (logo, abas, iniciar rodada); md+: 1 linha centralizada */}
           <div className="mx-auto flex max-w-5xl flex-col items-center gap-1.5 px-3 py-2 md:flex-row md:flex-wrap md:justify-center md:gap-4">
             <img
