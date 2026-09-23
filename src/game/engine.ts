@@ -13,20 +13,40 @@ export const DEFAULT_TACTICS: Tactics = {
   autoSub: false,
 };
 
-const MENTALITY_ATT: Record<Mentality, number> = {
-  defensivo: 0.6,
-  equilibrado: 1.0,
-  ofensivo: 1.35,
-  tudo_ou_nada: 1.75, // aposta tudo no ataque — o time mais decidido/arriscado do jogo
+// Divisão de cada setor entre as fases do jogo, por mentalidade: fração do setor
+// que participa do ATAQUE; o resto é quem fica atrás da linha da bola. São sempre
+// os mesmos 10 jogadores de linha — quem sobe não está lá para recompor. É isso que
+// impede o "macete" de encher o time de atacantes: cada corpo a mais na frente é um
+// a menos atrás, o rival cria mais e contra-ataca num campo aberto.
+const PHASE_SPLIT: Record<Mentality, Record<"DEF" | "MEI" | "ATA", number>> = {
+  defensivo: { DEF: 0.04, MEI: 0.3, ATA: 0.72 },
+  equilibrado: { DEF: 0.1, MEI: 0.5, ATA: 0.85 },
+  ofensivo: { DEF: 0.18, MEI: 0.62, ATA: 0.92 },
+  tudo_ou_nada: { DEF: 0.3, MEI: 0.75, ATA: 1 }, // laterais e volantes no ataque, atrás só sobra a zaga
 };
 
-// "Tudo ou nada" também abre mão de parte da defesa em troca desse volume ofensivo
-// (time joga com a linha alta, sem se preocupar em voltar): mais chance de sofrer gol.
-const MENTALITY_DEF: Record<Mentality, number> = {
-  defensivo: 1.15,
-  equilibrado: 1.0,
-  ofensivo: 0.95,
-  tudo_ou_nada: 0.65,
+// Rendimento de cada setor fora da sua função: zagueiro que sobe não finaliza como
+// atacante, atacante que recompõe não marca como zagueiro. Deslocar gente de função
+// sempre desperdiça força — o equilibrado é a mentalidade de menor desperdício.
+const PHASE_EFF = {
+  atk: { DEF: 0.5, MEI: 0.9, ATA: 1 },
+  def: { DEF: 1, MEI: 0.9, ATA: 0.5 },
+} as const;
+
+// Rendimento decrescente por linha: além do número natural de jogadores de cada
+// setor, o excedente ocupa o mesmo espaço dos companheiros. Encher o ataque de
+// gente é o caso mais crítico — três atacantes ainda somam, quatro se atropelam.
+const CROWDING: Record<Position, number[]> = {
+  GOL: [1],
+  DEF: [1, 1, 1, 1, 0.8],
+  MEI: [1, 1, 1, 1, 0.85],
+  ATA: [1, 1, 0.8, 0.55],
+};
+
+// Mentalidade na disputa de território: quem propõe o jogo empurra o rival para
+// trás; o defensivo cede a bola de propósito para fechar os espaços.
+const MENTALITY_CTRL: Record<Mentality, number> = {
+  defensivo: 0.86, equilibrado: 1, ofensivo: 1.07, tudo_ou_nada: 1.02, // tudo ou nada é chutão, não construção
 };
 
 // Marcação: mais apertada rende mais desarmes (bônus no volume) mas cansa mais rápido;
@@ -36,14 +56,21 @@ const MENTALITY_DEF: Record<Mentality, number> = {
 const MARKING_DRAIN: Record<Marking, number> = {
   leve: 0.8,
   frouxa: 1.0,
-  apertada: 1.3,
+  apertada: 1.22,
   extrema: 1.9,
 };
-const MARKING_POWER: Record<Marking, number> = {
-  leve: -3,
-  frouxa: 0,
-  apertada: 5,
-  extrema: 9,
+// Solidez da fase defensiva e recuperação de bola (território) por marcação.
+const MARKING_DEF: Record<Marking, number> = {
+  leve: 0.93,
+  frouxa: 1,
+  apertada: 1.08,
+  extrema: 1.17,
+};
+const MARKING_CTRL: Record<Marking, number> = {
+  leve: 0.94,
+  frouxa: 1,
+  apertada: 1.06,
+  extrema: 1.08,
 };
 
 // Força efetiva em campo, por energia: curva gradual, não mais um corte abrupto.
@@ -199,6 +226,36 @@ export function aiPregameTactics(mySquad: Player[], oppSquad: Player[], aggressi
   return t;
 }
 
+// Formação pré-jogo da IA: a faixa de opções vem da força relativa (mais fraco
+// fecha o meio ou a defesa, mais forte abre o time) e, dentro dela, cada clube tem
+// o seu estilo de casa. Sem isso a IA jogava sempre de 4-4-2 e qualquer desenho
+// que encaixasse contra o 4-4-2 virava receita garantida.
+export function aiPregameFormation(
+  clubId: string, mySquad: Player[], oppSquad: Player[],
+  competition: "league" | "cup" | "continental" = "league",
+): Exclude<Formation, "custom"> {
+  const xiStrength = (squad: Player[]) =>
+    bestXI(squad, "4-4-2", false, competition).reduce((s, id) => s + (squad.find((p) => p.id === id)?.strength ?? 0), 0);
+  const ratio = xiStrength(mySquad) / Math.max(1, xiStrength(oppSquad));
+  const band: Exclude<Formation, "custom">[] =
+    ratio < 0.85 ? ["4-5-1", "5-3-2", "4-4-2"]
+    : ratio < 0.95 ? ["4-5-1", "4-4-2", "3-5-2"]
+    : ratio <= 1.05 ? ["4-4-2", "4-3-3", "3-5-2", "4-5-1"]
+    : ratio <= 1.15 ? ["4-3-3", "4-4-2", "3-5-2"]
+    : ["4-3-3", "3-4-3", "4-4-2"];
+  const available = mySquad.filter((p) => !isSuspended(p, competition) && !isInjured(p));
+  const canFill = (f: Exclude<Formation, "custom">) => {
+    const shape = shapeOf(f);
+    const n = (pos: Position) => available.filter((p) => p.pos === pos).length;
+    return n("GOL") >= 1 && n("DEF") >= shape.DEF && n("MEI") >= shape.MEI && n("ATA") >= shape.ATA;
+  };
+  // estilo da casa: hash estável do clube escolhe a preferida dentro da faixa
+  let h = 0;
+  for (const ch of clubId) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const ordered = [...band.slice(h % band.length), ...band.slice(0, h % band.length)];
+  return ordered.find(canFill) ?? "4-4-2";
+}
+
 export function createLiveMatch(
   homeId: string,
   awayId: string,
@@ -213,8 +270,8 @@ export function createLiveMatch(
   homeSlotOrder?: string[],
   awaySlotOrder?: string[],
   competition: "league" | "cup" | "continental" = "league",
-  homeFormation: Formation = "4-4-2",
-  awayFormation: Formation = "4-4-2",
+  homeFormationArg?: Formation,
+  awayFormationArg?: Formation,
   homeCustomFormation?: CustomFormation,
   awayCustomFormation?: CustomFormation,
   homeMorale = 0.5,
@@ -226,6 +283,11 @@ export function createLiveMatch(
   homeCaptainId?: string,
   awayCaptainId?: string,
 ): LiveMatch {
+  // lado do usuário (com táticas) usa a formação dele; lado da IA escolhe a sua
+  const homeFormation: Formation = homeFormationArg
+    ?? (homeDefaultTactics ? "4-4-2" : aiPregameFormation(homeId, homeSquad, awaySquad, competition));
+  const awayFormation: Formation = awayFormationArg
+    ?? (awayDefaultTactics ? "4-4-2" : aiPregameFormation(awayId, awaySquad, homeSquad, competition));
   return {
     homeMorale, awayMorale,
     homePenaltyTakerId, awayPenaltyTakerId,
@@ -310,49 +372,99 @@ function orderedLine(
 
 function sectorPower(
   lineup: LivePlayer[], idx: PlayersIndex, pos: Player["pos"], slotOrder?: string[],
-): { total: number; energyAvg: number } {
+): { total: number; count: number } {
   const onField = orderedLine(lineup, idx, pos, slotOrder);
-  if (onField.length === 0) return { total: 1, energyAvg: 50 };
-  const total = onField.reduce(
-    (s, lp, i) =>
-      s +
+  if (onField.length === 0) return { total: 0, count: 0 };
+  const contrib = onField
+    .map((lp, i) =>
       effStrength(idx[lp.playerId], lp) *
-        (pos === "GOL" ? 1 : footFactor(idx[lp.playerId].foot, i, onField.length)),
-    0,
-  );
+        (pos === "GOL" ? 1 : footFactor(idx[lp.playerId].foot, i, onField.length)))
+    .sort((a, b) => b - a);
+  // linha congestionada rende menos por jogador: os mais fortes contam cheio e os
+  // excedentes disputam o mesmo espaço (o 4º atacante pouco acrescenta)
+  const crowd = CROWDING[pos];
+  const total = contrib.reduce((s, v, i) => s + v * (crowd[i] ?? crowd[crowd.length - 1]), 0);
+  // intensidade: além da curva individual, o setor inteiro perde ritmo com o cansaço
   const energyAvg = onField.reduce((s, lp) => s + lp.energy, 0) / onField.length;
-  return { total, energyAvg };
+  return { total: total * (0.6 + 0.4 * energyAvg / 100), count: onField.length };
 }
 
-// Poder ofensivo bruto: (Meio-Campo × Energia) + (Ataque × Mentalidade), fórmula do GDD.
-function attackPower(lineup: LivePlayer[], idx: PlayersIndex, t: Tactics, slotOrder?: string[]): number {
-  const mid = sectorPower(lineup, idx, "MEI", slotOrder);
-  const att = sectorPower(lineup, idx, "ATA", slotOrder);
-  let power = mid.total * (mid.energyAvg / 100) + att.total * MENTALITY_ATT[t.mentality];
-  if (t.truculencia) power += 8; // bônus pesado de desarme no volume
-  // Bicho: motivação proporcional ao nível pago, com teto saudável de +10% —
-  // acima disso o prêmio viraria botão de vitória. Saves antigos (sem pct) mantêm 10.
-  if (t.bicho) power *= 1 + Math.min(10, Math.max(0, t.bichoPct ?? 10)) / 100;
-  return power;
+// Como o time se distribui em campo neste minuto: força e corpos em cada fase.
+interface TeamShape {
+  atk: number; // força de quem participa do ataque
+  def: number; // força de quem fica atrás da linha da bola
+  total: number; // força total do time (escala da comparação ataque×defesa)
+  ctrl: number; // disputa de meio-campo: posse e território
+  atkBodies: number; // gente chegando na área rival
+  defBodies: number; // gente recompondo atrás
+  restDef: number; // zagueiros que ficam na cobertura quando o time sobe (contragolpe)
+  nDef: number; // zagueiros em campo (linha de trás)
+  nAta: number; // atacantes em campo (quem prende a zaga rival)
 }
 
-// Poder defensivo: setor DEF, também sensível à energia; goleiro entra como reforço leve.
-// A marcação (leve/frouxa/apertada) soma ou tira volume de desarme.
-function defensePower(lineup: LivePlayer[], idx: PlayersIndex, t: Tactics, slotOrder?: string[]): number {
-  const def = sectorPower(lineup, idx, "DEF", slotOrder);
-  const gk = sectorPower(lineup, idx, "GOL");
-  return (def.total * (def.energyAvg / 100) + gk.total * 0.3 + MARKING_POWER[t.marking]) * MENTALITY_DEF[t.mentality];
+// Referências de um 4-4-2 equilibrado: as contas de volume e de conversão são
+// relativas a esse time "padrão", então ele joga exatamente como o motor calibrado.
+const REF_EDGE = -0.185; // (ataque − defesa rival) / força média, 4-4-2 equilibrado × igual
+const REF_ATK_BODIES = 4.1;
+const REF_BODY_RATIO = 5.9 / 4.1;
+const REF_REST_DEF = 3.6;
+
+// Calibragem global (scripts/tac-lab.mts varre esses valores): mando de campo,
+// volume de chances, peso do território e da relação ataque×defesa, contragolpe.
+export const TUNE = {
+  homeAdv: 1.08,
+  chanceBase: 0.038,
+  shareExp: 1,
+  ratioExp: 4,
+  counterBase: 0.005,
+  exposureCap: 4,
+  expBodies: 1,
+  expRest: 3,
+};
+
+// Vantagem do ataque de um lado sobre a defesa do outro, relativa ao 4-4-2 padrão.
+// Comparação por DIFERENÇA, na escala da força média dos dois times: mover um
+// jogador da defesa para o ataque abre o jogo na mesma medida para os dois lados
+// (mais chances para mim, mais para o rival). Jogo aberto favorece quem é melhor;
+// jogo fechado, o mais fraco — não existe forma "grátis" de atacar mais.
+function edgeFactor(me: TeamShape, opp: TeamShape): number {
+  const edge = (me.atk - opp.def) / ((me.total + opp.total) / 2);
+  return Math.max(0.2, Math.min(5, Math.exp(TUNE.ratioExp * (edge - REF_EDGE))));
 }
 
-// Poder líquido do time no confronto: ataque próprio reduzido pela defesa adversária,
-// então mais defensores (formações como 5-3-2) seguram melhor o jogo e formações
-// ofensivas (4-3-3, 3-5-2) sofrem mais atrás.
-function teamPower(
-  lineup: LivePlayer[], idx: PlayersIndex, t: Tactics, oppDefense: number, slotOrder?: string[],
-): number {
-  const atk = attackPower(lineup, idx, t, slotOrder);
-  const defFactor = 140 / (140 + oppDefense); // defesa forte adversária reduz o volume
-  return atk * defFactor;
+// Encaixe das linhas: a zaga precisa de um homem de sobra sobre os atacantes do
+// rival. Três zagueiros contra dois atacantes é seguro; contra três, cada um fica
+// no mano a mano e qualquer bola nas costas vira chance clara. Devolve o quanto a
+// defesa fica exposta (1 = coberta; maior = sem sobra ou em inferioridade).
+function backlineExposure(def: TeamShape, atk: TeamShape): number {
+  const spare = def.nDef - atk.nAta;
+  return spare >= 1 ? 1 : spare >= 0 ? 1.15 : 1.3;
+}
+
+// q = qualidade geral do time no dia (mando, moral, liderança, bicho, expulsões):
+// vale nas duas fases, não só no ataque.
+function teamShape(lineup: LivePlayer[], idx: PlayersIndex, t: Tactics, q: number, slotOrder?: string[]): TeamShape {
+  const split = PHASE_SPLIT[t.mentality];
+  let atk = 0, def = 0, total = 0, atkBodies = 0, defBodies = 0;
+  const s = {} as Record<"DEF" | "MEI" | "ATA", { total: number; count: number }>;
+  for (const pos of ["DEF", "MEI", "ATA"] as const) {
+    s[pos] = sectorPower(lineup, idx, pos, slotOrder);
+    atk += s[pos].total * split[pos] * PHASE_EFF.atk[pos];
+    def += s[pos].total * (1 - split[pos]) * PHASE_EFF.def[pos];
+    total += s[pos].total;
+    atkBodies += s[pos].count * split[pos];
+    defBodies += s[pos].count * (1 - split[pos]);
+  }
+  // o meio manda na posse, mas todo mundo toca na bola; linha com menos meias perde o miolo
+  const ctrl = (s.MEI.total + 0.35 * (s.DEF.total + s.ATA.total)) * MENTALITY_CTRL[t.mentality] * MARKING_CTRL[t.marking];
+  def *= MARKING_DEF[t.marking] * (t.truculencia ? 1.04 : 1);
+  return {
+    atk: Math.max(1, atk * q), def: Math.max(1, def * q), total: Math.max(1, total * q), ctrl: Math.max(1, ctrl * q),
+    atkBodies: Math.max(0.5, atkBodies), defBodies: Math.max(0.5, defBodies),
+    restDef: s.DEF.count * (1 - split.DEF),
+    nDef: s.DEF.count,
+    nAta: s.ATA.count,
+  };
 }
 
 function bestOnField(
@@ -422,27 +534,6 @@ function pickStriker(
 function randomOnField(rng: Rng, lineup: LivePlayer[], idx: PlayersIndex): Player {
   const cands = lineup.filter((lp) => lp.onField && !lp.sentOff);
   return idx[pick(rng, cands).playerId];
-}
-
-// Contagem de jogadores em campo por setor efetivo (posOverride conta).
-function countSector(lineup: LivePlayer[], idx: PlayersIndex, pos: Position): number {
-  return lineup.filter(
-    (lp) => lp.onField && !lp.sentOff && (lp.posOverride ?? idx[lp.playerId].pos) === pos,
-  ).length;
-}
-
-// Peso do meia na FASE DE ATAQUE, para as contas de vantagem numérica: um 4-5-1
-// não ataca só com o centroavante — os meias sobem e municiam. Cada meia vale uma
-// fração de atacante (mais quando o time propõe o jogo), então a linha de 5 meias
-// deixa de ser tratada como "1 homem no ataque" e passa a gerar/finalizar chances.
-const MID_ATTACK_WEIGHT: Record<Mentality, number> = {
-  defensivo: 0.35, equilibrado: 0.5, ofensivo: 0.65, tudo_ou_nada: 0.75,
-};
-// "Corpos" que efetivamente atacam: atacantes cheios + meias com peso pela mentalidade.
-function attackingBodies(
-  lineup: LivePlayer[], idx: PlayersIndex, mentality: Mentality,
-): number {
-  return countSector(lineup, idx, "ATA") + MID_ATTACK_WEIGHT[mentality] * countSector(lineup, idx, "MEI");
 }
 
 // Jogadores a menos em campo (expulsões): base de todas as penalidades de
@@ -553,7 +644,7 @@ function takePenalty(rng: Rng, m: LiveMatch, idx: PlayersIndex, side: "home" | "
 
 function tryShot(
   rng: Rng, m: LiveMatch, idx: PlayersIndex, side: "home" | "away",
-  counter = false,
+  atkShape: TeamShape, defShape: TeamShape, counter = false,
 ) {
   const atkLineup = side === "home" ? m.homeLineup : m.awayLineup;
   const defLineup = side === "home" ? m.awayLineup : m.homeLineup;
@@ -580,9 +671,6 @@ function tryShot(
   const atkStats = m.stats?.[side];
   const defStats = m.stats?.[side === "home" ? "away" : "home"];
   if (atkStats) atkStats.shots++;
-  // "tudo ou nada" mexe na CONVERSÃO, não só no volume: quem ataca com tudo
-  // finaliza melhor (todo mundo no ataque), e quem defende nessa mentalidade
-  // está com a linha lá na frente — o goleiro fica exposto ao 1×1.
   // Determina assistente em potencial antes de calcular o chute para aplicar bônus do Criativo
   let assistantLp: LivePlayer | undefined = undefined;
   if (chance(rng, 0.65)) {
@@ -610,7 +698,6 @@ function tryShot(
   // contra-ataque pega a defesa aberta; Veloz dispara em velocidade e finaliza no espaço
   if (counter) atk *= striker.traits.includes("Veloz") ? 1.3 : 1.12;
 
-  if (atkTactics.mentality === "tudo_ou_nada") atk *= 1.2;
   // confiança: moral alta melhora a frieza na conclusão, moral baixa trava a perna —
   // é o que transforma domínio em resultado nos jogos apertados
   const atkMorale = (side === "home" ? m.homeMorale : m.awayMorale) ?? 0.5;
@@ -619,23 +706,26 @@ function tryShot(
   // o empate sozinho; o último defensor ajuda menos que o goleiro.
   let gk = (keeper?.strength ?? 5) * 1.15 * (keeper?.traits.includes("Paredão") ? 1.3 : 1);
   gk += (bestDef?.strength ?? 5) * 0.35;
-  // Vantagem numérica na defesa: cada defensor a mais que os atacantes do rival
-  // fecha espaço de verdade (5 DEF × ataque de 2-3 neutraliza chance); em contra-
-  // ataque a linha está desarrumada e o bônus numérico não vale.
-  if (!counter) {
-    const nDef = countSector(defLineup, idx, "DEF");
-    // atacantes efetivos = ATA + meias que sobem: 4-5-1 ataca com muito mais que 1 corpo
-    const nAtk = attackingBodies(atkLineup, idx, atkTactics.mentality);
-    gk *= 1 + Math.max(-0.21, Math.min(0.3, 0.08 * (nDef - nAtk)));
-  }
+  // Superioridade numérica na área: gente recompondo contra gente chegando. Vale
+  // para os dois lados — encher a área rival facilita a conclusão, mas quem subiu
+  // não está atrás, e a próxima chance do adversário encontra a defesa mais vazia.
+  // No contragolpe só conta a zaga que ficou na cobertura: time que manda os
+  // laterais e volantes ao ataque é pego com 2-3 atrás e o goleiro exposto.
+  // zaga sem sobra sobre os atacantes: o finalizador chega no mano a mano
+  gk /= Math.sqrt(backlineExposure(defShape, atkShape));
+  const cover = counter
+    ? defShape.restDef / REF_REST_DEF
+    : (defShape.defBodies / atkShape.atkBodies) / REF_BODY_RATIO;
+  gk *= counter
+    ? Math.max(0.5, Math.min(1.15, cover ** 0.8)) // cobertura rala no contragolpe é fatal
+    : Math.max(0.72, Math.min(1.3, Math.sqrt(cover)));
   // time desfalcado defende com espaços abertos: cada expulso facilita a
   // conclusão do rival (a linha não fecha, o goleiro fica mais exposto)
   gk *= Math.max(0.7, 1 - 0.08 * menDown(defLineup));
-  // marcação dura estraga a finalização; leve dá espaço
-  if (defTactics.marking === "extrema") gk *= 1.12;
-  else if (defTactics.marking === "apertada") gk *= 1.05;
-  else if (defTactics.marking === "leve") gk *= 0.94;
-  if (defTactics.mentality === "tudo_ou_nada") gk *= 0.7;
+  // marcação dura atrapalha a finalização; leve dá espaço
+  if (defTactics.marking === "extrema") gk *= 1.06;
+  else if (defTactics.marking === "apertada") gk *= 1.03;
+  else if (defTactics.marking === "leve") gk *= 0.97;
   const pGoal = Math.min(0.6, Math.max(0.05, (atk / (atk + gk)) * 0.5));
   if (chance(rng, pGoal)) {
     // intervalo mínimo entre gols: a chance de gol vira defesa do goleiro,
@@ -916,67 +1006,58 @@ export function simulateMinute(
     }
   }
 
-  // deslocamento da barra de momentum: ataque de cada lado é freado pela defesa do outro.
-  // A diferença de poder (formação, tática, escalação, energia) agora pesa mais que o
-  // ruído aleatório — decisões do jogador e da IA se refletem de verdade no placar,
-  // mas o ruído continua alto o bastante para permitir zebra e jogo imprevisível.
-  // penalidade global de inferioridade numérica: além de perder a força do
-  // expulso nas somas de setor, o time a menos perde organização/cobertura —
-  // ~15% do poder total (ataque e defesa) por jogador a menos.
-  const homeShort = Math.max(0.55, 1 - 0.15 * menDown(m.homeLineup));
-  const awayShort = Math.max(0.55, 1 - 0.15 * menDown(m.awayLineup));
-  const homeDef = defensePower(m.homeLineup, idx, m.homeTactics, m.homeSlotOrder) * homeShort;
-  const awayDef = defensePower(m.awayLineup, idx, m.awayTactics, m.awaySlotOrder) * awayShort;
-  // moral (0..1): neutra entre 40% e 60%; melhora gradualmente acima de 60% (até +10%);
-  // piora gradualmente abaixo de 40% (até -10%).
+  // ── qualidade do time no dia: vale para atacar E para defender ──
+  // inferioridade numérica: além de perder a força e o corpo do expulso nas contas
+  // de setor, o time a menos perde organização/cobertura — ~10% por jogador a menos.
+  const homeShort = Math.max(0.65, 1 - 0.1 * menDown(m.homeLineup));
+  const awayShort = Math.max(0.65, 1 - 0.1 * menDown(m.awayLineup));
+  // moral (0..1): neutra entre 40% e 60%; melhora gradualmente acima de 60% (até +6%);
+  // piora gradualmente abaixo de 40% (até -6%).
   const moraleBoost = (mor: number | undefined) => {
     const morale = Math.round((mor ?? 0.6) * 100);
-    if (morale > 60) {
-      const pct = (morale - 60) / 35; // 0..1 de 60 a 95
-      return 1.0 + 0.10 * pct;
-    } else if (morale < 40) {
-      const pct = (40 - morale) / 30; // 0..1 de 40 a 10
-      return 1.0 - 0.10 * pct;
-    } else {
-      return 1.0;
-    }
+    if (morale > 60) return 1 + 0.06 * Math.min(1, (morale - 60) / 35);
+    if (morale < 40) return 1 - 0.06 * Math.min(1, (40 - morale) / 30);
+    return 1;
   };
-  // Mando de campo de verdade: a casa vale ~×1,32 no poder, e a moral do mandante
-  // amplia ou encolhe esse empurrão da torcida — moral alta chega perto de ×1,50,
-  // moral no chão derruba para ~×1,18. Fora de casa a moral só mexe no próprio time.
+  // Mando de campo: a torcida empurra o time nas duas fases, e a moral do mandante
+  // amplia ou encolhe esse empurrão. Fora de casa a moral só mexe no próprio time.
   const homeMoraleN = m.homeMorale ?? 0.6;
   const homeAdv =
-    1.35 +
-    (homeMoraleN > 0.6 ? 0.16 * Math.min(1, (homeMoraleN - 0.6) / 0.35)
-      : homeMoraleN < 0.4 ? -0.16 * Math.min(1, (0.4 - homeMoraleN) / 0.3)
+    TUNE.homeAdv +
+    (homeMoraleN > 0.6 ? 0.05 * Math.min(1, (homeMoraleN - 0.6) / 0.35)
+      : homeMoraleN < 0.4 ? -0.05 * Math.min(1, (0.4 - homeMoraleN) / 0.3)
       : 0);
-  // liderança: capitão Líder em campo vale ~5% de poder para o time inteiro
-  const homeLead = leadershipFactor(m.homeLineup, idx, m.homeCaptainId);
-  const awayLead = leadershipFactor(m.awayLineup, idx, m.awayCaptainId);
-  const hp = teamPower(m.homeLineup, idx, m.homeTactics, awayDef, m.homeSlotOrder) * homeAdv * moraleBoost(m.homeMorale) * homeShort * homeLead;
-  const ap = teamPower(m.awayLineup, idx, m.awayTactics, homeDef, m.awaySlotOrder) * moraleBoost(m.awayMorale) * awayShort * awayLead;
-  let delta = ((hp - ap) / (hp + ap)) * 34 + (rng() - 0.5) * 18;
-  // "cera" do lado que trava: barra tende ao zero e adversário ganha volume sutil
-  if (m.homeTactics.cera) delta = delta * 0.5 - 1.5;
-  if (m.awayTactics.cera) delta = delta * 0.5 + 1.5;
-  if (m.homeTactics.mentality === "defensivo") delta *= m.momentum > 0 ? 0.5 : 0.85;
-  if (m.awayTactics.mentality === "defensivo") delta *= m.momentum < 0 ? 0.5 : 0.85;
-  // swing pós-gol: quem sofreu o gol fica desorganizado por alguns minutos, cedendo
-  // mais volume ao adversário — cria uma janela de pressão real após cada gol.
+  // Bicho: motivação proporcional ao nível pago, com teto de +10% no nível máximo
+  // (vale só metade disso na qualidade, que já pesa nas duas fases do jogo).
+  const bichoBoost = (t: Tactics) => t.bicho ? 1 + Math.min(10, Math.max(0, t.bichoPct ?? 10)) / 200 : 1;
+  const homeQ = homeAdv * moraleBoost(m.homeMorale) * homeShort * bichoBoost(m.homeTactics) *
+    leadershipFactor(m.homeLineup, idx, m.homeCaptainId);
+  const awayQ = moraleBoost(m.awayMorale) * awayShort * bichoBoost(m.awayTactics) *
+    leadershipFactor(m.awayLineup, idx, m.awayCaptainId);
+  const H = teamShape(m.homeLineup, idx, m.homeTactics, homeQ, m.homeSlotOrder);
+  const A = teamShape(m.awayLineup, idx, m.awayTactics, awayQ, m.awaySlotOrder);
+
+  // ── território (barra de momentum) ──
+  // O meio-campo decide quem fica com a bola e empurra o outro para trás. A barra
+  // persegue esse equilíbrio com inércia e ruído: há fases de pressão de verdade,
+  // e é nelas que saem as chances. Quem sofreu gol fica desorganizado por uns minutos.
+  const cH = H.ctrl ** 1.5, cA = A.ctrl ** 1.5;
+  let target = (cH / (cH + cA) - 0.5) * 250;
   if (m.swingSide && m.minute < m.swingUntil) {
-    delta += m.swingSide === "home" ? -6 : 6;
+    target += m.swingSide === "home" ? -30 : 30;
   } else if (m.swingSide && m.minute >= m.swingUntil) {
     m.swingSide = null;
   }
-  m.momentum = Math.max(-100, Math.min(100, m.momentum + delta));
+  // cera: quem catimba esfria o jogo — a barra tende ao meio
+  if (m.homeTactics.cera || m.awayTactics.cera) target *= 0.6;
+  m.momentum += (target - m.momentum) * 0.25 + (rng() - 0.5) * 20;
+  m.momentum = Math.max(-100, Math.min(100, m.momentum));
+  // fatia de território/posse do mandante neste minuto
+  const homeShare = Math.max(0.2, Math.min(0.8, 0.5 + m.momentum / 250));
 
-  // posse de bola real: acumula a fração do minuto conforme o momentum, com teto —
-  // nem o maior domínio passa de ~78% num minuto; a % final é a média do jogo todo,
-  // não a foto do momentum no apito final.
   if (m.stats) {
-    const share = Math.max(0.22, Math.min(0.78, 0.5 + m.momentum / 280));
-    m.stats.home.poss += share;
-    m.stats.away.poss += 1 - share;
+    m.stats.home.poss += homeShare;
+    m.stats.away.poss += 1 - homeShare;
 
     // desarmes e interceptações: quem está sendo pressionado defende mais; marcação
     // mais dura desarma mais (é para isso que ela existe), mentalidade defensiva
@@ -994,67 +1075,48 @@ export function simulateMinute(
     );
   }
 
-  // ── criação de chances: contínua, proporcional ao domínio ──
-  // Cada lado pode finalizar em QUALQUER minuto: a probabilidade cresce com a
-  // fatia de poder no jogo (share^1.7 — dominar muito rende muito mais chute),
-  // com a mentalidade (volume) e com os criativos do meio. Não existe mais trava
-  // de momentum: o time da casa mais forte pressiona e finaliza o jogo inteiro,
-  // e goleada é consequência natural.
-  const MENTALITY_VOLUME: Record<Mentality, number> = {
-    defensivo: 0.65, equilibrado: 1.0, ofensivo: 1.3, tudo_ou_nada: 1.55,
-  };
-  const shotProb = (side: "home" | "away"): number => {
-    const myPower = side === "home" ? hp : ap;
-    const share = myPower / (hp + ap);
+  // ── criação de chances: ataque próprio contra a DEFESA do rival ──
+  // O volume depende do território (quem tem a bola ataca mais) e de quanto a força
+  // que sobe supera a força que fica atrás do outro lado. Atacar não protege: o
+  // ataque do rival continua medido contra a SUA defesa, que ficou mais leve.
+  const chanceProb = (side: "home" | "away"): number => {
+    const me = side === "home" ? H : A;
+    const opp = side === "home" ? A : H;
+    const share = side === "home" ? homeShare : 1 - homeShare;
     const t = side === "home" ? m.homeTactics : m.awayTactics;
-    const opp = side === "home" ? m.awayTactics : m.homeTactics;
+    const oppT = side === "home" ? m.awayTactics : m.homeTactics;
     const lineup = side === "home" ? m.homeLineup : m.awayLineup;
-    const oppLineup = side === "home" ? m.awayLineup : m.homeLineup;
-    let p = 0.24 * Math.pow(share, 1.7) * MENTALITY_VOLUME[t.mentality];
-    // postura defensiva do rival corta o VOLUME de chances, não só a conversão:
-    // bloco baixo tira espaço; marcação dura mata a jogada antes do chute
-    if (opp.mentality === "defensivo") p *= 0.82;
-    if (opp.marking === "extrema") p *= 0.85;
-    else if (opp.marking === "apertada") p *= 0.93;
-    else if (opp.marking === "leve") p *= 1.06;
-    // rival com a linha lá na frente deixa espaço: atacar contra tudo-ou-nada rende
-    if (opp.mentality === "tudo_ou_nada") p *= 1.3;
-    else if (opp.mentality === "ofensivo") p *= 1.08;
-    // superioridade numérica na defesa rival abafa a criação — mas contra os
-    // atacantes EFETIVOS (ATA + meias que sobem), não só o centroavante: um 4-5-1
-    // leva os 5 meias ao ataque, então não sofre a punição de "1 x 4 zagueiros"
-    const nDefOpp = countSector(oppLineup, idx, "DEF");
-    const nAtkMine = attackingBodies(lineup, idx, t.mentality);
-    if (nDefOpp > nAtkMine) p *= Math.max(0.85, 1 - 0.04 * (nDefOpp - nAtkMine));
+    let p = TUNE.chanceBase * (share / 0.5) ** TUNE.shareExp * edgeFactor(me, opp);
     // criativos fabricam chances do nada (meio e ataque)
     const nCriativo = lineup.filter(
       (lp) => lp.onField && !lp.sentOff && idx[lp.playerId].traits.includes("Criativo") &&
         (lp.posOverride ?? idx[lp.playerId].pos) !== "GOL",
     ).length;
-    p *= 1 + 0.06 * nCriativo;
+    p *= 1 + 0.05 * nCriativo;
     // truculência do rival quebra o ritmo e corta a criação (não é só cartão)
-    if (opp.truculencia) p *= 0.85;
-    // catimba esfria o jogo: a própria cera corta mais o rival do que a si mesmo
+    if (oppT.truculencia) p *= 0.88;
+    // zaga rival sem sobra: bola nas costas vira chance
+    p *= backlineExposure(opp, me);
+    // catimba esfria o jogo: a própria cera corta mais o próprio ataque que o do rival
     if (t.cera) p *= 0.8;
-    if (opp.cera) p *= 0.85;
+    if (oppT.cera) p *= 0.88;
     // swing pós-gol: quem sofreu está desorganizado e cria menos
-    if (m.swingSide === side && m.minute < m.swingUntil) p *= 0.6;
-    return Math.min(0.3, p);
+    if (m.swingSide === side && m.minute < m.swingUntil) p *= 0.7;
+    return Math.min(0.35, p);
   };
-  if (chance(rng, shotProb("home"))) tryShot(rng, m, idx, "home");
-  if (!m.finished && chance(rng, shotProb("away"))) tryShot(rng, m, idx, "away");
+  if (chance(rng, chanceProb("home"))) tryShot(rng, m, idx, "home", H, A);
+  if (chance(rng, chanceProb("away"))) tryShot(rng, m, idx, "away", A, H);
 
-  // ── contra-ataque: a arma de quem cede o jogo ──
-  // O time SEM a bola (share baixa) tem chance de contragolpe: cresce se joga
-  // fechado (defensivo espera para sair no contra), com Veloz no ataque/meio, e
-  // se o rival está no tudo-ou-nada com a linha lá na frente. É a única forma do
-  // time fraco retrancado matar o jogo — mas não pune quem apenas propõe o jogo.
+  // ── contra-ataque: a arma de quem cede a bola ──
+  // Cresce quanto mais gente o rival manda ao ataque (laterais e volantes fora de
+  // posição), quanto menos território o time tem (bola roubada com o campo todo pela
+  // frente), com Veloz na frente e com o time montado para isso (defensivo). Contra
+  // quem ataca com cautela quase não existe.
   for (const side of ["home", "away"] as const) {
-    const myPower = side === "home" ? hp : ap;
-    const share = myPower / (hp + ap);
-    if (share >= 0.42) continue; // só quem está cedendo o jogo contra-ataca
+    const me = side === "home" ? H : A;
+    const opp = side === "home" ? A : H;
+    const share = side === "home" ? homeShare : 1 - homeShare;
     const t = side === "home" ? m.homeTactics : m.awayTactics;
-    const opp = side === "home" ? m.awayTactics : m.homeTactics;
     const lineup = side === "home" ? m.homeLineup : m.awayLineup;
     const nVeloz = lineup.filter(
       (lp) => {
@@ -1063,17 +1125,16 @@ export function simulateMinute(
         return (pos === "ATA" || pos === "MEI") && idx[lp.playerId].traits.includes("Veloz");
       },
     ).length;
-    let pCounter = 0.018 + 0.006 * nVeloz;
-    if (t.mentality === "defensivo") pCounter += 0.012; // retranca armada para o contra
-    if (opp.mentality === "tudo_ou_nada") pCounter *= 1.7; // linha adversária no ataque
-    else if (opp.mentality === "ofensivo") pCounter *= 1.25;
-    // contra-ataque de verdade exige o rival escancarado: cresce com a PROFUNDIDADE
-    // do domínio cedido — jogo só levemente desequilibrado quase não gera contra
-    // (ser um pouco melhor não pode ser punido).
-    pCounter *= Math.min(1, (0.42 - share) / 0.05);
+    // exposição do rival: gente que subiu e não volta a tempo, e zaga rala na cobertura
+    const exposure = Math.min(TUNE.exposureCap, (opp.atkBodies / REF_ATK_BODIES) ** TUNE.expBodies * (REF_REST_DEF / Math.max(1.5, opp.restDef)) ** TUNE.expRest);
+    let pCounter = TUNE.counterBase * ((1 - share) / 0.5) * exposure * (1 + 0.2 * nVeloz);
+    if (t.mentality === "defensivo") pCounter *= 1.4; // retranca armada para sair no contra
+    // precisa de alguém lá na frente para puxar o contragolpe
+    pCounter *= Math.min(1, me.atkBodies / 2.5);
+    pCounter *= Math.sqrt(edgeFactor(me, opp));
     // com 10 ou 9 homens não sobra perna nem gente para sair no contragolpe
     pCounter *= Math.pow(0.6, menDown(lineup));
-    if (chance(rng, pCounter)) tryShot(rng, m, idx, side, true);
+    if (chance(rng, pCounter)) tryShot(rng, m, idx, side, me, opp, true);
   }
   m.dangerTime = Math.abs(m.momentum) >= 70 ? m.dangerTime + 1 : 0;
 

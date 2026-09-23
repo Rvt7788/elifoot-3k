@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useStore, nextPlayableWeek, clubAggression, isCupEliminated, squadWageBill, BANKRUPTCY_WEEKS } from "../store";
 import { weekInfo, tiesForLeg, groupFixturesForMatchday, userRecentMatches, CUP_STAGE_NAMES, CONT_STAGE_NAMES } from "../game/cup";
 import { sortTable } from "../game/schedule";
-import { aiPregameTactics } from "../game/engine";
+import { aiPregameFormation, aiPregameTactics } from "../game/engine";
 import { autoTacticsForOpponent } from "../game/autoTactics";
 import { appAlert } from "./AppDialog";
 import type { Club, GameState, MatchRecord, Player } from "../types";
@@ -230,6 +230,7 @@ function OpponentModal({
 
   // mesma lógica que a IA usa ao entrar em campo contra o time do usuário
   const tactics = aiPregameTactics(squad, userSquad, clubAggression(game, opp.id));
+  const formation = aiPregameFormation(opp.id, squad, userSquad);
   const topScorers = [...squad].sort((a, b) => b.goals - a.goals).slice(0, 3);
 
   return (
@@ -260,7 +261,8 @@ function OpponentModal({
 
         <SectionLabel>Estratégia provável</SectionLabel>
         <p className="mb-1 text-sm text-zinc-200">
-          Postura <span className="font-semibold text-amber-400">{tactics.mentality}</span>
+          <span className="font-semibold text-amber-400">{formation}</span>
+          {" · "}postura <span className="font-semibold text-amber-400">{tactics.mentality}</span>
           {" · "}marcação <span className="font-semibold text-amber-400">{tactics.marking}</span>
           {tactics.truculencia && (
             <> · <span className="font-semibold text-red-400">truculência</span></>
