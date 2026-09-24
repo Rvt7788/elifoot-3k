@@ -500,11 +500,11 @@ export default function TacticsBoard() {
       addedIds.push(...bench.map((p) => p.id));
     });
     // Ainda faltam vagas (posição sem reserva disponível): completa com os
-    // melhores reservas de qualquer posição, para nunca ficar com menos de 11.
+    // melhores reservas de linha (goleiro reserva não vira atacante).
     const missing = slots.length - starters.length - addedIds.length;
     if (missing > 0) {
       const extras = squad
-        .filter((p) => !starters.includes(p.id) && !addedIds.includes(p.id) && !((p.injuryWeeks ?? 0) > 0) && !isSuspendedNext(p))
+        .filter((p) => p.pos !== "GOL" && !starters.includes(p.id) && !addedIds.includes(p.id) && !((p.injuryWeeks ?? 0) > 0) && !isSuspendedNext(p))
         .sort((a, b) => b.strength - a.strength)
         .slice(0, missing);
       addedIds.push(...extras.map((p) => p.id));

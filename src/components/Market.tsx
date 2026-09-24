@@ -125,12 +125,99 @@ export default function Market() {
   const [sortAsc, setSortAsc] = useState(false);
   const [expandedSell, setExpandedSell] = useState<string | null>(null);
   const [financeOpen, setFinanceOpen] = useState(false);
-  const [sellSort, setSellSort] = useState<"value" | "name" | "age" | "strength" | "apps" | "goals">("value");
-  const [sellAsc, setSellAsc] = useState(false);
+  const [sellSort, setSellSort] = useState<"pos" | "value" | "name" | "age" | "strength" | "apps" | "goals">("pos");
+  const [sellAsc, setSellAsc] = useState(true);
 
   if (!game) return null;
   const squad = game.players.filter((p) => p.clubId === game.userClubId);
   const roles = userSquadRoles(game);
+  // "Posição" empilha o elenco como no Elenco: GOL → DEF → MEI → ATA e, dentro
+  // da posição, o mais forte primeiro. Os demais botões ordenam a lista inteira.
+  const POS_ORDER: Record<Position, number> = { GOL: 0, DEF: 1, MEI: 2, ATA: 3 };
+  const sellKey = (p: Player) =>
+    sellSort === "value" ? quickSellPrice(p)
+    : sellSort === "name" ? p.name
+    : sellSort === "apps" ? (p.apps ?? 0)
+    : sellSort === "pos" ? POS_ORDER[p.pos]
+    : p[sellSort];
+  const sellList = [...squad].sort((a, b) => {
+    if (sellSort === "pos") {
+      const byPos = POS_ORDER[a.pos] - POS_ORDER[b.pos];
+      return (sellAsc ? byPos : -byPos) || b.strength - a.strength;
+    }
+    const va = sellKey(a);
+    const vb = sellKey(b);
+    if (typeof va === "string" && typeof vb === "string")
+      return sellAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+    return sellAsc ? (va as number) - (vb as number) : (vb as number) - (va as number);
+  });
+  const sellRow = (p: Player) => (
+    <Fragment key={p.id}>
+      <div
+        onClick={() => setExpandedSell(expandedSell === p.id ? null : p.id)}
+        className="flex flex-wrap sm:flex-nowrap items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm cursor-pointer hover:bg-zinc-800/20"
+      >
+        <span className="w-8 shrink-0 text-zinc-400">{p.pos}</span>
+        <span className="min-w-[120px] flex-1 truncate">
+          <span className="inline-flex items-center gap-1">
+            {p.name} <span className="text-amber-400">{TIER_BADGE[p.tier]}</span>
+            <RoleBadges penalty={p.id === roles.penaltyTakerId} captain={p.id === roles.captainId} />
+            {game.starters.includes(p.id) && (
+              <span className="shrink-0 rounded bg-emerald-950 px-1 text-[10px] text-emerald-400">titular</span>
+            )}
+          </span>
+        </span>
+        <span className="w-10 shrink-0 text-center font-bold">
+          {p.strength}
+          {p.strength < p.cap && (
+            <span className="ml-0.5 text-emerald-400" title={`Potencial até ${p.cap}`}>▲</span>
+          )}
+        </span>
+        <span className="w-10 shrink-0 text-center text-xs text-zinc-400">{p.age}a</span>
+        <span className="w-28 shrink-0 text-right text-xs text-emerald-400 font-mono">
+          ${(quickSellPrice(p) / 1e6).toFixed(2)}M
+        </span>
+        <button
+          disabled={squad.length <= MIN_SQUAD}
+          onClick={(e) => {
+            e.stopPropagation();
+            doSell(p);
+          }}
+          className="shrink-0 rounded bg-red-800 px-2 py-1 text-xs hover:bg-red-700 disabled:opacity-30"
+        >
+          Vender
+        </button>
+      </div>
+      {expandedSell === p.id && (
+        <div className="bg-[#0c131d] px-4 py-3 border-x border-b border-zinc-800 rounded-b-lg -mt-2 mb-1.5 shadow-inner">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-zinc-400 sm:grid-cols-4">
+            <p>Nível: <span className="text-zinc-200">{TIER_NAME[p.tier] || p.tier}</span></p>
+            <p>Pé: <span className="text-zinc-200 capitalize">{p.foot}</span></p>
+            <p className="col-span-2">Nascimento: <span className="text-zinc-200">{playerBirthDate(p.id, p.age, game.season)}</span></p>
+            <p>Jogos: <span className="text-zinc-200">{p.apps ?? 0}</span></p>
+            <p>Gols: <span className="text-zinc-200">{p.goals}</span></p>
+            <p>Assistências: <span className="text-zinc-200">{p.assists}</span></p>
+            <p>Cartões: <span className="text-zinc-200">🟨 {p.yellows} · 🟥 {p.reds}</span></p>
+            <p>Evolução no ano: <span className={p.gained > 0 ? "text-emerald-400" : "text-zinc-200"}>{p.gained > 0 ? `+${p.gained}` : p.gained}</span></p>
+            <p>Treino: <span className="text-zinc-200 capitalize">{p.training}</span></p>
+            <p className="flex items-center gap-1">Títulos: <span className="inline-flex items-center gap-1 text-amber-400">{p.titles ?? 0} <GameIcon name="trophy" size={11} /></span></p>
+            <p className="col-span-2">
+              Contrato:{" "}
+              <span className={(p.contract ?? 1) <= 1 ? "font-bold text-amber-400" : "text-zinc-200"}>
+                {p.contract ?? 1} temporada{(p.contract ?? 1) > 1 ? "s" : ""}
+              </span>
+            </p>
+            <p className="col-span-2 sm:col-span-4">
+              Características:{" "}
+              <span className="text-amber-400">
+                {p.traits.length ? p.traits.join(", ") : "nenhuma"}
+              </span>
+            </p>
+          </div>
+        </div>
+      )}
+    </Fragment>
+  );
 
   const updateFilters = (patch: Partial<MarketFilters>) => setFilters({ ...filters, ...patch });
 
@@ -470,6 +557,7 @@ export default function Market() {
             </p>
             <div className="flex flex-wrap gap-1">
               {([
+                ["pos", "Posição"],
                 ["value", "Valor"],
                 ["name", "Nome"],
                 ["age", "Idade"],
@@ -481,7 +569,7 @@ export default function Market() {
                   key={key}
                   onClick={() => {
                     if (sellSort === key) setSellAsc(!sellAsc);
-                    else { setSellSort(key); setSellAsc(key === "name" || key === "age"); }
+                    else { setSellSort(key); setSellAsc(key === "pos" || key === "name" || key === "age"); }
                   }}
                   className={`rounded px-2 py-0.5 text-[11px] font-semibold ${
                     sellSort === key ? "bg-emerald-600 text-white" : "bg-zinc-800/60 text-zinc-400 hover:text-zinc-200"
@@ -492,87 +580,16 @@ export default function Market() {
               ))}
             </div>
           </div>
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {(["GOL", "DEF", "MEI", "ATA"] as const).map((pos) => (
+              <span key={pos} className="rounded bg-zinc-800 px-2 py-0.5 text-[11px]">
+                <span className="text-zinc-400">{pos}</span>{" "}
+                <b className="text-zinc-100">{squad.filter((p) => p.pos === pos).length}</b>
+              </span>
+            ))}
+          </div>
           <div className="flex flex-col gap-1.5">
-            {[...squad]
-              .sort((a, b) => {
-                const key = (p: Player) =>
-                  sellSort === "value" ? quickSellPrice(p)
-                  : sellSort === "name" ? p.name
-                  : sellSort === "apps" ? (p.apps ?? 0)
-                  : p[sellSort];
-                const va = key(a);
-                const vb = key(b);
-                if (typeof va === "string" && typeof vb === "string")
-                  return sellAsc ? va.localeCompare(vb) : vb.localeCompare(va);
-                return sellAsc ? (va as number) - (vb as number) : (vb as number) - (va as number);
-              })
-              .map((p) => (
-                <Fragment key={p.id}>
-                  <div
-                    onClick={() => setExpandedSell(expandedSell === p.id ? null : p.id)}
-                    className="flex flex-wrap sm:flex-nowrap items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm cursor-pointer hover:bg-zinc-800/20"
-                  >
-                    <span className="w-8 shrink-0 text-zinc-400">{p.pos}</span>
-                    <span className="min-w-[120px] flex-1 truncate">
-                      <span className="inline-flex items-center gap-1">
-                        {p.name} <span className="text-amber-400">{TIER_BADGE[p.tier]}</span>
-                        <RoleBadges penalty={p.id === roles.penaltyTakerId} captain={p.id === roles.captainId} />
-                        {game.starters.includes(p.id) && (
-                          <span className="shrink-0 rounded bg-emerald-950 px-1 text-[10px] text-emerald-400">titular</span>
-                        )}
-                      </span>
-                    </span>
-                    <span className="w-10 shrink-0 text-center font-bold">
-                      {p.strength}
-                      {p.strength < p.cap && (
-                        <span className="ml-0.5 text-emerald-400" title={`Potencial até ${p.cap}`}>▲</span>
-                      )}
-                    </span>
-                    <span className="w-10 shrink-0 text-center text-xs text-zinc-400">{p.age}a</span>
-                    <span className="w-28 shrink-0 text-right text-xs text-emerald-400 font-mono">
-                      ${(quickSellPrice(p) / 1e6).toFixed(2)}M
-                    </span>
-                    <button
-                      disabled={squad.length <= MIN_SQUAD}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        doSell(p);
-                      }}
-                      className="shrink-0 rounded bg-red-800 px-2 py-1 text-xs hover:bg-red-700 disabled:opacity-30"
-                    >
-                      Vender
-                    </button>
-                  </div>
-                  {expandedSell === p.id && (
-                    <div className="bg-[#0c131d] px-4 py-3 border-x border-b border-zinc-800 rounded-b-lg -mt-2 mb-1.5 shadow-inner">
-                      <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-zinc-400 sm:grid-cols-4">
-                        <p>Nível: <span className="text-zinc-200">{TIER_NAME[p.tier] || p.tier}</span></p>
-                        <p>Pé: <span className="text-zinc-200 capitalize">{p.foot}</span></p>
-                        <p className="col-span-2">Nascimento: <span className="text-zinc-200">{playerBirthDate(p.id, p.age, game.season)}</span></p>
-                        <p>Jogos: <span className="text-zinc-200">{p.apps ?? 0}</span></p>
-                        <p>Gols: <span className="text-zinc-200">{p.goals}</span></p>
-                        <p>Assistências: <span className="text-zinc-200">{p.assists}</span></p>
-                        <p>Cartões: <span className="text-zinc-200">🟨 {p.yellows} · 🟥 {p.reds}</span></p>
-                        <p>Evolução no ano: <span className={p.gained > 0 ? "text-emerald-400" : "text-zinc-200"}>{p.gained > 0 ? `+${p.gained}` : p.gained}</span></p>
-                        <p>Treino: <span className="text-zinc-200 capitalize">{p.training}</span></p>
-                        <p className="flex items-center gap-1">Títulos: <span className="inline-flex items-center gap-1 text-amber-400">{p.titles ?? 0} <GameIcon name="trophy" size={11} /></span></p>
-                        <p className="col-span-2">
-                          Contrato:{" "}
-                          <span className={(p.contract ?? 1) <= 1 ? "font-bold text-amber-400" : "text-zinc-200"}>
-                            {p.contract ?? 1} temporada{(p.contract ?? 1) > 1 ? "s" : ""}
-                          </span>
-                        </p>
-                        <p className="col-span-2 sm:col-span-4">
-                          Características:{" "}
-                          <span className="text-amber-400">
-                            {p.traits.length ? p.traits.join(", ") : "nenhuma"}
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </Fragment>
-              ))}
+            {sellList.map((p) => sellRow(p))}
           </div>
         </>
       )}

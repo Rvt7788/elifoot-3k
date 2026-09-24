@@ -12,7 +12,7 @@ import continentalData from "./data/continental.json";
 import { newGame, assignShirtNumbers, fixDuplicateNumbers, freeShirtNumber, renumberSquadByStarters, playerSalary, processSeasonTransitions } from "./game/seeder";
 import { runTransferWindow, windowOfferForUser } from "./game/transferWindow";
 import { track } from "./game/analytics";
-import { bestXI, createLiveMatch, simulateMinute } from "./game/engine";
+import { bestXI, createLiveMatch, isInjured, isSuspended, simulateMinute } from "./game/engine";
 import { applyResult, buildLeagueFixtures, initTable, sortTable } from "./game/schedule";
 import { mulberry32, pick } from "./game/rng";
 import { aiAcceptChance, askingPrice, canNegotiate, quickSellPrice } from "./game/market";
@@ -381,6 +381,106 @@ export const nextPlayableWeek = (g: GameState): number | null => {
   return candidates.length ? Math.min(...candidates) : null;
 };
 
+// Competição do próximo jogo que o clube do usuário de fato disputa: rodada de
+// copa sem o clube não conta, a busca segue até o jogo seguinte dele.
+function nextUserCompetition(g: GameState): "league" | "cup" | "continental" {
+  const start = nextPlayableWeek(g);
+  if (start === null) return "league";
+  const uid = g.userClubId;
+  for (let w = start; w < start + 50; w++) {
+    const info = weekInfo(w);
+    if (info.type === "cup") {
+      if (g.cup && tiesForLeg(g.cup, info.stage, info.leg).some((t) => t.homeId === uid || t.awayId === uid)) return "cup";
+    } else if (info.type === "contgroup") {
+      if (g.continental && groupFixturesForMatchday(g.continental, info.matchday).some((f) => f.homeId === uid || f.awayId === uid)) return "continental";
+    } else if (info.type === "continental") {
+      if (g.continental && tiesForLeg(g.continental, info.stage, info.leg).some((t) => t.homeId === uid || t.awayId === uid)) return "continental";
+    } else if (g.fixtures.some((f) => f.week === w && !f.played && (f.homeId === uid || f.awayId === uid))) {
+      return "league";
+    }
+  }
+  return "league";
+}
+
+// Titulares prontos para o próximo jogo do usuário: quem está lesionado, suspenso
+// na competição seguinte ou já saiu do clube dá lugar ao melhor reserva disponível
+// da mesma posição. Sem reserva da posição, entra o melhor de linha — goleiro
+// reserva só entra no gol, nunca vira atacante de emergência.
+function refreshUserStarters(g: GameState): Pick<GameState, "starters" | "slotOrder" | "posOverrides"> {
+  const competition = nextUserCompetition(g);
+  const squad = g.players.filter((p) => p.clubId === g.userClubId);
+  const inSquad = new Map(squad.map((p) => [p.id, p]));
+  const anywhere = new Map(g.players.map((p) => [p.id, p]));
+  const unavailable = (p: Player) => isInjured(p) || isSuspended(p, competition);
+  let slotOrder = g.slotOrder ? [...g.slotOrder] : undefined;
+  const posOverrides = g.posOverrides ? { ...g.posOverrides } : undefined;
+  const used = new Set(g.starters ?? []);
+  const pickReserve = (pos: Position): Player | undefined => {
+    const pool = squad
+      .filter((p) => !used.has(p.id) && !unavailable(p))
+      .sort((a, b) => b.strength - a.strength);
+    return pool.find((p) => p.pos === pos) ?? (pos === "GOL" ? undefined : pool.find((p) => p.pos !== "GOL"));
+  };
+  const hand = (fromId: string, toId: string) => {
+    if (slotOrder) slotOrder = slotOrder.map((id) => (id === fromId ? toId : id));
+    if (posOverrides && posOverrides[fromId]) {
+      posOverrides[toId] = posOverrides[fromId];
+      delete posOverrides[fromId];
+    }
+  };
+
+  let dropped = 0;
+  let keepers = 0;
+  const starters: string[] = [];
+  for (const id of g.starters ?? []) {
+    const p = inSquad.get(id);
+    // goleiro a mais no XI (saves antigos em que a venda puxava o goleiro
+    // reserva para a vaga de linha): sai e a vaga é reposta pelo desenho
+    if (p && p.pos === "GOL" && (posOverrides?.[id] ?? "GOL") === "GOL" && keepers++ >= 1) {
+      dropped++;
+      if (slotOrder) slotOrder = slotOrder.filter((x) => x !== id);
+      used.delete(id);
+      continue;
+    }
+    if (p && !unavailable(p)) { starters.push(id); continue; }
+    // posição em campo de quem sai: a natural (ou a da prancheta); aposentado
+    // não existe mais no universo, então a vaga é reposta pelo desenho abaixo
+    const pos = posOverrides?.[id] ?? anywhere.get(id)?.pos;
+    const rep = pos ? pickReserve(pos) : undefined;
+    if (rep) {
+      used.add(rep.id);
+      hand(id, rep.id);
+      starters.push(rep.id);
+    } else if (p) {
+      starters.push(id); // ninguém para entrar: o motor completa na hora do jogo
+    } else {
+      dropped++;
+      if (slotOrder) slotOrder = slotOrder.filter((x) => x !== id);
+      if (posOverrides) delete posOverrides[id];
+    }
+  }
+  // vagas sem posição conhecida: completa os setores que a formação pede
+  if (dropped > 0) {
+    const shape = shapeOf(g.formation ?? "4-4-2", g.customFormation);
+    const need: Record<Position, number> = { GOL: 1, DEF: shape.DEF, MEI: shape.MEI, ATA: shape.ATA };
+    for (const id of starters) {
+      const p = inSquad.get(id);
+      if (p) need[posOverrides?.[id] ?? p.pos]--;
+    }
+    const room = Math.min(dropped, 11 - starters.length);
+    for (let i = 0; i < room; i++) {
+      const pos = (["GOL", "DEF", "MEI", "ATA"] as const).find((k) => need[k] > 0) ?? "MEI";
+      const rep = pickReserve(pos);
+      if (!rep) break;
+      used.add(rep.id);
+      need[pos]--;
+      starters.push(rep.id);
+    }
+    slotOrder = undefined;
+  }
+  return { starters, slotOrder, posOverrides };
+}
+
 // Clube da IA que abriga um jogador saindo do time do usuário (venda ou dispensa):
 // entre os clubes com quem a divisão do usuário negocia, prioriza quem tem menos
 // jogadores na posição (repõe carência real), desempatando pelo maior orçamento.
@@ -469,13 +569,9 @@ export const useStore = create<Store>()(
         // dispensado não some do mundo: outro clube o abriga (de graça)
         const dest = findBuyerClub(g, id);
         const players = g.players.map((p) => (p.id === id ? { ...p, clubId: dest } : p));
-        let starters = g.starters;
-        if (starters.includes(id)) {
-          const rest = players.filter((p) => p.clubId === g.userClubId);
-          const sub = rest.find((p) => !starters.includes(p.id));
-          starters = starters.map((s) => (s === id ? (sub?.id ?? s) : s)).filter((s) => s !== id);
-        }
-        set({ game: { ...g, players, starters } });
+        // titular que sai dá lugar ao melhor reserva da mesma posição
+        const lineup = refreshUserStarters({ ...g, players });
+        set({ game: { ...g, players, ...lineup } });
       },
 
       sellPlayer: (id) => {
@@ -490,13 +586,9 @@ export const useStore = create<Store>()(
         // vendido segue carreira num clube comprador, em vez de ser apagado do jogo
         const dest = findBuyerClub(g, id);
         const players = g.players.map((p) => (p.id === id ? { ...p, clubId: dest } : p));
-        let starters = g.starters;
-        if (starters.includes(id)) {
-          const rest = players.filter((p) => p.clubId === g.userClubId);
-          const sub = rest.find((p) => !starters.includes(p.id));
-          starters = starters.map((s) => (s === id ? (sub?.id ?? s) : s)).filter((s) => s !== id);
-        }
-        set({ game: { ...g, players, starters, budget: g.budget + amount } });
+        // titular que sai dá lugar ao melhor reserva da mesma posição
+        const lineup = refreshUserStarters({ ...g, players });
+        set({ game: { ...g, players, ...lineup, budget: g.budget + amount } });
         return { ok: true, amount };
       },
 
@@ -539,13 +631,9 @@ export const useStore = create<Store>()(
             ? { ...p, clubId: dest.id, contract: 2 + Math.round(Math.random() * 2) }
             : p,
         );
-        let starters = g.starters;
-        if (starters.includes(id)) {
-          const rest = players.filter((p) => p.clubId === g.userClubId);
-          const sub = rest.find((p) => !starters.includes(p.id));
-          starters = starters.map((s) => (s === id ? (sub?.id ?? s) : s)).filter((s) => s !== id);
-        }
-        set({ game: { ...g, players, starters } });
+        // titular que sai dá lugar ao melhor reserva da mesma posição
+        const lineup = refreshUserStarters({ ...g, players });
+        set({ game: { ...g, players, ...lineup } });
       },
 
       // Proposta recebida de um clube da IA: aceitar transfere o jogador na hora.
@@ -562,17 +650,11 @@ export const useStore = create<Store>()(
         const players = g.players.map((p) =>
           p.id === offer.playerId ? { ...p, clubId: offer.clubId } : p,
         );
-        let starters = g.starters;
-        if (starters.includes(offer.playerId)) {
-          const rest = players.filter((p) => p.clubId === g.userClubId);
-          const sub = rest.find((p) => !starters.includes(p.id));
-          starters = starters
-            .map((s) => (s === offer.playerId ? (sub?.id ?? s) : s))
-            .filter((s) => s !== offer.playerId);
-        }
+        // titular que sai dá lugar ao melhor reserva da mesma posição
+        const lineup = refreshUserStarters({ ...g, players });
         set({
           game: {
-            ...g, players, starters,
+            ...g, players, ...lineup,
             budget: g.budget + offer.amount,
             incomingOffer: undefined,
           },
@@ -787,6 +869,8 @@ export const useStore = create<Store>()(
               })(),
             ),
           };
+          // quem saiu na virada (contrato, aposentadoria, janela) deixa a escalação
+          g = { ...g, ...refreshUserStarters(g) };
           set({ game: g });
           return;
         }
@@ -1199,7 +1283,7 @@ export const useStore = create<Store>()(
         if (kept.size < Math.min(11, squad.length)) {
           const rest = squad
             .filter((p) => !kept.has(p.id))
-            .sort((a, b) => b.strength - a.strength);
+            .sort((a, b) => Number(a.pos === "GOL") - Number(b.pos === "GOL") || b.strength - a.strength);
           for (const p of rest) {
             if (kept.size >= Math.min(11, squad.length)) break;
             kept.add(p.id);
@@ -1471,58 +1555,6 @@ export const useStore = create<Store>()(
             ? { ...m, winsA: (m.winsA ?? 0) + wins, seasonWinsA: (m.seasonWinsA ?? 0) + wins }
             : { ...m, winsB: (m.winsB ?? 0) + wins, seasonWinsB: (m.seasonWinsB ?? 0) + wins };
         });
-        // Auto-replace injured starters with healthy reserves
-        let starters = game.starters ? [...game.starters] : [];
-        let slotOrder = game.slotOrder ? [...game.slotOrder] : undefined;
-        const posOverrides = game.posOverrides ? { ...game.posOverrides } : undefined;
-        const userClubId = game.userClubId;
-
-        const getHealthyReserves = (pos?: string, excludeIds: string[] = []) => {
-          return players.filter((p) => 
-            p.clubId === userClubId &&
-            !starters.includes(p.id) &&
-            !excludeIds.includes(p.id) &&
-            !((p.injuryWeeks ?? 0) > 0) &&
-            (pos ? p.pos === pos : true)
-          ).sort((a, b) => b.strength - a.strength);
-        };
-
-        const replacedStarters = new Set<string>();
-        starters = starters.map((sId) => {
-          const p = players.find((x) => x.id === sId);
-          if (p && (p.injuryWeeks ?? 0) > 0) {
-            const samePos = getHealthyReserves(p.pos, Array.from(replacedStarters));
-            if (samePos.length > 0) {
-              const rep = samePos[0];
-              replacedStarters.add(rep.id);
-              if (slotOrder) {
-                const idx = slotOrder.indexOf(sId);
-                if (idx !== -1) slotOrder[idx] = rep.id;
-              }
-              if (posOverrides && posOverrides[sId]) {
-                posOverrides[rep.id] = posOverrides[sId];
-                delete posOverrides[sId];
-              }
-              return rep.id;
-            }
-            const anyPos = getHealthyReserves(undefined, Array.from(replacedStarters));
-            if (anyPos.length > 0) {
-              const rep = anyPos[0];
-              replacedStarters.add(rep.id);
-              if (slotOrder) {
-                const idx = slotOrder.indexOf(sId);
-                if (idx !== -1) slotOrder[idx] = rep.id;
-              }
-              if (posOverrides && posOverrides[sId]) {
-                posOverrides[rep.id] = posOverrides[sId];
-                delete posOverrides[sId];
-              }
-              return rep.id;
-            }
-          }
-          return sId;
-        });
-
         // ── janela do meio de temporada: fecha a rodada 19 da liga e o mercado
         // abre entre o turno e o returno. Só a IA negocia entre si; pelo elenco
         // do usuário chega no máximo uma proposta (aceita/recusa como sempre).
@@ -1588,9 +1620,9 @@ export const useStore = create<Store>()(
             debtWeeks,
             fired,
             firedReason,
-            starters,
-            slotOrder,
-            posOverrides,
+            // titulares lesionados, suspensos no próximo jogo ou que saíram do
+            // clube já voltam da rodada substituídos pelo reserva da posição
+            ...refreshUserStarters({ ...game, players, fixtures, cup, continental, week: game.week + 1 }),
             jobOffer: fired ? undefined : game.jobOffer,
             // proposta antiga expira ao fim da rodada; nova pode chegar no lugar
             // (na janela do meio, a proposta da janela tem prioridade)

@@ -112,7 +112,7 @@ export default function Training() {
                   setAllIntensity(next);
                   setAllTraining(next);
                 }}
-                className="uppercase tracking-wide text-zinc-400 hover:text-zinc-200"
+                className="rounded border border-zinc-600 px-1.5 py-0.5 uppercase tracking-wide text-zinc-300 hover:border-zinc-400 hover:text-zinc-100"
                 title="Muda o regime de todos os jogadores de uma vez"
               >
                 Regime ▾

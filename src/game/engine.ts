@@ -90,7 +90,7 @@ export function effectiveStrength(p: Player): number {
 
 // Suspensão vale só na mesma competição: vermelho na liga não tira o jogador
 // da copa, e vice-versa.
-function isSuspended(p: Player, competition: "league" | "cup" | "continental"): boolean {
+export function isSuspended(p: Player, competition: "league" | "cup" | "continental"): boolean {
   if (competition === "league") return p.suspendedLeague;
   if (competition === "cup") return p.suspendedCup;
   return p.suspendedContinental ?? false;
@@ -123,9 +123,10 @@ export function bestXI(
   // (suspensões, vendas), completa com os melhores restantes fora de posição.
   if (picked.length < 11) {
     const chosen = new Set(picked.map((p) => p.id));
+    // goleiro reserva só vira jogador de linha em último caso
     const rest = available
       .filter((p) => !chosen.has(p.id))
-      .sort((a, b) => rank(b) - rank(a) || b.strength - a.strength);
+      .sort((a, b) => Number(a.pos === "GOL") - Number(b.pos === "GOL") || rank(b) - rank(a) || b.strength - a.strength);
     picked.push(...rest.slice(0, 11 - picked.length));
   }
   return picked.map((p) => p.id);
