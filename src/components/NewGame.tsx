@@ -8,17 +8,18 @@ import { readableOn } from "../game/color";
 
 // bandeiras em mini PNG (public/flags): emoji de bandeira não renderiza em
 // todo sistema (Windows/Chrome mostra só as letras do código do país)
-// Só o Brasil está liberado por enquanto — é o país com os elencos atualizados.
-// Os demais ficam bloqueados na tela inicial até terem seus elencos revisados.
+// Países com elencos revisados ficam liberados; os demais seguem bloqueados na
+// tela inicial até terem seus elencos atualizados. Jogo em português: Brasil e
+// Portugal abrem a grade; bloqueados vão para o fim.
 const COUNTRIES: Record<string, { name: string; locked?: boolean }> = {
   BR: { name: "Brasil" },
+  PT: { name: "Portugal" },
   AR: { name: "Argentina" },
   EN: { name: "Inglaterra" },
   ES: { name: "Espanha" },
+  IT: { name: "Itália" },
   DE: { name: "Alemanha", locked: true },
   FR: { name: "França", locked: true },
-  IT: { name: "Itália", locked: true },
-  PT: { name: "Portugal", locked: true },
 };
 
 function isDarkColor(hex: string): boolean {
@@ -127,7 +128,7 @@ export default function NewGame() {
   const startGame = useStore((s) => s.startGame);
   const clubs = clubsData as Club[];
   const [managerName, setManagerName] = useState("");
-  // só o Brasil está liberado: começa selecionado e o sorteio fica restrito a ele
+  // null = "Qualquer": o sorteio escolhe antes um dos países liberados
   const [country, setCountry] = useState<string | null>("BR");
   const [club, setClub] = useState<Club | null>(null);
   // bilhete premiado: rolado uma vez ao abrir a tela — clicar de novo no dado
@@ -186,8 +187,8 @@ export default function NewGame() {
         className="mx-auto mb-6 block w-full max-w-xs border-b border-[rgba(34,211,238,0.55)] bg-transparent px-2 py-2 text-center font-semibold tracking-wide text-zinc-100 placeholder-zinc-600 outline-none transition-colors focus:border-[rgb(34,211,238)]"
       />
 
-      {/* seleção de país em grade 3×3: só o Brasil está liberado — os demais
-          ficam bloqueados (cadeado) até terem os elencos atualizados */}
+      {/* seleção de país em grade 3×3: países sem elencos atualizados ficam
+          bloqueados (cadeado) */}
       <nav className="mx-auto mb-6 grid w-fit grid-cols-3 gap-x-4 gap-y-1 sm:gap-x-6">
         {Object.entries(COUNTRIES).map(([code, { name, locked }]) => (
           <button
@@ -202,24 +203,27 @@ export default function NewGame() {
             {locked && <span className="ml-1 text-[9px]">🔒</span>}
           </button>
         ))}
-        {/* "Qualquer" (sorteio geral) fica bloqueado por ora — só mantido para
-            preencher a 9ª célula e manter o grid 3×3 simétrico */}
+        {/* "Qualquer": sorteio entre os países liberados */}
         <button
-          disabled
-          className="country-tab text-left cursor-not-allowed opacity-40"
-          title="Em breve: sorteio geral quando outros países forem liberados"
+          onClick={() => { setCountry(null); setClub(null); }}
+          className={`country-tab text-left ${country === null ? "active" : ""}`}
         >
           <span className="mr-1.5 inline-flex h-3 w-[18px] items-center justify-center rounded-[1px] border border-zinc-600 align-middle text-[9px] leading-none text-zinc-400">?</span>
           Qualquer
-          <span className="ml-1 text-[9px]">🔒</span>
         </button>
       </nav>
 
       <div className="mb-6 flex justify-center">
         <button
-          onClick={() => drawRandom(serieBPool(clubs, lucky, country ?? undefined))}
+          onClick={() => {
+            // "Qualquer" sorteia primeiro o país: juntar as Séries B de todos e
+            // pegar os 10 mais pobres cairia sempre no país de orçamento menor
+            const open = Object.keys(COUNTRIES).filter((c) => !COUNTRIES[c].locked);
+            const target = country ?? open[Math.floor(Math.random() * open.length)];
+            drawRandom(serieBPool(clubs, lucky, target));
+          }}
           className="btn-cta inline-flex items-center px-6 py-2"
-          title={country ? "Sorteia um clube pequeno da Série B do país selecionado" : "Sorteia um clube pequeno da Série B de qualquer país"}
+          title={country ? "Sorteia um clube pequeno da Série B do país selecionado" : "Sorteia um clube pequeno da Série B de um dos países liberados"}
         >
           <span className="mr-2 inline-flex align-middle"><GameIcon name="dice" size={15} /></span>
           {club ? "Sortear outro" : "Sortear clube"}

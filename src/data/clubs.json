@@ -88,6 +88,17 @@
     "region": "América do Sul"
   },
   {
+    "id": "cru_br",
+    "name": "Cruzeiro",
+    "shortName": "CRU",
+    "division": "Série A",
+    "primaryColor": "#0033A0",
+    "secondaryColor": "#FFFFFF",
+    "baseBudget": 16000000,
+    "country": "BR",
+    "region": "América do Sul"
+  },
+  {
     "id": "gre_br",
     "name": "Grêmio",
     "shortName": "GRE",
@@ -106,17 +117,6 @@
     "primaryColor": "#E32219",
     "secondaryColor": "#FFFFFF",
     "baseBudget": 15000000,
-    "country": "BR",
-    "region": "América do Sul"
-  },
-  {
-    "id": "cru_br",
-    "name": "Cruzeiro",
-    "shortName": "CRU",
-    "division": "Série A",
-    "primaryColor": "#0033A0",
-    "secondaryColor": "#FFFFFF",
-    "baseBudget": 14000000,
     "country": "BR",
     "region": "América do Sul"
   },
@@ -154,35 +154,13 @@
     "region": "América do Sul"
   },
   {
-    "id": "for_br",
-    "name": "Fortaleza",
-    "shortName": "FOR",
-    "division": "Série A",
-    "primaryColor": "#11307A",
-    "secondaryColor": "#E31C23",
-    "baseBudget": 11000000,
-    "country": "BR",
-    "region": "América do Sul"
-  },
-  {
     "id": "san_br",
     "name": "Santos",
     "shortName": "SAN",
     "division": "Série A",
     "primaryColor": "#000000",
     "secondaryColor": "#FFFFFF",
-    "baseBudget": 10000000,
-    "country": "BR",
-    "region": "América do Sul"
-  },
-  {
-    "id": "cui_br",
-    "name": "Cuiabá",
-    "shortName": "CUI",
-    "division": "Série A",
-    "primaryColor": "#007A33",
-    "secondaryColor": "#FDB913",
-    "baseBudget": 6000000,
+    "baseBudget": 11000000,
     "country": "BR",
     "region": "América do Sul"
   },
@@ -193,40 +171,73 @@
     "division": "Série A",
     "primaryColor": "#FF0000",
     "secondaryColor": "#000000",
-    "baseBudget": 6000000,
+    "baseBudget": 7000000,
     "country": "BR",
     "region": "América do Sul"
   },
   {
-    "id": "cri_br",
-    "name": "Criciúma",
-    "shortName": "CRI",
-    "division": "Série A",
-    "primaryColor": "#F9DF1D",
-    "secondaryColor": "#000000",
-    "baseBudget": 5000000,
+    "id": "mir_br",
+    "name": "Mirassol",
+    "shortName": "MIR",
+    "primaryColor": "#FFF200",
+    "secondaryColor": "#00843D",
     "country": "BR",
-    "region": "América do Sul"
-  },
-  {
-    "id": "juv_br",
-    "name": "Juventude",
-    "shortName": "JUV",
+    "region": "América do Sul",
     "division": "Série A",
-    "primaryColor": "#006633",
-    "secondaryColor": "#FFFFFF",
-    "baseBudget": 5000000,
-    "country": "BR",
-    "region": "América do Sul"
+    "baseBudget": 6000000
   },
   {
     "id": "cori_br",
     "name": "Coritiba",
     "shortName": "CFC",
-    "division": "Série B",
+    "division": "Série A",
     "primaryColor": "#005221",
     "secondaryColor": "#FFFFFF",
-    "baseBudget": 3500000,
+    "baseBudget": 6000000,
+    "country": "BR",
+    "region": "América do Sul"
+  },
+  {
+    "id": "rem_br",
+    "name": "Remo",
+    "shortName": "REM",
+    "division": "Série A",
+    "primaryColor": "#003DA5",
+    "secondaryColor": "#FFFFFF",
+    "baseBudget": 5500000,
+    "country": "BR",
+    "region": "América do Sul"
+  },
+  {
+    "id": "cha_br",
+    "name": "Chapecoense",
+    "shortName": "CHA",
+    "division": "Série A",
+    "primaryColor": "#009846",
+    "secondaryColor": "#FFFFFF",
+    "baseBudget": 5000000,
+    "country": "BR",
+    "region": "América do Sul"
+  },
+  {
+    "id": "for_br",
+    "name": "Fortaleza",
+    "shortName": "FOR",
+    "division": "Série B",
+    "primaryColor": "#11307A",
+    "secondaryColor": "#E31C23",
+    "baseBudget": 4500000,
+    "country": "BR",
+    "region": "América do Sul"
+  },
+  {
+    "id": "cea_br",
+    "name": "Ceará",
+    "shortName": "CEA",
+    "division": "Série B",
+    "primaryColor": "#000000",
+    "secondaryColor": "#FFFFFF",
+    "baseBudget": 4000000,
     "country": "BR",
     "region": "América do Sul"
   },
@@ -237,7 +248,29 @@
     "division": "Série B",
     "primaryColor": "#D8232A",
     "secondaryColor": "#F9A01B",
+    "baseBudget": 4000000,
+    "country": "BR",
+    "region": "América do Sul"
+  },
+  {
+    "id": "juv_br",
+    "name": "Juventude",
+    "shortName": "JUV",
+    "division": "Série B",
+    "primaryColor": "#006633",
+    "secondaryColor": "#FFFFFF",
     "baseBudget": 3500000,
+    "country": "BR",
+    "region": "América do Sul"
+  },
+  {
+    "id": "cui_br",
+    "name": "Cuiabá",
+    "shortName": "CUI",
+    "division": "Série B",
+    "primaryColor": "#007A33",
+    "secondaryColor": "#FDB913",
+    "baseBudget": 3000000,
     "country": "BR",
     "region": "América do Sul"
   },
@@ -264,22 +297,22 @@
     "region": "América do Sul"
   },
   {
-    "id": "cea_br",
-    "name": "Ceará",
-    "shortName": "CEA",
-    "division": "Série B",
-    "primaryColor": "#000000",
-    "secondaryColor": "#FFFFFF",
-    "baseBudget": 3000000,
-    "country": "BR",
-    "region": "América do Sul"
-  },
-  {
     "id": "ame_br",
     "name": "América-MG",
     "shortName": "AME",
     "division": "Série B",
     "primaryColor": "#007A33",
+    "secondaryColor": "#000000",
+    "baseBudget": 2500000,
+    "country": "BR",
+    "region": "América do Sul"
+  },
+  {
+    "id": "cri_br",
+    "name": "Criciúma",
+    "shortName": "CRI",
+    "division": "Série B",
+    "primaryColor": "#F9DF1D",
     "secondaryColor": "#000000",
     "baseBudget": 2500000,
     "country": "BR",
@@ -308,24 +341,13 @@
     "region": "América do Sul"
   },
   {
-    "id": "cha_br",
-    "name": "Chapecoense",
-    "shortName": "CHA",
-    "division": "Série B",
-    "primaryColor": "#009846",
-    "secondaryColor": "#FFFFFF",
-    "baseBudget": 1600000,
-    "country": "BR",
-    "region": "América do Sul"
-  },
-  {
     "id": "nov_br",
     "name": "Novorizontino",
     "shortName": "NOV",
     "division": "Série B",
     "primaryColor": "#FFF200",
     "secondaryColor": "#000000",
-    "baseBudget": 1500000,
+    "baseBudget": 1600000,
     "country": "BR",
     "region": "América do Sul"
   },
@@ -341,17 +363,6 @@
     "region": "América do Sul"
   },
   {
-    "id": "pay_br",
-    "name": "Paysandu",
-    "shortName": "PAY",
-    "division": "Série B",
-    "primaryColor": "#0080C8",
-    "secondaryColor": "#FFFFFF",
-    "baseBudget": 1400000,
-    "country": "BR",
-    "region": "América do Sul"
-  },
-  {
     "id": "vil_br",
     "name": "Vila Nova",
     "shortName": "VIL",
@@ -359,17 +370,6 @@
     "primaryColor": "#CE1126",
     "secondaryColor": "#FFFFFF",
     "baseBudget": 1400000,
-    "country": "BR",
-    "region": "América do Sul"
-  },
-  {
-    "id": "rem_br",
-    "name": "Remo",
-    "shortName": "REM",
-    "division": "Série B",
-    "primaryColor": "#003DA5",
-    "secondaryColor": "#FFFFFF",
-    "baseBudget": 1300000,
     "country": "BR",
     "region": "América do Sul"
   },
@@ -391,7 +391,7 @@
     "division": "Série B",
     "primaryColor": "#CE1126",
     "secondaryColor": "#FFFFFF",
-    "baseBudget": 1100000,
+    "baseBudget": 1200000,
     "country": "BR",
     "region": "América do Sul"
   },
@@ -407,37 +407,37 @@
     "region": "América do Sul"
   },
   {
-    "id": "abc_br",
-    "name": "ABC",
-    "shortName": "ABC",
+    "id": "lon_br",
+    "name": "Londrina",
+    "shortName": "LEC",
+    "primaryColor": "#3EA0FF",
+    "secondaryColor": "#FFFFFF",
+    "country": "BR",
+    "region": "América do Sul",
     "division": "Série B",
+    "baseBudget": 1000000
+  },
+  {
+    "id": "sbe_br",
+    "name": "São Bernardo",
+    "shortName": "SBE",
+    "primaryColor": "#FFFF00",
+    "secondaryColor": "#000000",
+    "country": "BR",
+    "region": "América do Sul",
+    "division": "Série B",
+    "baseBudget": 900000
+  },
+  {
+    "id": "ath_br",
+    "name": "Athletic",
+    "shortName": "ATH",
     "primaryColor": "#000000",
     "secondaryColor": "#FFFFFF",
-    "baseBudget": 900000,
     "country": "BR",
-    "region": "América do Sul"
-  },
-  {
-    "id": "gua_br",
-    "name": "Guarani",
-    "shortName": "GUA",
+    "region": "América do Sul",
     "division": "Série B",
-    "primaryColor": "#005C33",
-    "secondaryColor": "#FFFFFF",
-    "baseBudget": 800000,
-    "country": "BR",
-    "region": "América do Sul"
-  },
-  {
-    "id": "csa_br",
-    "name": "CSA",
-    "shortName": "CSA",
-    "division": "Série B",
-    "primaryColor": "#003A70",
-    "secondaryColor": "#FFFFFF",
-    "baseBudget": 700000,
-    "country": "BR",
-    "region": "América do Sul"
+    "baseBudget": 800000
   },
   {
     "id": "carp_ar",
@@ -2717,17 +2717,6 @@
     "region": "Europa"
   },
   {
-    "id": "bfc_pt",
-    "name": "Boavista",
-    "shortName": "BFC",
-    "division": "Série A",
-    "primaryColor": "#000000",
-    "secondaryColor": "#FFFFFF",
-    "baseBudget": 5500000,
-    "country": "PT",
-    "region": "Europa"
-  },
-  {
     "id": "stc_pt",
     "name": "Santa Clara",
     "shortName": "STC",
@@ -2783,17 +2772,6 @@
     "region": "Europa"
   },
   {
-    "id": "scf_pt",
-    "name": "Farense",
-    "shortName": "SCF",
-    "division": "Série A",
-    "primaryColor": "#000000",
-    "secondaryColor": "#FFFFFF",
-    "baseBudget": 4500000,
-    "country": "PT",
-    "region": "Europa"
-  },
-  {
     "id": "mfc_pt",
     "name": "Moreirense",
     "shortName": "MFC",
@@ -2827,24 +2805,68 @@
     "region": "Europa"
   },
   {
+    "id": "mar_pt",
+    "name": "Marítimo",
+    "shortName": "MAR",
+    "division": "Série A",
+    "primaryColor": "#008057",
+    "secondaryColor": "#E30613",
+    "baseBudget": 3500000,
+    "country": "PT",
+    "region": "Europa"
+  },
+  {
+    "id": "alv_pt",
+    "name": "Alverca",
+    "shortName": "ALV",
+    "division": "Série A",
+    "primaryColor": "#E10012",
+    "secondaryColor": "#FFFFFF",
+    "baseBudget": 3200000,
+    "country": "PT",
+    "region": "Europa"
+  },
+  {
+    "id": "avi_pt",
+    "name": "Académico de Viseu",
+    "shortName": "AVI",
+    "division": "Série A",
+    "primaryColor": "#000000",
+    "secondaryColor": "#FFFFFF",
+    "baseBudget": 3000000,
+    "country": "PT",
+    "region": "Europa"
+  },
+  {
     "id": "avs_pt",
     "name": "AVS Futebol SAD",
     "shortName": "AVS",
     "division": "Série A",
     "primaryColor": "#FF0000",
     "secondaryColor": "#000000",
-    "baseBudget": 4000000,
+    "baseBudget": 2900000,
     "country": "PT",
     "region": "Europa"
   },
   {
-    "id": "mar_pt",
-    "name": "Marítimo",
-    "shortName": "mar",
+    "id": "ton_pt",
+    "name": "Tondela",
+    "shortName": "CDT",
     "division": "Série A",
     "primaryColor": "#008057",
-    "secondaryColor": "#E30613",
-    "baseBudget": 3000000,
+    "secondaryColor": "#FEE100",
+    "baseBudget": 2800000,
+    "country": "PT",
+    "region": "Europa"
+  },
+  {
+    "id": "scf_pt",
+    "name": "Farense",
+    "shortName": "SCF",
+    "division": "Série B",
+    "primaryColor": "#000000",
+    "secondaryColor": "#FFFFFF",
+    "baseBudget": 2200000,
     "country": "PT",
     "region": "Europa"
   },
@@ -2852,10 +2874,10 @@
     "id": "por_pt",
     "name": "Portimonense",
     "shortName": "PSC",
-    "division": "Série A",
+    "division": "Série B",
     "primaryColor": "#000000",
     "secondaryColor": "#FFFFFF",
-    "baseBudget": 2800000,
+    "baseBudget": 2200000,
     "country": "PT",
     "region": "Europa"
   },
@@ -2866,7 +2888,7 @@
     "division": "Série B",
     "primaryColor": "#002D62",
     "secondaryColor": "#E30613",
-    "baseBudget": 2500000,
+    "baseBudget": 2100000,
     "country": "PT",
     "region": "Europa"
   },
@@ -2877,18 +2899,7 @@
     "division": "Série B",
     "primaryColor": "#00A3E0",
     "secondaryColor": "#FFFFFF",
-    "baseBudget": 2400000,
-    "country": "PT",
-    "region": "Europa"
-  },
-  {
-    "id": "paf_pt",
-    "name": "Paços de Ferreira",
-    "shortName": "PAF",
-    "division": "Série B",
-    "primaryColor": "#FEE100",
-    "secondaryColor": "#008057",
-    "baseBudget": 2200000,
+    "baseBudget": 2000000,
     "country": "PT",
     "region": "Europa"
   },
@@ -2900,17 +2911,6 @@
     "primaryColor": "#FFFFFF",
     "secondaryColor": "#005CA9",
     "baseBudget": 1800000,
-    "country": "PT",
-    "region": "Europa"
-  },
-  {
-    "id": "ton_pt",
-    "name": "Tondela",
-    "shortName": "CDT",
-    "division": "Série B",
-    "primaryColor": "#008057",
-    "secondaryColor": "#FEE100",
-    "baseBudget": 1600000,
     "country": "PT",
     "region": "Europa"
   },
@@ -2939,22 +2939,11 @@
   {
     "id": "pen_pt",
     "name": "Penafiel",
-    "shortName": "FC",
+    "shortName": "PNF",
     "division": "Série B",
     "primaryColor": "#FFD700",
     "secondaryColor": "#000000",
     "baseBudget": 1400000,
-    "country": "PT",
-    "region": "Europa"
-  },
-  {
-    "id": "avi_pt",
-    "name": "Académico de Viseu",
-    "shortName": "AVI",
-    "division": "Série B",
-    "primaryColor": "#000000",
-    "secondaryColor": "#FFFFFF",
-    "baseBudget": 900000,
     "country": "PT",
     "region": "Europa"
   },
@@ -2965,18 +2954,73 @@
     "division": "Série B",
     "primaryColor": "#E10012",
     "secondaryColor": "#FFFFFF",
-    "baseBudget": 850000,
+    "baseBudget": 1200000,
     "country": "PT",
     "region": "Europa"
   },
   {
-    "id": "alv_pt",
-    "name": "Alverca",
-    "shortName": "ALV",
+    "id": "aca_pt",
+    "name": "Académica",
+    "shortName": "AAC",
+    "division": "Série B",
+    "primaryColor": "#000000",
+    "secondaryColor": "#FFFFFF",
+    "baseBudget": 1100000,
+    "country": "PT",
+    "region": "Europa"
+  },
+  {
+    "id": "paf_pt",
+    "name": "Paços de Ferreira",
+    "shortName": "PAF",
+    "division": "Série B",
+    "primaryColor": "#FEE100",
+    "secondaryColor": "#008057",
+    "baseBudget": 900000,
+    "country": "PT",
+    "region": "Europa"
+  },
+  {
+    "id": "fel_pt",
+    "name": "Felgueiras",
+    "shortName": "FEL",
+    "division": "Série B",
+    "primaryColor": "#009846",
+    "secondaryColor": "#FFFFFF",
+    "baseBudget": 900000,
+    "country": "PT",
+    "region": "Europa"
+  },
+  {
+    "id": "lus_pt",
+    "name": "Lusitânia",
+    "shortName": "LUS",
+    "primaryColor": "#FFDD00",
+    "secondaryColor": "#000000",
+    "country": "PT",
+    "region": "Europa",
+    "division": "Série B",
+    "baseBudget": 900000
+  },
+  {
+    "id": "ama_pt",
+    "name": "Amarante",
+    "shortName": "AMA",
+    "primaryColor": "#000000",
+    "secondaryColor": "#FFFFFF",
+    "country": "PT",
+    "region": "Europa",
+    "division": "Série B",
+    "baseBudget": 800000
+  },
+  {
+    "id": "oli_pt",
+    "name": "Oliveirense",
+    "shortName": "OLI",
     "division": "Série B",
     "primaryColor": "#E10012",
-    "secondaryColor": "#FFFFFF",
-    "baseBudget": 850000,
+    "secondaryColor": "#000000",
+    "baseBudget": 800000,
     "country": "PT",
     "region": "Europa"
   },
@@ -3003,17 +3047,6 @@
     "region": "Europa"
   },
   {
-    "id": "oli_pt",
-    "name": "Oliveirense",
-    "shortName": "OLI",
-    "division": "Série B",
-    "primaryColor": "#E10012",
-    "secondaryColor": "#000000",
-    "baseBudget": 800000,
-    "country": "PT",
-    "region": "Europa"
-  },
-  {
     "id": "var_pt",
     "name": "Varzim",
     "shortName": "VAR",
@@ -3021,28 +3054,6 @@
     "primaryColor": "#FFFFFF",
     "secondaryColor": "#000000",
     "baseBudget": 750000,
-    "country": "PT",
-    "region": "Europa"
-  },
-  {
-    "id": "aca_pt",
-    "name": "Académica",
-    "shortName": "AAC",
-    "division": "Série B",
-    "primaryColor": "#000000",
-    "secondaryColor": "#FFFFFF",
-    "baseBudget": 700000,
-    "country": "PT",
-    "region": "Europa"
-  },
-  {
-    "id": "fel_pt",
-    "name": "Felgueiras",
-    "shortName": "FEL",
-    "division": "Série B",
-    "primaryColor": "#009846",
-    "secondaryColor": "#FFFFFF",
-    "baseBudget": 700000,
     "country": "PT",
     "region": "Europa"
   },
@@ -3065,17 +3076,6 @@
     "primaryColor": "#FFD700",
     "secondaryColor": "#000000",
     "baseBudget": 650000,
-    "country": "PT",
-    "region": "Europa"
-  },
-  {
-    "id": "vvd_pt",
-    "name": "Länk Vilaverdense",
-    "shortName": "VVD",
-    "division": "Série B",
-    "primaryColor": "#005CA9",
-    "secondaryColor": "#FFFFFF",
-    "baseBudget": 600000,
     "country": "PT",
     "region": "Europa"
   },
@@ -3179,6 +3179,17 @@
     "region": "Europa"
   },
   {
+    "id": "com_it",
+    "name": "Como",
+    "shortName": "COM",
+    "division": "Série A",
+    "primaryColor": "#003DA5",
+    "secondaryColor": "#FFFFFF",
+    "baseBudget": 18000000,
+    "country": "IT",
+    "region": "Europa"
+  },
+  {
     "id": "tor_it",
     "name": "Torino",
     "shortName": "TOR",
@@ -3186,17 +3197,6 @@
     "primaryColor": "#8E1F2F",
     "secondaryColor": "#FFFFFF",
     "baseBudget": 15000000,
-    "country": "IT",
-    "region": "Europa"
-  },
-  {
-    "id": "com_it",
-    "name": "Como",
-    "shortName": "COM",
-    "division": "Série A",
-    "primaryColor": "#003DA5",
-    "secondaryColor": "#FFFFFF",
-    "baseBudget": 14000000,
     "country": "IT",
     "region": "Europa"
   },
@@ -3256,23 +3256,12 @@
     "region": "Europa"
   },
   {
-    "id": "ver_it",
-    "name": "Hellas Verona",
-    "shortName": "VER",
+    "id": "sas_it",
+    "name": "Sassuolo",
+    "shortName": "SAS",
     "division": "Série A",
-    "primaryColor": "#FFD200",
-    "secondaryColor": "#003DA5",
-    "baseBudget": 9000000,
-    "country": "IT",
-    "region": "Europa"
-  },
-  {
-    "id": "emp_it",
-    "name": "Empoli",
-    "shortName": "EMP",
-    "division": "Série A",
-    "primaryColor": "#005CA9",
-    "secondaryColor": "#FFFFFF",
+    "primaryColor": "#00A650",
+    "secondaryColor": "#000000",
     "baseBudget": 8500000,
     "country": "IT",
     "region": "Europa"
@@ -3300,46 +3289,13 @@
     "region": "Europa"
   },
   {
-    "id": "sas_it",
-    "name": "Sassuolo",
-    "shortName": "SAS",
-    "division": "Série B",
-    "primaryColor": "#00A650",
-    "secondaryColor": "#000000",
+    "id": "fro_it",
+    "name": "Frosinone",
+    "shortName": "FRO",
+    "division": "Série A",
+    "primaryColor": "#FFD200",
+    "secondaryColor": "#005CA9",
     "baseBudget": 7500000,
-    "country": "IT",
-    "region": "Europa"
-  },
-  {
-    "id": "sam_it",
-    "name": "Sampdoria",
-    "shortName": "SAM",
-    "division": "Série B",
-    "primaryColor": "#005CA9",
-    "secondaryColor": "#FFFFFF",
-    "baseBudget": 7000000,
-    "country": "IT",
-    "region": "Europa"
-  },
-  {
-    "id": "pal_it",
-    "name": "Palermo",
-    "shortName": "PAL",
-    "division": "Série B",
-    "primaryColor": "#F2A6C2",
-    "secondaryColor": "#000000",
-    "baseBudget": 6500000,
-    "country": "IT",
-    "region": "Europa"
-  },
-  {
-    "id": "bar_it",
-    "name": "Bari",
-    "shortName": "BAR",
-    "division": "Série B",
-    "primaryColor": "#FFFFFF",
-    "secondaryColor": "#D50032",
-    "baseBudget": 5000000,
     "country": "IT",
     "region": "Europa"
   },
@@ -3350,18 +3306,18 @@
     "division": "Série B",
     "primaryColor": "#8E1F2F",
     "secondaryColor": "#B0B0B0",
-    "baseBudget": 5000000,
+    "baseBudget": 6500000,
     "country": "IT",
     "region": "Europa"
   },
   {
-    "id": "spe_it",
-    "name": "Spezia",
-    "shortName": "SPE",
+    "id": "ver_it",
+    "name": "Hellas Verona",
+    "shortName": "VER",
     "division": "Série B",
-    "primaryColor": "#FFFFFF",
-    "secondaryColor": "#000000",
-    "baseBudget": 4500000,
+    "primaryColor": "#FFD200",
+    "secondaryColor": "#003DA5",
+    "baseBudget": 6500000,
     "country": "IT",
     "region": "Europa"
   },
@@ -3372,40 +3328,40 @@
     "division": "Série B",
     "primaryColor": "#003DA5",
     "secondaryColor": "#000000",
-    "baseBudget": 4500000,
+    "baseBudget": 6000000,
     "country": "IT",
     "region": "Europa"
   },
   {
-    "id": "fro_it",
-    "name": "Frosinone",
-    "shortName": "FRO",
+    "id": "emp_it",
+    "name": "Empoli",
+    "shortName": "EMP",
     "division": "Série B",
-    "primaryColor": "#FFD200",
-    "secondaryColor": "#005CA9",
-    "baseBudget": 4000000,
-    "country": "IT",
-    "region": "Europa"
-  },
-  {
-    "id": "sal_it",
-    "name": "Salernitana",
-    "shortName": "SAL",
-    "division": "Série B",
-    "primaryColor": "#8E1F2F",
+    "primaryColor": "#005CA9",
     "secondaryColor": "#FFFFFF",
-    "baseBudget": 4000000,
+    "baseBudget": 6000000,
     "country": "IT",
     "region": "Europa"
   },
   {
-    "id": "bre_it",
-    "name": "Brescia",
-    "shortName": "BRE",
+    "id": "sam_it",
+    "name": "Sampdoria",
+    "shortName": "SAM",
     "division": "Série B",
-    "primaryColor": "#003DA5",
+    "primaryColor": "#005CA9",
     "secondaryColor": "#FFFFFF",
-    "baseBudget": 3500000,
+    "baseBudget": 5500000,
+    "country": "IT",
+    "region": "Europa"
+  },
+  {
+    "id": "pal_it",
+    "name": "Palermo",
+    "shortName": "PAL",
+    "division": "Série B",
+    "primaryColor": "#F2A6C2",
+    "secondaryColor": "#000000",
+    "baseBudget": 5500000,
     "country": "IT",
     "region": "Europa"
   },
@@ -3432,17 +3388,6 @@
     "region": "Europa"
   },
   {
-    "id": "reg_it",
-    "name": "Reggiana",
-    "shortName": "REG",
-    "division": "Série B",
-    "primaryColor": "#8E1F2F",
-    "secondaryColor": "#FFFFFF",
-    "baseBudget": 2800000,
-    "country": "IT",
-    "region": "Europa"
-  },
-  {
     "id": "ces_it",
     "name": "Cesena",
     "shortName": "CES",
@@ -3465,37 +3410,103 @@
     "region": "Europa"
   },
   {
-    "id": "cit_it",
-    "name": "Cittadella",
-    "shortName": "CIT",
-    "division": "Série B",
-    "primaryColor": "#8E1F2F",
-    "secondaryColor": "#FFFFFF",
-    "baseBudget": 2400000,
-    "country": "IT",
-    "region": "Europa"
-  },
-  {
-    "id": "cos_it",
-    "name": "Cosenza",
-    "shortName": "COS",
-    "division": "Série B",
-    "primaryColor": "#D50032",
-    "secondaryColor": "#003DA5",
-    "baseBudget": 2200000,
-    "country": "IT",
-    "region": "Europa"
-  },
-  {
-    "id": "ter_it",
-    "name": "Ternana",
-    "shortName": "TER",
-    "division": "Série B",
-    "primaryColor": "#00A650",
+    "id": "ben_it",
+    "name": "Benevento",
+    "shortName": "BEN",
+    "primaryColor": "#FFD200",
     "secondaryColor": "#D50032",
-    "baseBudget": 2000000,
     "country": "IT",
-    "region": "Europa"
+    "region": "Europa",
+    "division": "Série B",
+    "baseBudget": 2500000
+  },
+  {
+    "id": "man_it",
+    "name": "Mantova",
+    "shortName": "MAN",
+    "primaryColor": "#FFFFFF",
+    "secondaryColor": "#D50032",
+    "country": "IT",
+    "region": "Europa",
+    "division": "Série B",
+    "baseBudget": 2400000
+  },
+  {
+    "id": "pad_it",
+    "name": "Padova",
+    "shortName": "PAD",
+    "primaryColor": "#FFFFFF",
+    "secondaryColor": "#E21300",
+    "country": "IT",
+    "region": "Europa",
+    "division": "Série B",
+    "baseBudget": 2400000
+  },
+  {
+    "id": "ave_it",
+    "name": "Avellino",
+    "shortName": "AVE",
+    "primaryColor": "#00843D",
+    "secondaryColor": "#FFFFFF",
+    "country": "IT",
+    "region": "Europa",
+    "division": "Série B",
+    "baseBudget": 2300000
+  },
+  {
+    "id": "jst_it",
+    "name": "Juve Stabia",
+    "shortName": "JST",
+    "primaryColor": "#FFD200",
+    "secondaryColor": "#003DA5",
+    "country": "IT",
+    "region": "Europa",
+    "division": "Série B",
+    "baseBudget": 2200000
+  },
+  {
+    "id": "vic_it",
+    "name": "Vicenza",
+    "shortName": "VIC",
+    "primaryColor": "#E42B2E",
+    "secondaryColor": "#FFFFFF",
+    "country": "IT",
+    "region": "Europa",
+    "division": "Série B",
+    "baseBudget": 2200000
+  },
+  {
+    "id": "car_it",
+    "name": "Carrarese",
+    "shortName": "CAR",
+    "primaryColor": "#0077C8",
+    "secondaryColor": "#FFD200",
+    "country": "IT",
+    "region": "Europa",
+    "division": "Série B",
+    "baseBudget": 2000000
+  },
+  {
+    "id": "ent_it",
+    "name": "Virtus Entella",
+    "shortName": "ENT",
+    "primaryColor": "#78D3F7",
+    "secondaryColor": "#FFFFFF",
+    "country": "IT",
+    "region": "Europa",
+    "division": "Série B",
+    "baseBudget": 2000000
+  },
+  {
+    "id": "are_it",
+    "name": "Arezzo",
+    "shortName": "ARE",
+    "primaryColor": "#8B1A3A",
+    "secondaryColor": "#FFFFFF",
+    "country": "IT",
+    "region": "Europa",
+    "division": "Série B",
+    "baseBudget": 1800000
   },
   {
     "id": "asc_it",
@@ -3503,17 +3514,6 @@
     "shortName": "ASC",
     "division": "Série B",
     "primaryColor": "#000000",
-    "secondaryColor": "#FFFFFF",
-    "baseBudget": 1800000,
-    "country": "IT",
-    "region": "Europa"
-  },
-  {
-    "id": "per_it",
-    "name": "Perugia",
-    "shortName": "PER",
-    "division": "Série B",
-    "primaryColor": "#D50032",
     "secondaryColor": "#FFFFFF",
     "baseBudget": 1800000,
     "country": "IT",
