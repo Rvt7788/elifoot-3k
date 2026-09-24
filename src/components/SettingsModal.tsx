@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, type ReactNode } from "react";
 import GameIcon from "./GameIcon";
 import { useStore } from "../store";
-import { appAlert, appConfirm } from "./AppDialog";
+import { appAlert, appChoice, appConfirm } from "./AppDialog";
 import { listSlots, saveToSlot, loadFromSlot, deleteSlot, type SlotMeta } from "../game/saveSlots";
 import type { GameState } from "../types";
 import { ScrollLock } from "./useLockBodyScroll";
@@ -79,6 +79,35 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
     const g = await loadFromSlot(i);
     if (!g) { appAlert("Save corrompido ou vazio."); return; }
     loadGame(g);
+    onClose();
+  };
+
+  // Novo jogo substitui só o jogo em andamento — os slots continuam intactos.
+  // Por isso a pergunta é se quer guardar o atual num slot antes de começar.
+  const handleNewGame = async () => {
+    if (!game) { resetGame(); onClose(); return; }
+    const choice = await appChoice(
+      "O novo jogo substitui o jogo em andamento. Os saves dos slots não são apagados. Quer salvar o jogo atual antes?",
+      [
+        { key: "save", label: "Salvar e começar", primary: true },
+        { key: "skip", label: "Começar sem salvar" },
+        { key: "cancel", label: "Cancelar" },
+      ],
+    );
+    if (choice === "save") {
+      const free = slots.findIndex((s) => s === null);
+      if (free < 0) {
+        appAlert("Todos os slots estão ocupados. Apague um slot antigo para salvar o jogo atual.");
+        return;
+      }
+      if (!(await saveToSlot(free, game))) {
+        appAlert("Não foi possível salvar: o armazenamento do navegador está cheio. Apague um slot antigo e tente novamente.");
+        return;
+      }
+    } else if (choice !== "skip") {
+      return;
+    }
+    resetGame();
     onClose();
   };
 
@@ -246,12 +275,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
             }}
           />
           <button
-            onClick={async () => {
-              if (await appConfirm("Apagar o save atual e começar um novo jogo?")) {
-                resetGame();
-                onClose();
-              }
-            }}
+            onClick={handleNewGame}
             className="rounded bg-red-900/60 px-3 py-2 text-left text-sm text-red-300 hover:bg-red-900"
           >
             🗑 Novo jogo
